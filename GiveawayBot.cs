@@ -306,7 +306,7 @@ public static class Loc
     /// Core logic manager for the Giveaway Bot.
     /// Handles configuration loading, state management, trigger routing, and command execution.
     /// </summary>
-    public class GiveawayManager
+    public class GiveawayManager : IDisposable
     {
         public const string VERSION = "1.0.1";
 
@@ -369,7 +369,9 @@ public static class Loc
         {
             _msgIdCleanupTimer?.Stop();
             _msgIdCleanupTimer?.Dispose();
+            _dumpTimer?.Dispose();
             _lock?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public WheelOfNamesClient WheelClient { get; set; }
