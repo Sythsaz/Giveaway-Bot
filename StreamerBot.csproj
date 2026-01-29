@@ -26,11 +26,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Automatically include in every CS file -->
-    <Using Include="Streamer.bot.Plugin.Interface" />
-    <Using Include="Streamer.bot.Plugin.Interface.Model" />
-    <Using Include="Streamer.bot.Plugin.Interface.Enums" />
-    <Using Include="Streamer.bot.Common.Events" />
+    <!-- NOTE: <Using> elements generate global using directives (C# 10.0+) -->
+    <!-- Commented out for C# 7.3 compatibility - add using statements manually in each file -->
+    <!-- <Using Include="Streamer.bot.Plugin.Interface" /> -->
+    <!-- <Using Include="Streamer.bot.Plugin.Interface.Model" /> -->
+    <!-- <Using Include="Streamer.bot.Plugin.Interface.Enums" /> -->
+    <!-- <Using Include="Streamer.bot.Common.Events" /> -->
 
     <!-- Use backslashes for Windows compatibility -->
     <Reference Include="$(StreamerBotPath)\Streamer.bot.Plugin.Interface.dll">
