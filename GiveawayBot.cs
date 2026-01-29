@@ -330,6 +330,9 @@ public static class Loc
         // Timer for incremental entry dumping (batch processing)
         private System.Threading.Timer _dumpTimer;
         private CPHAdapter _currentAdapter; // Store for timer callback access
+        
+        // Cache for Trigger JSON strings to prevent redundant deserialization
+        private Dictionary<string, string> _triggersJsonCache = new Dictionary<string, string>();
 
         public GiveawayManager()
         {
@@ -1813,11 +1816,20 @@ public static class Loc
                     string triggersJson = adapter.GetGlobalVar<string>(varName, true);
                     if (!string.IsNullOrEmpty(triggersJson))
                     {
+                        // Optimization: Skip deserialization if JSON hasn't changed
+                        if (_triggersJsonCache.TryGetValue(name, out var cachedJson) && cachedJson == triggersJson)
+                        {
+                            continue;
+                        }
+
                         try
                         {
                             var incoming = JsonConvert.DeserializeObject<Dictionary<string, string>>(triggersJson);
                             if (incoming != null)
                             {
+                                // Cache the new JSON since it parsed successfully
+                                _triggersJsonCache[name] = triggersJson;
+
                                 // Compare with current
                                 var current = profile.Triggers ?? new Dictionary<string, string>();
                                 bool equal = incoming.Count == current.Count;
@@ -1845,7 +1857,9 @@ public static class Loc
                         }
                         catch (Exception ex)
                         {
-                            adapter.LogTrace($"[Sync] Invalid JSON in variable '{varName}': {ex.Message}");
+                            string err = $"[Sync] Invalid JSON in variable '{varName}': {ex.Message}";
+                            adapter.LogWarn(err);
+                            adapter.SetGlobalVar("GiveawayBot_LastConfigErrors", err, true);
                         }
                     }
                 }
