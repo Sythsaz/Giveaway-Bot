@@ -19,7 +19,8 @@
 ## ✨ Key Features
 
 - **Multi-Profile Support**: Run "Daily", "Weekly", and "Sub-Only" giveaways simultaneously.
-- **Enterprise Security**: AES-256-CBC (DPAPI) encryption, **GDPR Data Deletion** (`!giveaway data delete`), & anti-loop protection.
+- **Enterprise Security**: AES-256-CBC (DPAPI) encryption, **GDPR Data Deletion** (`!giveaway data delete`),
+  & anti-loop protection.
 - **Smart Validation**: Blocks bots using entropy checks and account age verification.
 - **Rich Feedback**: Windows **Toast Notifications**, **Localization** support, and highly visible chat alerts.
 - **Automated Config**: Auto-Import global variables (API keys) from JSON on startup.
