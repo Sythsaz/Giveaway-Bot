@@ -23,7 +23,8 @@
 ### Dependency Management
 
 The project references Streamer.bot DLLs (`StreamerBot.Plugin.Interface.dll`, `StreamerBot.Common.dll`).
-These are **not** included in the repo. You must adhere to the Setup instructions in [CONTRIBUTING.md](../CONTRIBUTING.md) to point the project to your local Streamer.bot installation.
+These are **not** included in the repo. You must adhere to the Setup instructions in
+[CONTRIBUTING.md](../CONTRIBUTING.md) to point the project to your local Streamer.bot installation.
 
 ## C# 7.3 Constraints
 
@@ -49,7 +50,8 @@ The `.editorconfig` file is heavily tuned to hide suggestions for these modern f
 
 ## Testing
 
-We use a custom test runner in `_tests/` because standard testing frameworks (NUnit/xUnit) are hard to integrate with the single-file script format and Streamer.bot's environment.
+We use a custom test runner in `_tests/` because standard testing frameworks (NUnit/xUnit) are hard to integrate with the
+single-file script format and Streamer.bot's environment.
 
 ### Running Tests
 
@@ -72,8 +74,10 @@ Since the bot runs _inside_ Streamer.bot, traditional debugging is difficult.
 ### Strategies
 
 1. **Logging**: Use `CPH.LogInfo()` / `CPH.LogDebug()`. These appear in the Streamer.bot Log tab.
-2. **File Logging**: The bot uses `FileLogger` to write to `Giveaway Helper/logs/`. Check these files for detailed persistence and logic traces.
-3. **Unit Tests**: The `MockCPH` allows you to step through code in your IDE (VS Code/Visual Studio) without running Streamer.bot. This is the **best** way to debug logic.
+2. **File Logging**: The bot uses `FileLogger` to write to `Giveaway Helper/logs/`. Check these files for detailed
+   persistence and logic traces.
+3. **Unit Tests**: The `MockCPH` allows you to step through code in your IDE (VS Code/Visual Studio) without running
+   Streamer.bot. This is the **best** way to debug logic.
 
 ### Attaching Process
 

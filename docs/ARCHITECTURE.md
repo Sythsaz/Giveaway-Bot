@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Florals Giveaway Bot is a single-file C# script designed to run within the **Streamer.bot** environment. It leverages Streamer.bot's `CPH` (Channel Points Handler) interface to interact with Twitch, YouTube, and Kick, while managing giveaway state locally.
+The Florals Giveaway Bot is a single-file C# script designed to run within the **Streamer.bot** environment. It leverages
+Streamer.bot's `CPH` (Channel Points Handler) interface to interact with Twitch, YouTube, and Kick, while managing
+giveaway state locally.
 
 ```mermaid
 graph TD

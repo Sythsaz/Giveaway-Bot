@@ -1,6 +1,7 @@
 # Contributing to Florals Giveaway Bot
 
-Thank you for your interest in contributing to the Florals Giveaway Bot! This document provides guidelines and information to help you get started.
+Thank you for your interest in contributing to the Florals Giveaway Bot! This document provides guidelines and information
+to help you get started.
 
 ## 📋 Table of Contents
 
@@ -16,7 +17,8 @@ Thank you for your interest in contributing to the Florals Giveaway Bot! This do
 
 ## Code of Conduct
 
-This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected
+to uphold this code.
 
 ## Getting Started
 
@@ -72,11 +74,13 @@ The project references Streamer.bot DLLs which must be present on your machine.
 
 ### Development Guide
 
-For detailed information about the architecture, component design, and extension points, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For detailed information about the architecture, component design, and extension points, see
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Understanding C# 7.3 Constraints
 
-**Critical**: This project targets **C# 7.3** and **.NET Framework 4.8** to maintain compatibility with Streamer.bot's embedded scripting environment.
+**Critical**: This project targets **C# 7.3** and **.NET Framework 4.8** to maintain compatibility with Streamer.bot's
+embedded scripting environment.
 
 ### What This Means
 
@@ -106,7 +110,8 @@ using (var stream = File.OpenRead("file.txt"))
 
 ## EditorConfig Usage
 
-The project includes a **custom `.editorconfig`** file that suppresses hundreds of IDE warnings for modern C# features not available in C# 7.3.
+The project includes a **custom `.editorconfig`** file that suppresses hundreds of IDE warnings for modern C# features not
+available in C# 7.3.
 
 ### Why We Need This
 
@@ -118,7 +123,8 @@ The project includes a **custom `.editorconfig`** file that suppresses hundreds 
 
 The `.editorconfig` disables warnings for:
 
-1. **Modern language features**: Target-typed new, using declarations, pattern matching, collection expressions, primary constructors
+1. **Modern language features**: Target-typed new, using declarations, pattern matching, collection expressions, primary
+   constructors
 2. **Performance suggestions**: `string.Contains(char)`, static readonly arrays, member as static
 3. **Style preferences**: var vs explicit type, expression bodies, braces on single-line statements
 4. **Nullable reference types**: All CS86xx warnings (not supported in C# 7.3)
@@ -128,7 +134,8 @@ The `.editorconfig` disables warnings for:
 > [!WARNING]
 > **Do NOT rely on `.editorconfig` as a code style reference** for other projects.
 >
-> This configuration is **highly tailored** to suppress incompatibilities, not to enforce best practices. It prioritizes **eliminating noise** over standardizing style.
+> This configuration is **highly tailored** to suppress incompatibilities, not to enforce best practices. It prioritizes
+> **eliminating noise** over standardizing style.
 
 If you modify `.editorconfig`, you may need to:
 

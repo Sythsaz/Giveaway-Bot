@@ -23,7 +23,8 @@
 
 ### Q: Do I need to install anything besides Streamer.bot?
 
-**A:** No external dependencies required. The bot runs entirely within Streamer.bot using only standard .NET Framework 4.8 libraries (C# 7.3).
+**A:** No external dependencies required. The bot runs entirely within Streamer.bot using only standard .NET
+Framework 4.8 libraries (C# 7.3).
 
 ### Q: Where are the bot files stored?
 
@@ -88,7 +89,8 @@ Giveaway Helper/
 
 ### Q: How do I enable desktop notifications?
 
-**A:** Enable `ToastNotifications` in your profile config. You can get alerts for Winner Selected, Giveaway Open/Close, and more.
+**A:** Enable `ToastNotifications` in your profile config. You can get alerts for Winner Selected, Giveaway
+Open/Close, and more.
 _(Requires Windows 10/11 and Streamer.bot notifications enabled)_
 
 ### Q: What does "Sub Luck" actually do?
@@ -142,7 +144,8 @@ _(Requires Windows 10/11 and Streamer.bot notifications enabled)_
 
 ### Q: Do I need to pay for Wheel of Names API?
 
-**A:** Wheel of Names has free and paid tiers. Check their [pricing page](https://wheelofnames.com/api-doc). The bot works with both.
+**A:** Wheel of Names has free and paid tiers. Check their [pricing page](https://wheelofnames.com/api-doc). The bot
+works with both.
 
 ### Q: My Wheel isn't showing in OBS. Why?
 
@@ -169,7 +172,8 @@ See [Wheel API Docs](https://wheelofnames.com/api-doc) for full options.
 
 ### Q: What if the Wheel API is down?
 
-**A:** The bot falls back to **local RNG** (random number generator). Winner is still selected and logged, but no visual spin.
+**A:** The bot falls back to **local RNG** (random number generator). Winner is still selected and logged, but no
+visual spin.
 
 ---
 
@@ -203,7 +207,8 @@ See [Wheel API Docs](https://wheelofnames.com/api-doc) for full options.
 
 ### Q: Can other mods see my API keys?
 
-**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you). Encrypted format `AES:...` is unreadable.
+**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you). Encrypted format
+`AES:...` is unreadable.
 
 ---
 
@@ -227,7 +232,8 @@ See [Wheel API Docs](https://wheelofnames.com/api-doc) for full options.
 
 ### Q: What's the rate limit for Wheel API calls?
 
-**A:** Wheel of Names API has rate limits (varies by plan). The bot includes **automatic retry with exponential backoff** if you hit limits. Check their API docs for your tier's limits.
+**A:** Wheel of Names API has rate limits (varies by plan). The bot includes **automatic retry with exponential
+backoff** if you hit limits. Check their API docs for your tier's limits.
 
 ---
 
@@ -239,9 +245,11 @@ See [Wheel API Docs](https://wheelofnames.com/api-doc) for full options.
 
 ### Q: "Loop Detected" in logs - what does this mean?
 
-**A:** The bot detected **its own message** and ignored it (anti-loop protection). This is normal and prevents infinite command loops.
+**A:** The bot detected **its own message** and ignored it (anti-loop protection). This is normal and prevents
+infinite command loops.
 
-**False positives:** If you see this for legitimate user messages, ensure your Streamer.bot isn't stripping invisible characters (`\u200B`).
+**False positives:** If you see this for legitimate user messages, ensure your Streamer.bot isn't stripping invisible
+characters (`\u200B`).
 
 ### Q: Variables not updating in OBS
 

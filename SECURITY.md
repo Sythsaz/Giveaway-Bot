@@ -2,7 +2,8 @@
 
 ## Supported Versions
 
-We accept security vulnerability reports for the versions listed below. If you are using an older version, please upgrade to the latest supported version before reporting issues.
+We accept security vulnerability reports for the versions listed below. If you are using an older version, please upgrade
+to the latest supported version before reporting issues.
 
 | Version | Supported          |
 | ------- | ------------------ |
@@ -11,7 +12,8 @@ We accept security vulnerability reports for the versions listed below. If you a
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in the Florals Giveaway Bot, please **do not open a public issue**. Instead, please report it via:
+If you discover a security vulnerability in the Florals Giveaway Bot, please **do not open a public issue**. Instead,
+please report it via:
 
 - **Email**: [Add your email or contact info here, or direct to GitHub Security Advisory if enabled]
 - **Discord**: DM `Sythsaz` (Discord User ID: `[Optional]`)
@@ -20,15 +22,19 @@ We will acknowledge your report within 72 hours and provide an estimated timelin
 
 ## Security Features
 
-This bot handles sensitive information (API keys) and interacts with public chat environments. It includes several built-in security mechanisms:
+This bot handles sensitive information (API keys) and interacts with public chat environments. It includes several
+built-in security mechanisms:
 
 ### 1. API Key Encryption (DPAPI)
 
 The bot uses the **Windows Data Protection API (DPAPI)** to encrypt sensitive configuration values at rest.
 
-- **Automatic Encryption**: On first run, any plain-text API keys in `giveaway_config.json` (specifically `WheelOfNamesApiKey`) are automatically encrypted.
-- **User Scope**: Keys are encrypted using the CurrentUser scope, meaning they can only be decrypted by the user account running the Streamer.bot process on that specific machine.
-- **Protection**: This prevents API keys from being stolen if the configuration file is accidentally shared or committed to version control.
+- **Automatic Encryption**: On first run, any plain-text API keys in `giveaway_config.json` (specifically
+  `WheelOfNamesApiKey`) are automatically encrypted.
+- **User Scope**: Keys are encrypted using the CurrentUser scope, meaning they can only be decrypted by the user account
+  running the Streamer.bot process on that specific machine.
+- **Protection**: This prevents API keys from being stolen if the configuration file is accidentally shared or committed
+  to version control.
 
 ### 2. Anti-Loop Protection
 
@@ -41,7 +47,8 @@ To prevent bot recursion and infinite loops:
 
 To ensure fair giveaways, the bot implements several validation layers:
 
-- **Entropy Checks**: Uses Shannon entropy analysis to detect random "keyboard smash" usernames typically used by mass-entry bots.
+- **Entropy Checks**: Uses Shannon entropy analysis to detect random "keyboard smash" usernames typically used by
+  mass-entry bots.
 - **Account Age Verification**: Configurable `MinAccountAgeDays` prevents brand new accounts from entering.
 - **Username Patterns**: Regex-based validation (`UsernamePattern`) to enforce community naming standards.
 

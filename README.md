@@ -67,7 +67,8 @@ See [Architecture Docs](docs/ARCHITECTURE.md) for details.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## 🔒 Security
 

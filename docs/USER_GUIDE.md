@@ -34,12 +34,14 @@
 
 ## Introduction
 
-The **Giveaway Assistant** is a robust, "enterprise-grade" giveaway system designed for high-volume broadcasts. It runs entirely within Streamer.bot but offers features usually found in standalone applications.
+The **Giveaway Assistant** is a robust, "enterprise-grade" giveaway system designed for high-volume broadcasts. It runs
+entirely within Streamer.bot but offers features usually found in standalone applications.
 
 **Why use this over simple random pickers?**
 
 - **Multi-Profile**: Run a "Daily Gold" giveaway and a "Monthly Grand Prize" simultaneously with different rules.
-- **Anti-Bot Security**: Validates account age, detects "keyboard smash" names (Entropy), and strictly prevents bot trigger loops.
+- **Anti-Bot Security**: Validates account age, detects "keyboard smash" names (Entropy), and strictly prevents bot
+  trigger loops.
 - **Observability**: Exposes real-time metrics (entries/sec, errors) to your OBS overlay.
 - **Visuals**: Automates **Wheel of Names** spins directly in OBS.
 - **Feedback & Transparency**:
@@ -613,16 +615,16 @@ You can edit this file directly or use the `!giveaway profile config` commands.
 
 These affect the entire bot behavior (found under `"Globals"` key).
 
-| Setting                | Type   | Default                 | Description                                                                               |
-| :--------------------- | :----- | :---------------------- | :---------------------------------------------------------------------------------------- |
-| `RunMode`              | String | `Mirror`                | `FileSystem` (File only), `GlobalVar` (Memory only), `Mirror` (Syncs both - Recommended). |
-| `StatePersistenceMode` | String | `Both`                  | Where to save active entries: `File`, `GlobalVar`, `Both`.                                |
-| `LogRetentionDays`     | Int    | `90`                    | How many days to keep logs before deletion.                                               |
-| `LogSizeCapMB`         | Int    | `100`                   | Maximum size of the logs folder in MB (prunes oldest first).                              |
-| `WheelApiKeyVar`       | String | `WheelOfNamesApiKey`    | Name of the _Streamer.bot Variable_ holding your API key.                                 |
-| `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | specific platforms to listen to and broadcast on.                                         |
-| `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                          |
-| `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                               |
+| Setting                | Type   | Default                 | Description                                                                           |
+| :--------------------- | :----- | :---------------------- | :------------------------------------------------------------------------------------ |
+| `RunMode`              | String | `Mirror`                | `FileSystem` (File only), `GlobalVar` (Memory only), `Mirror` (Syncs both - Recom'd). |
+| `StatePersistenceMode` | String | `Both`                  | Where to save active entries: `File`, `GlobalVar`, `Both`.                            |
+| `LogRetentionDays`     | Int    | `90`                    | How many days to keep logs before deletion.                                           |
+| `LogSizeCapMB`         | Int    | `100`                   | Maximum size of the logs folder in MB (prunes oldest first).                          |
+| `WheelApiKeyVar`       | String | `WheelOfNamesApiKey`    | Name of the _Streamer.bot Variable_ holding your API key.                             |
+| `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | specific platforms to listen to and broadcast on.                                     |
+| `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
+| `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
 
 ### Profile Settings
 
@@ -714,7 +716,8 @@ Want **Nightbot** or **Moobot** to control your giveaway? You can whitelist exte
 
 ### Variables & Observability
 
-The bot exposes extremely detailed metrics to **Streamer.bot Global Variables**. You can use these in C# Actions or OBS Text Sources (syntax `%VariableName%`).
+The bot exposes extremely detailed metrics to **Streamer.bot Global Variables**. You can use these in C# Actions or OBS
+Text Sources (syntax `%VariableName%`).
 
 **Core Metrics (Requires `ExposeVariables: true` in profile):**
 
@@ -918,10 +921,13 @@ Run `!giveaway system test`.
 
 ### "Loop Detected" in Logs
 
-The bot has built-in protection. If you name your bot "StreamerBot" and your command is also "!giveaway", it might see its own message.
+The bot has built-in protection. If you name your bot "StreamerBot" and your command is also "!giveaway", it might see
+its own message.
 
-- **Fix**: The bot automatically appends an invisible token (`\u200B`) to its messages to ignore them. Ensure you aren't stripping invisible characters in other actions.
+- **Fix**: The bot automatically appends an invisible token (`\u200B`) to its messages to ignore them. Ensure you aren't
+  stripping invisible characters in other actions.
 
 ### Profiles not syncing?
 
-Check your `RunMode`. If set to `FileSystem`, variables might not update instantly. Use `Mirror` mode for best experience.
+Check your `RunMode`. If set to `FileSystem`, variables might not update instantly. Use `Mirror` mode for best
+experience.

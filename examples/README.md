@@ -13,7 +13,8 @@ This directory contains pre-configured `giveaway_config.json` examples for vario
 
 ### [01-minimal-starter.json](01-minimal-starter.json)
 
-Start here if you're new! Contains just the "Main" profile with essential commands (`!enter`, `!draw`). Good for testing.
+Start here if you're new! Contains just the "Main" profile with essential commands (`!enter`, `!draw`).
+Good for testing.
 
 ### [02-multi-profile-setup.json](02-multi-profile-setup.json)
 
