@@ -7,8 +7,6 @@ using System.IO;
 using System.Threading.Tasks;
 using StreamerBot;
 
-#nullable disable
-
 namespace StreamerBot.Tests
 {
     public class MockCPH : IGiveawayCPH
