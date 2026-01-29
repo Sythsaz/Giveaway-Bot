@@ -2413,12 +2413,17 @@ public static class Loc
                     string url = await WheelClient.CreateWheel(adapter, pool, GlobalConfig.Globals.WheelApiKeyVar, config.WheelSettings);
                     if (url != null)
                     {
-                        if (Bus != null) Bus.Publish(new WheelReadyEvent(adapter, profileName, state, url, platform));
-                        
-                        // Fallback/Legacy direct call if EventBus was null (unlikely)
-                        if (Bus == null && config.EnableObs && Obs != null) Obs.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
-                        
-                        Messenger?.SendBroadcast(adapter, $"Wheel Ready! {url}", platform);
+                        if (Bus != null) 
+                        {
+                            Bus.Publish(new WheelReadyEvent(adapter, profileName, state, url, platform));
+                        }
+                        else
+                        {
+                            // Fallback/Legacy direct call if EventBus was null (unlikely)
+                            if (config.EnableObs && Obs != null) Obs.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
+                            Messenger?.SendBroadcast(adapter, $"Wheel Ready! {url}", platform);
+                        }
+
                         if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config);
                         return true;
                     }
@@ -2447,9 +2452,15 @@ public static class Loc
                     adapter.LogDebug($"[{profileName}] Winner: {winnerName} ({winnerEntry.UserId}) - WinsTotal incremented.");
                     
                     if (Bus != null)
-                {
-                    Bus.Publish(new WinnerSelectedEvent(adapter, profileName, state, winnerEntry, platform));
-                }
+                    {
+                        Bus.Publish(new WinnerSelectedEvent(adapter, profileName, state, winnerEntry, platform));
+                    }
+                    else
+                    {
+                         // Fallback Broadcast if EventBus is missing
+                         string msg = config.WheelSettings?.WinnerMessage?.Replace("{name}", winnerEntry.UserName) ?? $"Winner: {winnerEntry.UserName}!";
+                         Messenger?.SendBroadcast(adapter, msg, platform);
+                    }
                 }
 
                 // Winner message handled by EventBus subscribers
