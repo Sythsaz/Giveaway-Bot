@@ -2,6 +2,7 @@
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using StreamerBot;
 

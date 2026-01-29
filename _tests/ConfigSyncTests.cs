@@ -1,9 +1,9 @@
 // Streamer.bot uses .NET Framework 4.8 / C# 7.3
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using StreamerBot;
 
@@ -33,7 +33,6 @@ namespace StreamerBot.Tests
             var cph = new MockCPH();
             var m = new GiveawayManager();
             // Reset static state for isolation (crucial for config tests)
-            GiveawayManager.GlobalConfig = null; 
             GiveawayManager.GlobalConfig = null;
             m.States.Clear(); // Although m is new, States is per instance, but GlobalConfig is static
             var adapter = new CPHAdapter(cph);
@@ -190,7 +189,7 @@ namespace StreamerBot.Tests
         {
             Console.Write("[TEST] Boolean Parsing Variants: ");
             var (m, c) = SetupWithCph();
-             // Ensure global override is active for this test so we can toggle it globally easily
+            // Ensure global override is active for this test so we can toggle it globally easily
             c.SetGlobalVar("GiveawayBot_ExposeVariables", "true", true);
 
             var config = GiveawayManager.GlobalConfig.Profiles["Main"];
@@ -204,7 +203,7 @@ namespace StreamerBot.Tests
                 c.Globals.Clear();
                 // Set GlobalVar to force Enable
                 c.SetGlobalVar("GiveawayBot_ExposeVariables", t, true);
-                
+
                 c.Args["userId"] = "BT" + (i++);
                 c.Args["user"] = "BT" + i;
                 c.Args["command"] = "!enter";
@@ -219,7 +218,7 @@ namespace StreamerBot.Tests
                 c.Globals.Clear();
                 // Set GlobalVar to force Disable
                 c.SetGlobalVar("GiveawayBot_ExposeVariables", f, true);
-                
+
                 c.Args["userId"] = "BF" + (i++);
                 c.Args["user"] = "BF" + i;
                 await m.ProcessTrigger(new CPHAdapter(c));
