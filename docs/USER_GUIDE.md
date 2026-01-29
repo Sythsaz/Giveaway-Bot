@@ -785,7 +785,8 @@ To enable the "Spin" effect:
 > 2. Bot **automatically encrypts** it with AES-256-CBC on next execution
 > 3. Variable updates to `AES:...` (encrypted blob)
 > 4. **Legacy keys**: Old `OBF:` keys are auto-converted to `AES:` (seamless upgrade)
-> 5. **Machine-specific**: Encrypted key only works on this PC/user (re-enter if moving bot)
+> 5. **Portable Security**: Encrypted keys use a random Salt stored in `giveaway_config.json`.
+>    If you move your config file, the keys remain valid on new machines.
 >
 > **Security Notes:**
 >

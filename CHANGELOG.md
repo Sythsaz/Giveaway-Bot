@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
+- **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 
 ## [1.1.0] - 2026-01-29
 

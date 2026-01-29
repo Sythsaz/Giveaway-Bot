@@ -380,6 +380,7 @@ public static class Loc
         public WheelOfNamesClient WheelClient { get; set; }
         public ObsController Obs { get; set; }
         public MultiPlatformMessenger Messenger { get; set; }
+        public IEventBus Bus { get; set; }
         public MetricsService Metrics { get; set; }
         private MetricsContainer _cachedMetrics;
 
@@ -428,10 +429,13 @@ public static class Loc
 
             MigrateSecurity(adapter);
 
+            Bus = new GiveawayEventBus();
             WheelClient = new WheelOfNamesClient();
             WheelClient.Metrics = _cachedMetrics; // Enable API latency tracking
-            Obs = new ObsController();
+            Obs = new ObsController(GlobalConfig);
+            Obs.Register(Bus);
             Messenger = new MultiPlatformMessenger(GlobalConfig);
+            Messenger.Register(Bus); // Subscribe to events
             Metrics = new MetricsService();
             _cachedMetrics = Metrics.LoadMetrics(adapter);
             adapter.LogVerbose("[GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).");
@@ -2324,8 +2328,17 @@ public static class Loc
 
                 IncUserMetric(adapter, userId, userName, "EntriesTotal");
 
-                if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
-                    adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {userName}");
+                if (Bus != null)
+                {
+                    // TODO: HandleEntry doesn't map platform yet, defaulting to "Twitch" or null
+                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, state, state.Entries[userId], "Twitch"));
+                }
+                else
+                {
+                    // Fallback if EventBus is not available (should require EventBus, but safe coding)
+                    if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
+                         adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {userName}");
+                }
 
                 return true;
             }
@@ -2396,7 +2409,11 @@ public static class Loc
                     string url = await WheelClient.CreateWheel(adapter, pool, GlobalConfig.Globals.WheelApiKeyVar, config.WheelSettings);
                     if (url != null)
                     {
-                        if (config.EnableObs && Obs != null) Obs.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
+                        if (Bus != null) Bus.Publish(new WheelReadyEvent(adapter, profileName, state, url, platform));
+                        
+                        // Fallback/Legacy direct call if EventBus was null (unlikely)
+                        if (Bus == null && config.EnableObs && Obs != null) Obs.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
+                        
                         Messenger?.SendBroadcast(adapter, $"Wheel Ready! {url}", platform);
                         if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config);
                         return true;
@@ -2425,8 +2442,10 @@ public static class Loc
                     
                     adapter.LogDebug($"[{profileName}] Winner: {winnerName} ({winnerEntry.UserId}) - WinsTotal incremented.");
                     
-                    if (config.ToastNotifications.TryGetValue("WinnerSelected", out var notify) && notify)
-                        adapter.ShowToastNotification("Giveaway Winner", $"Winner: {winnerName}!");
+                    if (Bus != null)
+                {
+                    Bus.Publish(new WinnerSelectedEvent(adapter, profileName, state, winnerEntry, platform));
+                }
                 }
 
                 // Use configured winner message template
@@ -2458,12 +2477,21 @@ public static class Loc
             {
                 state.IsActive = true;
                 adapter.LogInfo($"[{profileName}] Giveaway is now OPEN.");
-                Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayOpened", profileName), platform);
+                
+                // Persistence must happen before event publish so subscribers see latest state if they reload
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
-                
-                if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
-                    adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is OPEN!");
+
+                if (Bus != null)
+                {
+                    Bus.Publish(new GiveawayStartedEvent(adapter, profileName, state, platform));
+                }
+                else
+                {
+                    Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayOpened", profileName), platform);
+                    if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
+                        adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is OPEN!");
+                }
 
                 return true;
             }
@@ -2486,13 +2514,22 @@ public static class Loc
             {
                 state.IsActive = false;
                 adapter.LogInfo($"[{profileName}] Giveaway is now CLOSED.");
-                Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayClosed"), platform);
+                
+                // Persistence
                 if (config.DumpEntriesOnEnd) await DumpEntriesAsync(adapter, profileName, state, config);
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
 
-                if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
-                    adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is CLOSED!");
+                if (Bus != null)
+                {
+                    Bus.Publish(new GiveawayEndedEvent(adapter, profileName, state, platform));
+                }
+                else
+                {
+                    Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayClosed"), platform);
+                    if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
+                        adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is CLOSED!");
+                }
 
                 return true;
             }
@@ -5197,6 +5234,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             { "GiveawayClosed", true }
         };
 
+        // Missing properties fixed
+        public double WinChance { get; set; } = 1.0;
+        public bool RequireSubscriber { get; set; } = false;
+
+
 
         [JsonExtensionData] public Dictionary<string, object> ExtensionData { get; set; }
     }
@@ -5631,6 +5673,51 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             Config = config;
         }
 
+        public void Register(IEventBus bus)
+        {
+            bus.Subscribe<WinnerSelectedEvent>(OnWinnerSelected);
+            bus.Subscribe<GiveawayStartedEvent>(OnGiveawayStarted);
+            bus.Subscribe<GiveawayEndedEvent>(OnGiveawayEnded);
+            bus.Subscribe<EntryAcceptedEvent>(OnEntryAccepted);
+        }
+
+        private void OnWinnerSelected(WinnerSelectedEvent evt)
+        {
+             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config) && config.ToastNotifications.TryGetValue("WinnerSelected", out var notify) && notify)
+             {
+                 evt.Adapter.ShowToastNotification("Giveaway Winner", $"Winner: {evt.Winner.UserName}!");
+             }
+             // Broadcast handled by proper winner message template in GiveawayManager currently
+        }
+
+        private void OnGiveawayStarted(GiveawayStartedEvent evt)
+        {
+             SendBroadcast(evt.Adapter, Loc.Get("GiveawayOpened", evt.ProfileName), evt.Source);
+             
+             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config) && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
+             {
+                 evt.Adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{evt.ProfileName}' is OPEN!");
+             }
+        }
+
+        private void OnGiveawayEnded(GiveawayEndedEvent evt)
+        {
+             SendBroadcast(evt.Adapter, Loc.Get("GiveawayClosed"), evt.Source);
+
+             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config) && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
+             {
+                 evt.Adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{evt.ProfileName}' is CLOSED!");
+             }
+        }
+
+        private void OnEntryAccepted(EntryAcceptedEvent evt)
+        {
+             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config) && config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
+             {
+                 evt.Adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {evt.Entry.UserName}");
+             }
+        }
+
         /// <summary>
         /// Sends a message to one or more platforms based on their live status and configuration.
         /// </summary>
@@ -5705,7 +5792,27 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
     /// </summary>
     public class ObsController
     {
-        public ObsController() { }
+        private readonly GiveawayBotConfig _config;
+
+        public ObsController(GiveawayBotConfig config) 
+        {
+            _config = config;
+        }
+
+        public void Register(IEventBus bus)
+        {
+            bus.Subscribe<WheelReadyEvent>(OnWheelReady);
+        }
+
+        private void OnWheelReady(WheelReadyEvent evt)
+        {
+            if (_config == null || !_config.Profiles.TryGetValue(evt.ProfileName, out var profile)) return;
+            
+            if (profile.EnableObs)
+            {
+                SetBrowserSource(evt.Adapter, profile.ObsScene, profile.ObsSource, evt.Url);
+            }
+        }
         
         /// <summary>
         /// Updates a Streamer.bot OBS Browser Source with a new URL (e.g., the Wheel of Names link).
@@ -5778,6 +5885,146 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public int WheelApiTimeouts { get; set; }
         public int WheelApiNetworkErrors { get; set; }
     }
+
+
+
+    /// <summary>
+    /// Event Bus Interface for decoupled communication.
+    /// </summary>
+    public interface IEventBus
+    {
+        void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent;
+        void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent;
+        void Publish<T>(T evt) where T : IGiveawayEvent;
+    }
+
+    /// <summary>
+    /// Base interface for all giveaway events.
+    /// </summary>
+    public interface IGiveawayEvent
+    {
+        CPHAdapter Adapter { get; }
+        string ProfileName { get; }
+        GiveawayState State { get; }
+        string Source { get; }
+    }
+
+    /// <summary>
+    /// Thread-safe Event Bus implementation.
+    /// </summary>
+    public class GiveawayEventBus : IEventBus
+    {
+        private readonly Dictionary<Type, List<Delegate>> _handlers = new Dictionary<Type, List<Delegate>>();
+        private readonly object _lock = new object();
+
+        public void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent
+        {
+            lock (_lock)
+            {
+                if (!_handlers.ContainsKey(typeof(T)))
+                {
+                    _handlers[typeof(T)] = new List<Delegate>();
+                }
+                _handlers[typeof(T)].Add(handler);
+            }
+        }
+
+        public void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent
+        {
+            lock (_lock)
+            {
+                if (_handlers.ContainsKey(typeof(T)))
+                {
+                    _handlers[typeof(T)].Remove(handler);
+                }
+            }
+        }
+
+        public void Publish<T>(T evt) where T : IGiveawayEvent
+        {
+            List<Delegate> handlersToInvoke = null;
+            lock (_lock)
+            {
+                if (_handlers.TryGetValue(typeof(T), out var list))
+                {
+                    handlersToInvoke = list.ToList();
+                }
+            }
+
+            if (handlersToInvoke != null)
+            {
+                foreach (var handler in handlersToInvoke)
+                {
+                    try
+                    {
+                        ((Action<T>)handler)(evt);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't crash the bus
+                        evt.Adapter?.LogError($"[EventBus] Error handling event {typeof(T).Name}: {ex.Message}");
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Core Events ---
+
+    public abstract class GiveawayEventBase : IGiveawayEvent
+    {
+        public CPHAdapter Adapter { get; }
+        public string ProfileName { get; }
+        public GiveawayState State { get; }
+        public string Source { get; }
+
+        protected GiveawayEventBase(CPHAdapter adapter, string profileName, GiveawayState state, string source)
+        {
+            Adapter = adapter;
+            ProfileName = profileName;
+            State = state;
+            Source = source;
+        }
+    }
+
+    public class GiveawayStartedEvent : GiveawayEventBase
+    {
+        public GiveawayStartedEvent(CPHAdapter adapter, string profileName, GiveawayState state, string source) : base(adapter, profileName, state, source) { }
+    }
+
+    public class GiveawayEndedEvent : GiveawayEventBase
+    {
+        public GiveawayEndedEvent(CPHAdapter adapter, string profileName, GiveawayState state, string source) : base(adapter, profileName, state, source) { }
+    }
+
+    public class WinnerSelectedEvent : GiveawayEventBase
+    {
+        public Entry Winner { get; }
+        public WinnerSelectedEvent(CPHAdapter adapter, string profileName, GiveawayState state, Entry winner, string source) : base(adapter, profileName, state, source) 
+        {
+            Winner = winner;
+        }
+    }
+
+    public class EntryAcceptedEvent : GiveawayEventBase
+    {
+        public Entry Entry { get; }
+        public EntryAcceptedEvent(CPHAdapter adapter, string profileName, GiveawayState state, Entry entry, string source) : base(adapter, profileName, state, source)
+        {
+            Entry = entry;
+        }
+    }
+
+    public class WheelReadyEvent : GiveawayEventBase
+    {
+        public string Url { get; }
+        public WheelReadyEvent(CPHAdapter adapter, string profileName, GiveawayState state, string url, string source) : base(adapter, profileName, state, source)
+        {
+            Url = url;
+        }
+    }
+
+
 
     public class UserMetricSet
     {
