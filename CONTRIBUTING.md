@@ -165,6 +165,31 @@ If you modify `.editorconfig`, you may need to:
 2. Right-click solution → Reload Solution, OR
 3. Restart your IDE
 
+### Pre-Commit Hook
+
+The repository includes a pre-commit hook (`.git/hooks/pre-commit`) that automatically scans staged C# files for C# 8.0+
+features before allowing commits.
+
+**Features detected**:
+
+- `??=` null-coalescing assignment
+- Switch expressions
+- Index/range operators
+- Using declarations
+- Nullable reference type annotations
+- Nullable pragmas
+
+**Hook behavior**:
+
+- ✅ Allows commit if no C# 8.0+ features detected
+- ❌ Blocks commit and lists violations if incompatible features found
+
+The hook runs automatically on `git commit`. To bypass (not recommended):
+
+```bash
+git commit --no-verify
+```
+
 ## Making Changes
 
 ### Branch Naming
