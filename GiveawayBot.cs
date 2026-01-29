@@ -237,6 +237,70 @@ public class CPHInline
             }
         }
     }
+/// <summary>
+/// Static Localization Helper.
+/// Manages default strings and user overrides from config.
+/// </summary>
+public static class Loc
+{
+    private static readonly Dictionary<string, string> _defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Entries
+            { "EntryAccepted", "Entry accepted! Total tickets: {0} ({1})" }, // {0}=Tickets, {1}=Luck
+            { "EntryAccepted_NoLuck", "Entry accepted! Total tickets: {0}" },
+            { "EntryRejected_MaxEntries", "You have reached the maximum number of entries." },
+            { "EntryRejected_TooNew", "Your account is too new to join this giveaway." },
+            { "EntryRejected_LowEntropy", "Entry rejected by anti-bot protection." },
+            { "EntryRejected_Blacklisted", "You are not allowed to join this giveaway." },
+            { "EntryRejected_GiveawayClosed", "The giveaway is currently closed." },
+
+            // Draw
+            { "WinnerSelected", "🎉 Congratulations @{0}! You have won the giveaway!" },
+            { "WinnerDrawn_Log", "Winner drawn: {0} (Tickets: {1})" },
+            
+            // State
+            { "GiveawayOpened", "🎟 The giveaway for '{0}' is now OPEN! Type !enter to join." },
+            { "GiveawayOpened_NoProfile", "🎟 The giveaway is now OPEN! Type !enter to join." },
+            { "GiveawayClosed", "🚫 The giveaway is now CLOSED! No more entries accepted." },
+            { "GiveawayFull", "🚫 The giveaway is FULL! No more entries accepted." },
+            
+            // Errors
+            { "Error_Loop", "Loop detected. Setup error." },
+            { "Error_System", "A system error occurred." },
+            { "Error_NoPermission", "You do not have permission to use this command." }
+        };
+
+    public static string Get(string key, params object[] args)
+    {
+        string template = null;
+
+        // 1. Try Config Overrides
+        if (GiveawayManager.GlobalConfig?.Globals?.CustomStrings != null)
+        {
+            if (GiveawayManager.GlobalConfig.Globals.CustomStrings.TryGetValue(key, out var overrideStr))
+            {
+                template = overrideStr;
+            }
+        }
+
+        // 2. Try Default Dictionary
+        if (template == null && _defaults.TryGetValue(key, out var defStr))
+        {
+            template = defStr;
+        }
+
+        // 3. Fallback
+        if (template == null) return $"[{key}]";
+
+        // 4. Format
+        if (args != null && args.Length > 0) // C# 7.3: args is object[]
+        {
+            try { return string.Format(template, args); }
+            catch { return template; } // Fail safe
+        }
+        return template;
+    }
+}
 
     /// <summary>
     /// Core logic manager for the Giveaway Bot.
@@ -4789,6 +4853,12 @@ public class CPHInline
 
         [JsonProperty("_enabled_platforms_help")] public string EnabledPlatformsHelp { get; set; } = "The list of platforms to monitor for live status and broadcast to.";
         public List<string> EnabledPlatforms { get; set; } = new List<string> { "Twitch", "YouTube", "Kick" };
+
+        [JsonProperty("_language_help")] public string LanguageHelp { get; set; } = "Language code for localization (e.g., en-US).";
+        public string Language { get; set; } = "en-US";
+
+        [JsonProperty("_custom_strings_help")] public string CustomStringsHelp { get; set; } = "Override specific localized strings here. Key:Value pairs.";
+        public Dictionary<string, string> CustomStrings { get; set; } = new Dictionary<string, string>();
 
         [JsonProperty("_persistence_mode_help")] public string PersistenceModeHelp { get; set; } = "StatePersistenceMode: Where to store active giveaway data (File, GlobalVar, Both).";
         public string StatePersistenceMode { get; set; } = "Both";
