@@ -3597,6 +3597,67 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         }
 
         /// <summary>
+        /// Validates configuration values and clamps them to safe ranges.
+        /// Also removes profiles with invalid names to prevent system errors.
+        /// </summary>
+        private static void ValidateConfig(CPHAdapter adapter, GiveawayBotConfig c)
+        {
+            if (c == null) return;
+
+            // 1. Profile Names & Reserved Keywords
+            if (c.Profiles != null)
+            {
+                var invalidKeys = new List<string>();
+                foreach (var profileKey in c.Profiles.Keys)
+                {
+                    if (!_profileNameRegex.IsMatch(profileKey))
+                    {
+                        adapter.LogError($"[Config] Invalid Profile Name '{profileKey}'. Must be alphanumeric/underscore (max 32 chars). Ignoring.");
+                        invalidKeys.Add(profileKey);
+                    }
+                    else if (_reservedNames.Contains(profileKey, StringComparer.OrdinalIgnoreCase))
+                    {
+                        adapter.LogError($"[Config] Reserved Profile Name '{profileKey}'. This name is system-locked. Ignoring.");
+                        invalidKeys.Add(profileKey);
+                    }
+                }
+                foreach (var key in invalidKeys) c.Profiles.Remove(key);
+            }
+
+            // 2. Clamp Values (Globals)
+            if (c.Globals != null) 
+            {
+               if (c.Globals.LogPruneProbability < 0) c.Globals.LogPruneProbability = 0;
+               if (c.Globals.LogPruneProbability > 100) c.Globals.LogPruneProbability = 100;
+
+               if (c.Globals.LogRetentionDays < 1) c.Globals.LogRetentionDays = 1;
+               if (c.Globals.MessageIdCacheTtlMinutes < 1) c.Globals.MessageIdCacheTtlMinutes = 1;
+            }
+
+            // 3. Clamp Values (Profiles)
+            if (c.Profiles != null)
+            {
+                foreach (var profile in c.Profiles.Values)
+                {
+                     // Throttle logic
+                     if (profile.DumpEntriesOnEntryThrottleSeconds < 5)
+                     {
+                         adapter.LogWarn($"[Config] DumpEntriesOnEntryThrottle too low ({profile.DumpEntriesOnEntryThrottleSeconds}s), clamped to 5s");
+                         profile.DumpEntriesOnEntryThrottleSeconds = 5;
+                     }
+                     if (profile.DumpEntriesOnEntryThrottleSeconds > 300)
+                     {
+                         adapter.LogWarn($"[Config] DumpEntriesOnEntryThrottle too high ({profile.DumpEntriesOnEntryThrottleSeconds}s), clamped to 300s");
+                         profile.DumpEntriesOnEntryThrottleSeconds = 300;
+                     }
+                     
+                     if (profile.WinChance < 0) profile.WinChance = 0;
+                     if (profile.SubLuckMultiplier < 1) profile.SubLuckMultiplier = 1;
+                }
+            }
+        }
+
+        /// <summary>
         /// Retrieves the current configuration object, managing caching and auto-reloading.
         /// Performs synchronization between disk and global variables based on RunMode.
         /// </summary>
@@ -3721,20 +3782,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                                 // Fix up dictionaries if they regressed to case-sensitive
                                 EnsureCaseInsensitive(c);
 
-                                // Validate and clamp DumpEntriesOnEntryThrottleSeconds to safe bounds
-                                foreach (var profile in c.Profiles.Values)
-                                {
-                                    if (profile.DumpEntriesOnEntryThrottleSeconds < 5)
-                                    {
-                                        adapter.LogWarn($"[Config] DumpEntriesOnEntryThrottle too low ({profile.DumpEntriesOnEntryThrottleSeconds}s), clamped to 5s");
-                                        profile.DumpEntriesOnEntryThrottleSeconds = 5;
-                                    }
-                                    if (profile.DumpEntriesOnEntryThrottleSeconds > 300)
-                                    {
-                                        adapter.LogWarn($"[Config] DumpEntriesOnEntryThrottle too high ({profile.DumpEntriesOnEntryThrottleSeconds}s), clamped to 300s");
-                                        profile.DumpEntriesOnEntryThrottleSeconds = 300;
-                                    }
-                                }
+                                // Validate and clamp values using strict schema rules
+                                ValidateConfig(adapter, c);
 
                                 _cached = c;
                                 _lastLoadedJson = json;
