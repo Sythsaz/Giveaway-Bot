@@ -2373,7 +2373,7 @@ public static class Loc
             {
                 state.IsActive = true;
                 adapter.LogInfo($"[{profileName}] Giveaway is now OPEN.");
-                Messenger?.SendBroadcast(adapter, $"Giveaway '{profileName}' is OPEN!", platform);
+                Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayOpened", profileName), platform);
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
                 
@@ -2401,7 +2401,7 @@ public static class Loc
             {
                 state.IsActive = false;
                 adapter.LogInfo($"[{profileName}] Giveaway is now CLOSED.");
-                Messenger?.SendBroadcast(adapter, $"Giveaway '{profileName}' is CLOSED!", platform);
+                Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayClosed"), platform);
                 if (config.DumpEntriesOnEnd) await DumpEntriesAsync(adapter, profileName, state, config);
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
