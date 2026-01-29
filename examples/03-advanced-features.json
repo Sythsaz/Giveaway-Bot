@@ -1,0 +1,32 @@
+{
+  "_instructions": [
+    "ADVANCED FEATURES CONFIGURATION",
+    "Heavy security and external bot integration."
+  ],
+  "Profiles": {
+    "Main": {
+      "Triggers": {
+        "command:!join": "Enter",
+        "command:!pick": "Winner"
+      },
+      "MaxEntriesPerMinute": 20,
+      "MinAccountAgeDays": 90,
+      "EnableEntropyCheck": true,
+      "UsernamePattern": "^[a-zA-Z0-9_]{4,25}$", 
+      "AllowedExternalBots": ["Nightbot", "StreamElements"],
+      "ExternalListeners": [
+        {
+          "BotName": "Nightbot",
+          "MessagePattern": "^(\\w+) entered the giveaway!",
+          "Action": "Enter",
+          "TargetGroup": 1 
+        }
+      ]
+    }
+  },
+  "Globals": {
+    "RunMode": "FileSystem", 
+    "StatePersistenceMode": "File",
+    "LogLevel": "DEBUG"
+  }
+}

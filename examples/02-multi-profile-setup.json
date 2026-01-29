@@ -1,0 +1,46 @@
+{
+  "_instructions": [
+    "MULTI-PROFILE CONFIGURATION",
+    "Run different giveaways at the same time!"
+  ],
+  "Profiles": {
+    "Main": {
+      "Triggers": {
+        "command:!enter": "Enter",
+        "command:!draw": "Winner",
+        "command:!start": "Open",
+        "command:!end": "Close"
+      },
+      "SubLuckMultiplier": 1, 
+      "EnableWheel": true,
+      "WheelSettings": {
+        "Title": "Main Giveaway",
+        "SpinTime": 10
+      }
+    },
+    "Weekly": {
+      "Triggers": {
+        "command:!weekly": "Enter",
+        "command:!drawweekly": "Winner"
+      },
+      "MaxEntriesPerMinute": 1000,
+      "EnableWheel": false,
+      "DumpEntriesOnEnd": true,
+      "Description": "Weekly grand prize!"
+    },
+    "SubOnly": {
+      "Triggers": {
+        "command:!subgiveaway": "Enter"
+      },
+      "SubLuckMultiplier": 99, 
+      "MinAccountAgeDays": 30,
+      "EnableEntropyCheck": true
+    }
+  },
+  "Globals": {
+    "LogToStreamerBot": false,
+    "RunMode": "Mirror",
+    "StatePersistenceMode": "Both",
+    "ExposeVariables": true
+  }
+}

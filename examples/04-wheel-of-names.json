@@ -1,0 +1,34 @@
+{
+  "_instructions": [
+    "WHEEL OF NAMES SPECIALIZED CONFIGURATION",
+    "Focuses on visual flair and API integration."
+  ],
+  "Profiles": {
+    "Main": {
+      "Triggers": {
+        "command:!spin": "Winner"
+      },
+      "EnableWheel": true,
+      "WheelSettings": {
+        "Title": "Big Winner!",
+        "Description": "Spinning for the grand prize...",
+        "SpinTime": 15,
+        "ShareMode": "copyable",
+        "WinnerMessage": "OH MY GOD! {name} just won!"
+      },
+      "EnableObs": true,
+      "ObsScene": "WinnerScene",
+      "ObsSource": "BrowserSourceWheel",
+      "ToastNotifications": {
+        "WinnerSelected": true,
+        "GiveawayOpened": true,
+        "GiveawayClosed": true
+      }
+    }
+  },
+  "Globals": {
+    "WheelApiKeyVar": "MyEncryptedWheelKey",
+    "ExposeVariables": true,
+    "RunMode": "Mirror"
+  }
+}

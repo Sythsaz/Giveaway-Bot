@@ -1,106 +1,78 @@
 # Florals Giveaway Bot
 
-> **Giveaway system for Streamer.bot**
+> **Enterprise-Grade Giveaway System for Streamer.bot**
 >
-> 📖 **Documentation**: [User Guide](USER_GUIDE.md) | [Advanced Guide](ADVANCED.md) | [FAQ](FAQ.md)
->
-> 📥 **Installation**: [How to Install (Step-by-Step)](USER_GUIDE.md#installation--verification)
-> _Import `GiveawayBot.cs` into Streamer.bot C# Action_
+> [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+> [![Streamer.bot](https://img.shields.io/badge/Streamer.bot-v0.2.3%2B-blueviolet)](https://streamer.bot)
+> [![GitHub release](https://img.shields.io/github/v/release/Sythsaz/Giveaway-Bot.svg)](https://github.com/Sythsaz/Giveaway-Bot/releases)
+> [![Build Status](https://github.com/Sythsaz/Giveaway-Bot/actions/workflows/markdown-lint.yml/badge.svg)](https://github.com/Sythsaz/Giveaway-Bot/actions)
+
+![Florals Giveaway Bot Banner](.github/assets/banner.png)
+
+## 📖 Documentation
+
+- **[User Guide](docs/USER_GUIDE.md)**: Installation, commands, and configuration.
+- **[Advanced Guide](docs/ADVANCED.md)**: Custom triggers, OBS integration, and power-user features.
+- **[FAQ](docs/FAQ.md)**: Troubleshooting and common questions.
+- **[Developer Guide](docs/DEVELOPMENT.md)**: Architecture, contributing, and building.
 
 ## ✨ Key Features
 
 - **Multi-Profile Support**: Run "Daily", "Weekly", and "Sub-Only" giveaways simultaneously.
-- **Enterprise-Grade Security**: AES-256-CBC encryption for API keys & anti-loop protection.
+- **Enterprise Security**: AES-256-CBC (DPAPI) encryption for API keys & anti-loop protection.
 - **Smart Validation**: Blocks bots using entropy checks and account age verification.
 - **Rich Feedback**: Windows **Toast Notifications** and highly visible chat alerts.
 - **Observability**: Real-time **OBS variables** and automated wheel spins.
+- **Wheel of Names Integration**: Seamlessly sync entries to the wheel and trigger spins.
 
-## 🚀 Core Commands
+## 🚀 Quick Start
 
-| Command                  | Permission | Description                                |
-| :----------------------- | :--------- | :----------------------------------------- |
-| `!enter`                 | Everyone   | Enter the "Main" giveaway                  |
-| `!giveaway`              | Mod+       | Base command (Alias: `!ga`)                |
-| `!start`                 | Mod+       | Open giveaway for entries                  |
-| `!end`                   | Mod+       | Close giveaway                             |
-| `!draw`                  | Mod+       | Pick a winner                              |
-| `!giveaway system test`  | Mod+       | **Run this first!** Full system diagnostic |
-| `!giveaway profile list` | Mod+       | Show all active giveaway profiles          |
+1. **Download** the latest `GiveawayBot.cs` from [Releases](https://github.com/Sythsaz/Giveaway-Bot/releases).
+2. **Import** into Streamer.bot:
+   - Create a new Action named "Giveaway Bot".
+   - Add a "Code > Execute C# Code" sub-action.
+   - Paste the contents of `GiveawayBot.cs`.
+   - Click "Compile" (Ensure you have references added: `System.Net.Http.dll`, `System.Core.dll`).
+3. **Configure**:
+   - The bot will generate a config file at `.../Streamer.bot/data/Giveaway Helper/config/giveaway_config.json`.
+   - Edit this file or use the [Example Configs](examples/).
+4. **Run**:
+   - Type `!giveaway system test` in chat to verify installation.
 
-## ⚙️ Essential Settings
+## ⚙️ Core Commands
 
-Copy to `config/giveaway_config.json`:
+| Command  | Permission | Description                            |
+| :------- | :--------- | :------------------------------------- |
+| `!enter` | Everyone   | Enter the active giveaway              |
+| `!start` | Mod+       | Open giveaway for entries              |
+| `!end`   | Mod+       | Close giveaway                         |
+| `!draw`  | Mod+       | Pick a winner (spins wheel if enabled) |
 
-```json
-{
-  "RunMode": "Mirror", // Best for stability (Syncs File <-> Vars)
-  "StatePersistenceMode": "Both", // Backup active entries to Disk & Memory
-  "MaxEntriesPerMinute": 60, // Global spam protection
-  "SubLuckMultiplier": 2, // Subs get 2x tickets (0 to disable)
-  "EnableWheel": false, // Set true to spin Wheel of Names on draw
-  "WheelApiKeyVar": "WheelOfNamesApiKey", // Variable holding your API key
-  "ToastNotifications": {
-    // Windows Desktop Alerts
-    "WinnerSelected": true,
-    "GiveawayOpened": true,
-    "GiveawayClosed": true
-  }
-}
+See [User Guide](docs/USER_GUIDE.md) for the full command list.
+
+## 🏗️ Architecture
+
+The bot uses a singleton manager pattern to handle state, configuration, and Streamer.bot interactions.
+
+```mermaid
+graph LR
+    User[User] -- !enter --> SB[Streamer.bot]
+    SB -- Trigger --> Manager[GiveawayManager]
+    Manager -- Read/Write --> State[State File]
+    Manager -- Sync --> Wheel[Wheel of Names]
+    Manager -- Broadcast --> Chat[Twitch/YT/Kick]
 ```
 
-## 📊 OBS Variables
+See [Architecture Docs](docs/ARCHITECTURE.md) for details.
 
-If `ExposeVariables: true` in your profile config:
+## 🤝 Contributing
 
-- `%GiveawayBot_Main_IsActive%`
-- `%GiveawayBot_Main_EntryCount%`
-- `%GiveawayBot_Main_WinnerName%`
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md).
 
-## 🔍 Troubleshooting Fast Track
+## 🔒 Security
 
-| Problem            | Solution                                                   |
-| :----------------- | :--------------------------------------------------------- |
-| **First Run?**     | Run `!giveaway system test` to verify install              |
-| **No entries?**    | Check `AllowedExternalBots` if using Nightbot triggers     |
-| **Config errors?** | Run `!giveaway config check` to find typos                 |
-| **Wheel fail?**    | Set `WheelOfNamesApiKey` variable (Text is auto-encrypted) |
-
-## 📁 File Locations
-
-- Config: `.../Streamer.bot/data/Giveaway Helper/config/giveaway_config.json`
-- Logs: `.../Streamer.bot/data/Giveaway Helper/logs/General/`
-- Dumps: `.../Streamer.bot/data/Giveaway Helper/dumps/Main/`
-
-## 🛠 Development Setup
-
-This project is built for **Streamer.bot v0.2.3+** and targets **.NET Framework 4.8**.
-
-### Dependencies
-
-The project references Streamer.bot DLLs which must be present on your machine.
-
-1. **Locate Streamer.bot**: Ensure you have Streamer.bot installed.
-2. **Configure Path**: The project defaults to looking for Streamer.bot at `C:\Streamer.bot`.
-   - If your install is elsewhere (e.g., `D:\Streamer Bot`), create a file named `StreamerBot.csproj.user` in the project root:
-
-     ```xml
-     <Project>
-       <PropertyGroup>
-         <StreamerBotPath>D:\Streamer Bot</StreamerBotPath>
-       </PropertyGroup>
-     </Project>
-     ```
-
-   - This file is ignored by git, so your local path won't affect others.
-
-### Building
-
-Open `StreamerBot.csproj` in your IDE (VS Code, Visual Studio, or Rider) and build.
-
-```bash
-dotnet build
-```
+We take security seriously. See our [Security Policy](SECURITY.md) for details on supported versions and reporting vulnerabilities.
 
 ---
 
-**Version**: 1.0.1 | **C# Compatibility**: 7.3 | **Streamer.bot**: v0.2.3+
+**Maintained by [Sythsaz](https://github.com/Sythsaz)**

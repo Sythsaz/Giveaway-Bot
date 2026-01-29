@@ -1,0 +1,32 @@
+{
+  "_instructions": [
+    "MINIMAL STARTER CONFIGURATION",
+    "Use this for a quick and simple giveaway setup."
+  ],
+  "Profiles": {
+    "Main": {
+      "Triggers": {
+        "command:!enter": "Enter",
+        "command:!draw": "Winner",
+        "command:!start": "Open",
+        "command:!end": "Close"
+      },
+      "MaxEntriesPerMinute": 60,
+      "EnableWheel": false,
+      "EnableObs": false,
+      "ExposeVariables": true,
+      "DumpEntriesOnEnd": true,
+      "DumpWinnersOnDraw": true,
+      "SubLuckMultiplier": 0,
+      "MinAccountAgeDays": 0,
+      "EnableEntropyCheck": false
+    }
+  },
+  "Globals": {
+    "LogToStreamerBot": true,
+    "RunMode": "Mirror",
+    "StatePersistenceMode": "File",
+    "FallbackPlatform": "Twitch",
+    "EnabledPlatforms": ["Twitch", "YouTube"]
+  }
+}
