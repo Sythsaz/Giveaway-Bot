@@ -20,6 +20,24 @@ namespace StreamerBot.Tests
             await Test_CloneProfile_Comprehensive();
         }
 
+        private static GiveawayState GetState(GiveawayManager m, string name)
+        {
+            // This is a helper method to retrieve the state for a given profile
+            // It's assumed that the GiveawayManager has a way to load/access profile states.
+            // For testing purposes, we might need to mock this or ensure the manager's
+            // internal state loading mechanism is accessible.
+            // For now, let's simulate by reading the state file directly.
+            string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper");
+            string statePath = Path.Combine(baseDir, "state", $"{name}.json");
+
+            if (File.Exists(statePath))
+            {
+                string json = File.ReadAllText(statePath);
+                return JsonConvert.DeserializeObject<GiveawayState>(json);
+            }
+            return new GiveawayState(); // Return a default state if not found
+        }
+
         private static async Task Test_ProfileManagement()
         {
             Console.Write("[TEST] Profile Management (Basic): ");
@@ -100,7 +118,7 @@ namespace StreamerBot.Tests
                 // Create one first
                 cph.Args["rawInput"] = "!giveaway profile create Duplicate";
                 await m.ProcessTrigger(adapter);
-                
+
                 assertCreate("Duplicate", "Duplicate name (fail)", false);
                 assertCreate("duplicate", "Duplicate name case-insensitive (fail)", false);
 
