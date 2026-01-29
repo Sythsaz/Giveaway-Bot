@@ -15,8 +15,7 @@ to the latest supported version before reporting issues.
 If you discover a security vulnerability in the Florals Giveaway Bot, please **do not open a public issue**. Instead,
 please report it via:
 
-- **Email**: [Add your email or contact info here, or direct to GitHub Security Advisory if enabled]
-- **Discord**: DM `Sythsaz` (Discord User ID: `[Optional]`)
+- **Discord**: DM `Sythsaz`
 
 We will acknowledge your report within 72 hours and provide an estimated timeline for investigation and resolution.
 
