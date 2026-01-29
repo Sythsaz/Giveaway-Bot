@@ -1,0 +1,31 @@
+# Standard C# ignores
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.lock.json
+
+# Streamer.bot proprietary files (DO NOT COMMIT)
+*.dll
+*.pdb
+!StreamerBot.Plugin.Interface.dll
+!StreamerBot.Common.dll
+
+# Antigravity/Agent files
+.agent/
+.gemini/
+.vscode/
+*.code-workspace
+
+# User configuration and secrets
+secrets.json
+giveaway_config.json
+Giveaway Helper/config/
+Giveaway Helper/logs/
+Giveaway Helper/dumps/
+Giveaway Helper/state/
+
+# Mac (just in case)
+.DS_Store

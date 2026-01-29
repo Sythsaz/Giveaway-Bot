@@ -1,0 +1,129 @@
+# EditorConfig for Streamer.bot Giveaway Helper
+# Purpose: Suppress C# 8.0+/.NET Core features NOT available in C# 7.3/.NET Framework 4.8
+# 
+# IMPORTANT: After editing this file, you may need to:
+# 1. Close and reopen the solution in Visual Studio, OR
+# 2. Right-click solution → Reload Solution, OR
+# 3. Restart your IDE
+#
+# Documentation: https://editorconfig.org/
+# IDE Codes: https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/
+
+root = true
+
+[*.cs]
+charset = utf-8
+end_of_line = crlf
+trim_trailing_whitespace = true
+
+# = ==================================================================
+# PERFORMANCE & LEGACY COMPATIBILITY - SUPPRESS
+# ===================================================================
+
+# .NET Core 2.0+ String Method Overloads (not in .NET Framework 4.8)
+dotnet_diagnostic.IDE0057.severity = none  # string.Contains(char)
+dotnet_diagnostic.IDE0058.severity = none  # string.StartsWith(char)
+dotnet_diagnostic.CA1865.severity = none   # Use 'string.StartsWith(char)'
+dotnet_diagnostic.CA1866.severity = none   # Use 'string.StartsWith(char)'
+dotnet_diagnostic.CA1867.severity = none   # Use 'string.Contains(char)'
+
+# Performance suggestions that might be overkill or incompatible
+dotnet_diagnostic.CA1822.severity = none   # Mark members as static
+dotnet_diagnostic.CA1861.severity = none   # Prefer 'static readonly' fields over constant array arguments
+
+# ===================================================================
+# MODERN C# FEATURES - MUST SUPPRESS (Not in C# 7.3)
+# ===================================================================
+
+# C# 9.0+ Target-Typed New Expressions
+dotnet_diagnostic.IDE0090.severity = none  # Use 'new(...)' 
+csharp_style_implicit_object_creation_when_type_is_apparent = false
+
+# C# 8.0+ Using Declarations  
+dotnet_diagnostic.IDE0063.severity = none  # Use simple 'using' statement
+csharp_prefer_simple_using_statement = false
+
+# C# 12.0+ Primary Constructors
+dotnet_diagnostic.IDE0290.severity = none  # Use primary constructor
+
+# C# 12.0+ Collection Expressions
+dotnet_diagnostic.IDE0300.severity = none  # Collection initialization can be simplified
+dotnet_diagnostic.IDE0301.severity = none  # Use collection expression
+
+# C# 11.0+ Regex Generator
+dotnet_diagnostic.SYSLIB1045.severity = none # Use 'GeneratedRegexAttribute'
+
+# ===================================================================
+# STYLE PREFERENCES - SUPPRESS (Reduce Visual Noise)
+# ===================================================================
+
+# --- Variable Type Declarations (var vs explicit) ---
+dotnet_diagnostic.IDE0007.severity = none  # Use explicit type instead of 'var'
+dotnet_diagnostic.IDE0008.severity = none  # Use var instead of explicit type
+csharp_style_var_when_type_is_apparent = false:none
+csharp_style_var_for_built_in_types = false:none
+csharp_style_var_elsewhere = false:none
+
+# --- Braces on Single-Line Statements ---
+dotnet_diagnostic.IDE0011.severity = none  # Add braces
+csharp_prefer_braces = when_multiline:none
+
+# --- Expression Bodies vs Block Bodies ---
+dotnet_diagnostic.IDE0021.severity = none  # Use expression body for constructors
+dotnet_diagnostic.IDE0022.severity = none  # Use expression body for methods
+dotnet_diagnostic.IDE0023.severity = none  # Use expression body for operators
+dotnet_diagnostic.IDE0024.severity = none  # Use expression body for operators
+dotnet_diagnostic.IDE0025.severity = none  # Use expression body for properties
+dotnet_diagnostic.IDE0026.severity = none  # Use expression body for indexers
+dotnet_diagnostic.IDE0027.severity = none  # Use expression body for accessors
+dotnet_diagnostic.IDE0053.severity = none  # Use block body for lambda expressions
+dotnet_diagnostic.IDE0061.severity = none  # Use block body for local functions
+
+# --- Code Simplifications ---
+dotnet_diagnostic.IDE0001.severity = none  # Simplify name
+dotnet_diagnostic.IDE0002.severity = none  # Simplify member access
+dotnet_diagnostic.IDE0004.severity = none  # Remove unnecessary cast
+dotnet_diagnostic.IDE0010.severity = none  # Add missing cases to switch
+dotnet_diagnostic.IDE0017.severity = none  # Simplify object initialization
+dotnet_diagnostic.IDE0018.severity = none  # Variable declaration can be inlined
+dotnet_diagnostic.IDE0028.severity = none  # Collection initialization can be simplified
+dotnet_diagnostic.IDE0032.severity = none  # Use auto property
+dotnet_diagnostic.IDE0034.severity = none  # Simplify 'default' expression
+dotnet_diagnostic.IDE0035.severity = none  # Remove unreachable code
+dotnet_diagnostic.IDE0042.severity = none  # Deconstruct variable declaration
+dotnet_diagnostic.IDE0051.severity = none  # Remove unused private member
+dotnet_diagnostic.IDE0052.severity = none  # Remove unread private member
+dotnet_diagnostic.IDE0055.severity = none  # Fix formatting
+dotnet_diagnostic.IDE0059.severity = none  # Unnecessary assignment of a value
+dotnet_diagnostic.IDE0060.severity = none  # Remove unused parameter
+dotnet_diagnostic.IDE0075.severity = none  # Simplify conditional expression
+dotnet_diagnostic.JSON002.severity = none  # Probable JSON string detected
+
+# --- Unused Code Detection ---
+dotnet_diagnostic.IDE0005.severity = none  # Using directive is unnecessary
+
+# --- Parentheses Preferences ---
+dotnet_diagnostic.IDE0047.severity = none  # Parentheses can be removed
+dotnet_diagnostic.IDE0048.severity = none  # Parentheses should be added for clarity
+
+# --- Pattern Matching ---
+dotnet_diagnostic.IDE0019.severity = none  # Use pattern matching
+dotnet_diagnostic.IDE0020.severity = none  # Use pattern matching  
+dotnet_diagnostic.IDE0038.severity = none  # Use pattern matching
+dotnet_diagnostic.IDE0078.severity = none  # Use pattern matching
+dotnet_diagnostic.IDE0083.severity = none  # Use pattern matching
+
+# --- If Statement Simplification ---
+dotnet_diagnostic.IDE0045.severity = none  # Use conditional expression for assignment
+dotnet_diagnostic.IDE0046.severity = none  # Use conditional expression for return
+
+# ===================================================================
+# COMPILER WARNINGS (C# 8.0+ Nullable Reference Types)
+# ===================================================================
+dotnet_diagnostic.CS8600.severity = none  # Converting null literal or possible null value to non-nullable type
+dotnet_diagnostic.CS8601.severity = none  # Possible null reference assignment
+dotnet_diagnostic.CS8602.severity = none  # Dereference of a possibly null reference
+dotnet_diagnostic.CS8603.severity = none  # Possible null reference return
+dotnet_diagnostic.CS8604.severity = none  # Possible null reference argument
+dotnet_diagnostic.CS8618.severity = none  # Non-nullable property initialization
+dotnet_diagnostic.CS8625.severity = none  # Cannot convert null literal to non-nullable reference type
