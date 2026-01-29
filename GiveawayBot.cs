@@ -370,7 +370,7 @@ public static class Loc
         /// </summary>
         public void Dispose()
         {
-            _msgIdCleanupTimer?.Stop();
+            // Threading.Timer does not have Stop(), Dispose is sufficient
             _msgIdCleanupTimer?.Dispose();
             _dumpTimer?.Dispose();
             _lock?.Dispose();
@@ -392,7 +392,7 @@ public static class Loc
 
         // Anti-Loop Protection: Tracks processed message IDs to prevent duplicate processing
         private readonly ConcurrentDictionary<string, DateTime> _processedMsgIds = new ConcurrentDictionary<string, DateTime>();
-        private System.Timers.Timer _msgIdCleanupTimer;
+        private System.Threading.Timer _msgIdCleanupTimer;
         
         // Anti-Loop Protection: Invisible token appended to bot messages for self-detection
         // Uses zero-width space (U+200B) followed by identifier for human-invisible marking
@@ -457,11 +457,14 @@ public static class Loc
             adapter.SetGlobalVar("GiveawayBot_LogPruneProbability", GlobalConfig.Globals.LogPruneProbability, true);
             SyncAllVariables(adapter); // Sync both global and profile variables
             
-            // Start periodic cleanup timer for message ID cache
-            _msgIdCleanupTimer = new System.Timers.Timer(GlobalConfig.Globals.MessageIdCleanupIntervalMs);
-            _msgIdCleanupTimer.Elapsed += (sender, e) => CleanupExpiredMessageIds(adapter);
-            _msgIdCleanupTimer.AutoReset = true;
-            _msgIdCleanupTimer.Start();
+            // Start periodic cleanup timer for message ID cache (Threading.Timer)
+            // Use adapter as state object
+            _msgIdCleanupTimer = new System.Threading.Timer(
+                state => CleanupExpiredMessageIds((CPHAdapter)state),
+                adapter,
+                TimeSpan.FromMilliseconds(GlobalConfig.Globals.MessageIdCleanupIntervalMs),
+                TimeSpan.FromMilliseconds(GlobalConfig.Globals.MessageIdCleanupIntervalMs));
+            
             adapter.LogDebug("[GiveawayManager] Message ID cleanup timer started (60s interval)");
             
             adapter.LogInfo("[GiveawayManager] Initialization complete. All states rehydrated.");
