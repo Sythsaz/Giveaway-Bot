@@ -1265,6 +1265,21 @@ public static class Loc
             if (GlobalConfig.TriggerPrefixHelp != null)
                 adapter.SetGlobalVar("GiveawayBot_TriggerPrefixHelp", string.Join("\n", GlobalConfig.TriggerPrefixHelp), true);
 
+            // Auto-Import Globals from Config (e.g., API Keys)
+            if (g.ImportGlobals != null)
+            {
+                foreach (var kvp in g.ImportGlobals)
+                {
+                    // Only set if missing/empty to prevent overwriting runtime changes
+                    var existing = adapter.GetGlobalVar<string>(kvp.Key);
+                    if (string.IsNullOrEmpty(existing))
+                    {
+                        adapter.SetGlobalVar(kvp.Key, kvp.Value, true);
+                        adapter.LogInfo($"[Sync] Imported Global Variable from Config: {kvp.Key}");
+                    }
+                }
+            }
+
             adapter.Logger?.LogTrace(adapter, "System", $"Global Sync: Mode={ConfigLoader.GetRunMode(adapter)}, LogLevel={currentLevelVar}, Platforms={string.Join(",", g.EnabledPlatforms ?? new List<string>())}");
 
             // Aggregate Metrics from Memory
@@ -4859,6 +4874,9 @@ public static class Loc
 
         [JsonProperty("_custom_strings_help")] public string CustomStringsHelp { get; set; } = "Override specific localized strings here. Key:Value pairs.";
         public Dictionary<string, string> CustomStrings { get; set; } = new Dictionary<string, string>();
+
+        [JsonProperty("_import_globals_help")] public string ImportGlobalsHelp { get; set; } = "Dictionary of Global Variables to import/set in Streamer.bot if missing (e.g. API Keys).";
+        public Dictionary<string, string> ImportGlobals { get; set; } = new Dictionary<string, string>();
 
         [JsonProperty("_persistence_mode_help")] public string PersistenceModeHelp { get; set; } = "StatePersistenceMode: Where to store active giveaway data (File, GlobalVar, Both).";
         public string StatePersistenceMode { get; set; } = "Both";
