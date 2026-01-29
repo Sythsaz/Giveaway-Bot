@@ -39,7 +39,9 @@ namespace StreamerBot.Tests
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             // Ensure Main exists in a clean state
+#pragma warning disable IDE0074 // Use compound assignment - C# 7.3 doesn't support ??= operator
             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
+#pragma warning restore IDE0074
             var config = GiveawayManager.GlobalConfig;
             return (m, cph);
         }
