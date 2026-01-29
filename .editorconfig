@@ -39,6 +39,10 @@ dotnet_diagnostic.CA1861.severity = none   # Prefer 'static readonly' fields ove
 dotnet_diagnostic.IDE0090.severity = none  # Use 'new(...)' 
 csharp_style_implicit_object_creation_when_type_is_apparent = false
 
+# C# 8.0+ Null-Coalescing Assignment (??=)
+dotnet_diagnostic.IDE0074.severity = none  # Use compound assignment
+csharp_style_prefer_null_coalescing_assignment = false
+
 # C# 8.0+ Using Declarations  
 dotnet_diagnostic.IDE0063.severity = none  # Use simple 'using' statement
 csharp_prefer_simple_using_statement = false
