@@ -22,6 +22,7 @@ namespace StreamerBot.Tests
             await Test_ExternalBotIntegration(m, cph);
             await Test_WheelIntegration_Failures();
             await Test_RunMode_Mirror_Conflict(m, cph);
+            await Test_Concurrency_EntryVsDraw(m, cph);
         }
 
         private static async Task Test_CommandAliases_Comprehensive(GiveawayManager m, MockCPH cph)
@@ -198,6 +199,67 @@ namespace StreamerBot.Tests
                 Console.WriteLine($"FAIL (Has New:{config.Profiles.ContainsKey("NewGlobalProfile")}, Has Old:{config.Profiles.ContainsKey("OldFileProfile")})");
 
             await Task.CompletedTask;
+        }
+
+        private static async Task Test_Concurrency_EntryVsDraw(GiveawayManager m, MockCPH cph)
+        {
+            Console.WriteLine("\n[TEST] Concurrency Entry vs Draw:");
+            Console.Write("  - Parallel Execution:                    ");
+
+            var adapter = new CPHAdapter(cph);
+
+            // Setup keys
+            if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("ConcurrencyProfile"))
+                await m.Loader.CreateProfileAsync(adapter, "ConcurrencyProfile");
+
+            // Reset State
+            m.States["ConcurrencyProfile"].IsActive = true;
+            m.States["ConcurrencyProfile"].Entries.Clear();
+
+            // Prepare tasks
+            var tasks = new List<Task>();
+            int entryCount = 50;
+
+            // Task to flood entries
+            tasks.Add(Task.Run(async () =>
+            {
+                for (int i = 0; i < entryCount; i++)
+                {
+                    var localCph = new MockCPH();
+                    localCph.Args["command"] = "!enter";
+                    localCph.Args["userId"] = $"user_{i}";
+                    localCph.Args["user"] = $"User_{i}";
+                    // We must share the SAME manager instance 'm'
+                    await m.ProcessTrigger(new CPHAdapter(localCph));
+                }
+            }));
+
+            // Task to Draw midway
+            tasks.Add(Task.Run(async () =>
+            {
+                await Task.Delay(20); // Small delay to let some entries in
+                var localCph = new MockCPH();
+                localCph.Args["command"] = "!draw";
+                localCph.Args["isBroadcaster"] = true;
+                localCph.Args["rawInput"] = "!draw";
+                await m.ProcessTrigger(new CPHAdapter(localCph));
+            }));
+
+            try
+            {
+                await Task.WhenAll(tasks);
+
+                // Verification
+                int count = m.States["ConcurrencyProfile"].Entries.Count;
+                if (count > 0)
+                    Console.WriteLine($"PASS (Entries: {count})");
+                else
+                    Console.WriteLine("FAIL (Zero entries processed)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"FAIL (Exception: {ex.Message})");
+            }
         }
     }
 }
