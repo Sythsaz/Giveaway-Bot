@@ -20,3 +20,16 @@ This document outlines the future development plans for the Giveaway Bot.
 
 - [ ] **Unit Test Coverage**: Expand `TestRunner.cs` to cover edge cases for the new `Loc` system and `ImportGlobals` logic.
 - [ ] **Documentation Localization**: Translate `USER_GUIDE.md` into other languages if community demand arises.
+
+## 📋 Backlog & Technical Debt
+
+- [ ] **Standardize Timer Usage**: Consolidate `System.Threading.Timer` and `System.Timers.Timer` usage for
+      consistency across the codebase.
+- [ ] **Refactor ObsController**: Resolve static vs instance method confusion in `ObsController` to clarify the
+      API and usage.
+- [ ] **Configuration Schema Validation**: Implement stricter JSON schema validation during config load to prevent
+      typos and invalid structures.
+- [ ] **Concurrency Stress Testing**: Create specialized unit tests targeting race conditions (e.g., parallel
+      entries vs draw) to verify robustness.
+- [ ] **Security Review**: Evaluate the current `Environment`-based key derivation strategy for AES encryption to
+      ensure it meets security requirements.
