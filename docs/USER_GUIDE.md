@@ -72,6 +72,8 @@ entirely within Streamer.bot but offers features usually found in standalone app
 
 ### Step 3: Add Basic Triggers
 
+#### Method A: Dedicated Commands (Recommended)
+
 You must explicitly tell Streamer.bot when to run this code.
 
 1. Go to the **Commands** tab.
@@ -87,8 +89,11 @@ You must explicitly tell Streamer.bot when to run this code.
 - `!end`
 - `!draw`
 
-> [!TIP]
-> This single "Giveaway Core" action handles ALL commands intelligently. You just need to route the chat commands to it.
+#### Method B: Single Catch-All Trigger
+
+Alternatively, you can just add a single **Twitch -> Chat -> Chat Message** trigger to the action.
+This routes _every_ chat message to the bot, allowing it to parse commands automatically.
+_Note: This runs the script on every message. Use Method A if CPU usage is a concern._
 
 ### Step 4: System Verification (New!)
 
