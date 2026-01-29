@@ -7,6 +7,8 @@
     <LangVersion>7.3</LangVersion>
     <!-- Disable nullable reference types (not supported in C# 7.3) -->
     <Nullable>disable</Nullable>
+    <!-- Disable implicit usings (generates global using directives - C# 10.0+) -->
+    <ImplicitUsings>disable</ImplicitUsings>
     <NoWarn>CS0114</NoWarn>
 
     <!-- 

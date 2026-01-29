@@ -34,7 +34,7 @@ namespace StreamerBot.Tests
             m.Initialize(adapter);
             return (m, cph);
         }
-        
+
         private static async Task Test_BatchOperations()
         {
             Console.Write("\n[TEST] Batch Operations (*): ");
@@ -103,15 +103,15 @@ namespace StreamerBot.Tests
                 var (s2, e2) = await m.Loader.UpdateProfileConfigAsync(adapter, "P9Reflect", "SubLuckMultiplier", "99");
                 if (s2 && m.Loader.GetConfig(adapter).Profiles["P9Reflect"].SubLuckMultiplier == 99) Console.WriteLine("PASS");
                 else Console.WriteLine($"FAIL: {e2}");
-                
+
                 // Cleanup
                 cph.Args["rawInput"] = "!giveaway profile delete P9Reflect confirm";
                 await m.ProcessTrigger(adapter);
             }
             finally { }
         }
-        
-        private static GiveawayProfileConfig? GetProfile(GiveawayBotConfig config, string name)
+
+        private static GiveawayProfileConfig GetProfile(GiveawayBotConfig config, string name)
         {
             if (config == null || config.Profiles == null) return null;
             foreach (var kv in config.Profiles)
