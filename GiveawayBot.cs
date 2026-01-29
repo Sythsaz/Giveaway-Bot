@@ -426,6 +426,8 @@ public static class Loc
 
             adapter.LogDebug($"[GiveawayManager] Primary configuration loaded. Profiles found: {string.Join(", ", GlobalConfig.Profiles.Keys.ToList() ?? new List<string>())}");
 
+            MigrateSecurity(adapter);
+
             WheelClient = new WheelOfNamesClient();
             WheelClient.Metrics = _cachedMetrics; // Enable API latency tracking
             Obs = new ObsController();
@@ -485,6 +487,47 @@ public static class Loc
             );
 #pragma warning restore CS8622
             adapter.LogDebug("[GiveawayManager] Incremental dump timer started (5s interval)");
+        }
+
+        private void MigrateSecurity(CPHAdapter adapter)
+        {
+            if (GlobalConfig?.Globals == null) return;
+            var g = GlobalConfig.Globals;
+
+            if (string.IsNullOrEmpty(g.EncryptionSalt))
+            {
+                adapter.LogInfo("[Security] No Encryption Salt found. Generating new portable salt...");
+                g.EncryptionSalt = Guid.NewGuid().ToString("N");
+
+                // Save immediately so valid salt is persisted
+                try 
+                {
+                    string json = JsonConvert.SerializeObject(GlobalConfig, Formatting.Indented);
+                    _configLoader?.WriteConfigText(adapter, json);
+                }
+                catch (Exception ex)
+                {
+                    adapter.LogError($"[Security] Failed to save config during migration: {ex.Message}");
+                }
+
+                // Migrate stored API Key from Legacy MachineKey to New Salt
+                string currentKey = adapter.GetGlobalVar<string>(g.WheelApiKeyVar, true);
+                if (!string.IsNullOrEmpty(currentKey) && currentKey.StartsWith("AES:"))
+                {
+                    // DecryptSecret will fail with new Salt, fallback to MachineKey -> Success
+                    string plain = DecryptSecret(currentKey);
+                    if (!string.IsNullOrEmpty(plain))
+                    {
+                        // EncryptSecret uses the NEW Salt we just set
+                        string newCipher = EncryptSecret(plain);
+                        if (!string.IsNullOrEmpty(newCipher) && newCipher != currentKey)
+                        {
+                            adapter.SetGlobalVar(g.WheelApiKeyVar, newCipher, true);
+                            adapter.LogInfo("[Security] Existing API Key migrated to portable encryption.");
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -548,12 +591,22 @@ public static class Loc
         }
 
         /// <summary>
-        /// Encrypts a secret using AES-256-CBC with machine-specific key derivation.
-        /// Compatible with .NET Framework 4.8 (System.Security.Cryptography in mscorlib.dll).
+        /// Encrypts a secret using AES-256-CBC.
+        /// Uses EncryptionSalt from GlobalConfig if available (portable), else MachineName (legacy).
         /// </summary>
         public static string EncryptSecret(string plainText)
         {
             if (string.IsNullOrEmpty(plainText)) return null;
+            
+            string seed = GlobalConfig?.Globals?.EncryptionSalt;
+            if (string.IsNullOrEmpty(seed))
+                seed = Environment.MachineName + "GiveawayBot_v2" + Environment.UserName;
+            
+            return EncryptWithSeed(plainText, seed);
+        }
+
+        private static string EncryptWithSeed(string plainText, string seed)
+        {
             try
             {
                 using (Aes aes = Aes.Create())
@@ -562,8 +615,6 @@ public static class Loc
                     aes.Mode = CipherMode.CBC;
                     aes.Padding = PaddingMode.PKCS7;
                     
-                    // Derive key from machine + user (persistent, no password needed)
-                    string seed = Environment.MachineName + "GiveawayBot_v2" + Environment.UserName;
                     using (var sha = SHA256.Create())
                     {
                         aes.Key = sha.ComputeHash(Encoding.UTF8.GetBytes(seed));
@@ -586,62 +637,59 @@ public static class Loc
                     }
                 }
             }
-            catch (Exception)
+            catch
             {
-                // IMPORTANT: Never log the plainText or exception details that might leak key material
                 return null;
             }
         }
 
         /// <summary>
         /// Decrypts AES-256-CBC encrypted secret.
-        /// Auto-converts legacy OBF: format (Base64) to plaintext (backward compatible).
+        /// Tries configured EncryptionSalt first, then falls back to legacy MachineName.
+        /// Auto-converts legacy OBF: format (Base64) to plaintext.
         /// </summary>
         public static string DecryptSecret(string secret)
         {
             if (string.IsNullOrEmpty(secret)) return null;
             
-            // Auto-conversion: Legacy OBF: (Base64) → plaintext → will be re-encrypted as AES
+            // Auto-conversion: Legacy OBF: (Base64)
             if (secret.StartsWith("OBF:"))
             {
-                try
-                {
-                    string base64 = secret.Substring(4);
-                    byte[] plainBytes = Convert.FromBase64String(base64);
-                    return Encoding.UTF8.GetString(plainBytes); // Return plaintext (will be re-encrypted)
-                }
-                catch
-                {
-                    return null; // Corrupted OBF, user must re-enter
-                }
+                try { return Encoding.UTF8.GetString(Convert.FromBase64String(secret.Substring(4))); }
+                catch { return null; }
             }
             
-            // Legacy ENC: (DPAPI) cannot be decrypted, user must re-enter
-            if (secret.StartsWith("ENC:"))
-            {
-                return null;
-            }
-            
+            if (secret.StartsWith("ENC:")) return null; // Legacy DPAPI
             if (!secret.StartsWith("AES:")) return secret; // Not encrypted
             
+            // 1. Try Configured Salt (Portable)
+            if (!string.IsNullOrEmpty(GlobalConfig?.Globals?.EncryptionSalt))
+            {
+                string result = TryDecrypt(secret, GlobalConfig.Globals.EncryptionSalt);
+                if (result != null) return result;
+            }
+            
+            // 2. Try Legacy Machine Key (Fallback)
+            return TryDecrypt(secret, Environment.MachineName + "GiveawayBot_v2" + Environment.UserName);
+        }
+
+        private static string TryDecrypt(string secret, string seed)
+        {
             try
             {
                 byte[] cipherBytes = Convert.FromBase64String(secret.Substring(4));
-                
                 using (Aes aes = Aes.Create())
                 {
                     aes.KeySize = 256;
                     aes.Mode = CipherMode.CBC;
                     aes.Padding = PaddingMode.PKCS7;
                     
-                    // Derive same key
-                    string seed = Environment.MachineName + "GiveawayBot_v2" + Environment.UserName;
                     using (var sha = SHA256.Create())
                     {
                         aes.Key = sha.ComputeHash(Encoding.UTF8.GetBytes(seed));
                     }
                     
-                    // Extract IV from first 16 bytes
+                    // Extract IV
                     byte[] iv = new byte[16];
                     Array.Copy(cipherBytes, 0, iv, 0, 16);
                     aes.IV = iv;
@@ -655,9 +703,8 @@ public static class Loc
                     }
                 }
             }
-            catch (Exception)
+            catch
             {
-                // IMPORTANT: Never log exception details that might leak key/cipher info
                 return null;
             }
         }
@@ -5023,6 +5070,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public bool? ExposeVariables { get; set; } = null;
 
         public string WheelApiKeyVar { get; set; } = "WheelOfNamesApiKey";
+        
+        [JsonProperty("_encryption_salt_help")] public string EncryptionSaltHelp { get; set; } = "Randomly generated salt for portable encryption. DO NOT CHANGE MANUALLY.";
+        public string EncryptionSalt { get; set; }
 
         [JsonProperty("_log_retention_help")] public string LogRetentionHelp { get; set; } = "How many days of historical logs to keep (default: 90).";
         public int LogRetentionDays { get; set; } = 90;
