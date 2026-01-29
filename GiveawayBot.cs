@@ -2448,12 +2448,7 @@ public static class Loc
                 }
                 }
 
-                // Use configured winner message template
-                string msg = config.WheelSettings.WinnerMessage.Replace("{name}", winnerName);
-                if (!string.IsNullOrEmpty(msg))
-                {
-                    Messenger?.SendBroadcast(adapter, msg, platform);
-                }
+                // Winner message handled by EventBus subscribers
                 if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config);
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
@@ -5676,6 +5671,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public void Register(IEventBus bus)
         {
             bus.Subscribe<WinnerSelectedEvent>(OnWinnerSelected);
+            bus.Subscribe<WheelReadyEvent>(OnWheelReady);
             bus.Subscribe<GiveawayStartedEvent>(OnGiveawayStarted);
             bus.Subscribe<GiveawayEndedEvent>(OnGiveawayEnded);
             bus.Subscribe<EntryAcceptedEvent>(OnEntryAccepted);
@@ -5683,11 +5679,28 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
         private void OnWinnerSelected(WinnerSelectedEvent evt)
         {
-             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config) && config.ToastNotifications.TryGetValue("WinnerSelected", out var notify) && notify)
+             if (Config.Profiles.TryGetValue(evt.ProfileName, out var config))
              {
-                 evt.Adapter.ShowToastNotification("Giveaway Winner", $"Winner: {evt.Winner.UserName}!");
+                 // Handle Toast
+                 if (config.ToastNotifications.TryGetValue("WinnerSelected", out var notify) && notify)
+                 {
+                     evt.Adapter.ShowToastNotification("Giveaway Winner", $"Winner: {evt.Winner.UserName}!");
+                 }
+                 
+                 // Handle Broadcast
+                 // Uses the template from the profile's WheelSettings
+                 string msg = config.WheelSettings.WinnerMessage.Replace("{name}", evt.Winner.UserName);
+                 if (!string.IsNullOrEmpty(msg))
+                 {
+                     SendBroadcast(evt.Adapter, msg, evt.Source);
+                 }
              }
-             // Broadcast handled by proper winner message template in GiveawayManager currently
+        }
+
+        private void OnWheelReady(WheelReadyEvent evt)
+        {
+             // Broadcast the wheel link
+             SendBroadcast(evt.Adapter, $"Wheel Ready! {evt.Url}", evt.Source);
         }
 
         private void OnGiveawayStarted(GiveawayStartedEvent evt)
