@@ -1,6 +1,6 @@
-# Florals Giveaway Bot
+# Giveaway Bot
 
-> **Enterprise-Grade Giveaway System for Streamer.bot**
+> **Giveaway System for Streamer.bot**
 >
 > [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 > [![Streamer.bot](https://img.shields.io/badge/Streamer.bot-v0.2.3%2B-blueviolet)](https://streamer.bot)
