@@ -24,6 +24,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
 
+## [1.1.0] - 2026-01-29
+
+### Added
+
+- **GDPR Compliance**: New `!giveaway data delete <user>` command to scrub user data from memory and logs.
+- **Auto-Import**: Config option `ImportGlobals` to automatically set Streamer.bot global variables (e.g., API keys).
+- **Localization**: `CustomStrings` dictionary in `giveaway_config.json` allows overriding bot response messages.
+- **Dispose Pattern**: Implemented `IDisposable` in `GiveawayManager` for robust resource cleanup.
+
+### Changed
+
+- **Optimization**: `CheckForConfigUpdates` now caches trigger JSON to reduce CPU usage during high load.
+- **Security**: Unauthorized management commands are now silently ignored to prevent chat spam.
+- **Logging**: Config sync errors are now logged as Warnings for better visibility.
+
 ## [1.0.1] - 2026-01-29
 
 ### Added (v1.0.1)

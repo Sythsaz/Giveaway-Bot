@@ -79,6 +79,7 @@ Add separate **Command** triggers for the main controls:
 - `!start` (Moderator+)
 - `!end` (Moderator+)
 - `!draw` (Moderator+)
+- `!giveaway data delete` (Broadcaster+)
 
 ### Step 4: System Verification (New!)
 
@@ -603,6 +604,7 @@ Manage different giveaway profiles (e.g., "Weekly", "SubOnly") without editing f
 | `!giveaway profile trigger <Name> add <spec> <act>` | Map a trigger. Ex: `!giveaway profile trigger Main add command:!ticket Enter`              |
 | `!giveaway profile start <Target>`                  | Start giveaway(s). Supports batch targets (`*`, `all`, `Main,Side`).                       |
 | `!giveaway profile end <Target>`                    | End giveaway(s). Supports batch targets (`*`, `all`, `Main,Side`).                         |
+| `!giveaway data delete <user>`                      | **GDPR**: Permanently delete user data from memory and logs. (Aliases: `!ga gdpr delete`)  |
 
 ---
 
@@ -625,6 +627,8 @@ These affect the entire bot behavior (found under `"Globals"` key).
 | `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | specific platforms to listen to and broadcast on.                                     |
 | `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
 | `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
+| `ImportGlobals`        | Dict   | `{}`                    | Auto-import specific global variables on startup (e.g. `{"MyKey": "123"}`).           |
+| `CustomStrings`        | Dict   | `{}`                    | Override bot response messages. Key=ID, Value=Text.                                   |
 
 ### Profile Settings
 
