@@ -5607,10 +5607,19 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
     public class ObsController
     {
         public ObsController() { }
+        
         /// <summary>
         /// Updates a Streamer.bot OBS Browser Source with a new URL (e.g., the Wheel of Names link).
         /// </summary>
-        public static void SetBrowserSource(CPHAdapter adapter, string s, string o, string u) => adapter.ObsSetBrowserSource(s, o, u);
+        /// <param name="adapter">CPH Adapter for OBS calls.</param>
+        /// <param name="scene">Name of the OBS scene.</param>
+        /// <param name="source">Name of the Browser Source.</param>
+        /// <param name="url">New URL to set.</param>
+        public void SetBrowserSource(CPHAdapter adapter, string scene, string source, string url)
+        {
+            if (adapter == null) return;
+            adapter.ObsSetBrowserSource(scene, source, url);
+        }
     }
 
     public class MetricsContainer
