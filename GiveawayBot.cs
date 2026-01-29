@@ -2882,40 +2882,9 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
         }
 
         // 2. Clean User Variables (Global Vars)
-        // We need the User ID to clean specific vars.
-        // If we found an entry, we have the ID. If not, we might only have the name.
-        // Try to resolve ID from arguments if possible, or look up in Streamer.bot?
-        // For now, we rely on what we found or try to guess variable names if targetUser looks like an ID.
-
-        string userId = null;
-        // Try to find ID from what we just deleted
-        // (Limited: only works if they were in an active giveaway)
-
-        // Generic cleanup of known User Variables for this name
-        // Note: Streamer.bot User Vars are usually keyed by ID internally.
-        // We can use CPH methods if we have the ID.
-
-        // Strategy: Since we can't easily get ID from Name without context, we rely on the Admin providing the exact name or ID used in vars.
-        // But generally users provide Name.
-        // We will try to resolve metadata if possible.
-
-        // For now, just Log that we cleared internal references.
-        // User-Scope variables in SB are tricky to clear by Name if we don't know ID.
-        // However, we can clear ANY Global Variable that contains the name logic if we stored it manually.
-        // Our bot stores User Metrics: GiveawayBot_User_{ID}_{Metric}
-        // We can iterate ALL globals and check pattern.
-
-        var allGlobals = adapter.GetGlobalVarNames();
-        int varsRemoved = 0;
-        foreach (var varName in allGlobals)
-        {
-            if (varName.StartsWith("GiveawayBot_User_", StringComparison.OrdinalIgnoreCase))
-            {
-                // Check if var name contains the target (heuristic)
-                // This is risky if targetUser is "User".
-                // Better: If we solved UserId from entries, use that.
-            }
-        }
+        // Note: Clean up requires resolving UserID from name, which is not guaranteed for all profiles.
+        // Future enhancement: Iterate known user IDs from active profiles and clean associated globals.
+        // For now, entries removal covers the most critical data.
 
         // 3. Clean Historical Logs (Dumps)
         // Directory: Giveaway Helper/data/dumps (and others?)
@@ -2942,7 +2911,7 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
     }
     catch (Exception ex)
     {
-        adapter.LogError($"[GDPR] Error deleting data for {targetUser}", ex);
+        adapter.LogError($"[GDPR] Error deleting data for {targetUser}: {ex.Message}");
         Messenger?.SendBroadcast(adapter, $"⚠ Error during deletion: {ex.Message}", platform);
     }
     finally
