@@ -2349,7 +2349,7 @@ public static class Loc
                     string url = await WheelClient.CreateWheel(adapter, pool, GlobalConfig.Globals.WheelApiKeyVar, config.WheelSettings);
                     if (url != null)
                     {
-                        if (config.EnableObs && Obs != null) ObsController.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
+                        if (config.EnableObs && Obs != null) Obs.SetBrowserSource(adapter, config.ObsScene, config.ObsSource, url);
                         Messenger?.SendBroadcast(adapter, $"Wheel Ready! {url}", platform);
                         if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config);
                         return true;
