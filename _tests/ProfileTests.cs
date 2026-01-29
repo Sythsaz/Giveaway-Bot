@@ -215,7 +215,7 @@ namespace StreamerBot.Tests
                 // Manually create an active state file for this profile
                 var state = new GiveawayState { IsActive = true, CurrentGiveawayId = "test-id" };
                 var statePath = Path.Combine(baseDir, "state", "ActiveTest.json");
-                string? stateDir = Path.GetDirectoryName(statePath);
+                string stateDir = Path.GetDirectoryName(statePath);
                 if (!string.IsNullOrEmpty(stateDir) && !Directory.Exists(stateDir)) Directory.CreateDirectory(stateDir);
                 File.WriteAllText(statePath, JsonConvert.SerializeObject(state));
 
