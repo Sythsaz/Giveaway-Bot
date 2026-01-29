@@ -82,9 +82,14 @@ For detailed information about the architecture, component design, and extension
 **Critical**: This project targets **C# 7.3** and **.NET Framework 4.8** to maintain compatibility with Streamer.bot's
 embedded scripting environment.
 
+> [!IMPORTANT]
+> **This constraint is tied to Streamer.bot's runtime**, not a design choice. When Streamer.bot upgrades to a newer
+> .NET version, this project will adopt modern C# features accordingly.
+
 ### What This Means
 
-- ❌ **No modern C# features**: No nullable reference types, pattern matching, target-typed new, using declarations, etc.
+- ❌ **No modern C# features**: No nullable reference types, pattern matching, target-typed new, using declarations,
+  `??=` operator, etc.
 - ❌ **No async Main**: Entry points must be synchronous
 - ❌ **Limited LINQ**: Some .NET Core 2.0+ string methods unavailable (e.g., `string.Contains(char)`)
 - ✅ **Use legacy syntax**: Explicit types, traditional using statements, verbose initialization
@@ -105,6 +110,23 @@ using var stream = File.OpenRead("file.txt");
 using (var stream = File.OpenRead("file.txt"))
 {
     // ...
+}
+
+// ❌ BAD - C# 8.0 null-coalescing assignment
+config ??= new Config();
+
+// ✅ GOOD - C# 7.3 compatible
+if (config == null) config = new Config();
+
+// ❌ BAD - C# 8.0 switch expression
+var result = value switch { 1 => "one", 2 => "two", _ => "other" };
+
+// ✅ GOOD - C# 7.3 traditional switch
+string result;
+switch (value) {
+    case 1: result = "one"; break;
+    case 2: result = "two"; break;
+    default: result = "other"; break;
 }
 ```
 

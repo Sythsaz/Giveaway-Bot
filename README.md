@@ -67,6 +67,14 @@ graph LR
 
 See [Architecture Docs](docs/ARCHITECTURE.md) for details.
 
+## 🔧 Compatibility
+
+**Runtime Environment**: C# 7.3 / .NET Framework 4.8 (Streamer.bot's current runtime)
+
+This project's C# version is tied to Streamer.bot's embedded scripting environment. If Streamer.bot upgrades to a
+newer .NET runtime, this project will adopt modern C# features accordingly. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for details on C# 7.3 limitations during development.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and
