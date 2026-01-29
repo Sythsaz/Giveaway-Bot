@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced README with badges, visual assets, and architecture overview
 - **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 
+## [1.2.0] - 2026-01-29
+
+### Added (v1.2.0)
+
+- **Cross-Profile Analytics**: `!giveaway stats global` command to view aggregate stats (entries, winners, unique users)
+  across all profiles.
+- **Advanced GDPR Cleanup**: Enhanced `!giveaway data delete` to scrub global metrics and user variables in addition
+  to active entries.
+- **Unified Event Bus**: Refactored internal architecture to use `GiveawayEventBus` for better decoupling and
+  maintainability.
+
 ## [1.1.0] - 2026-01-29
 
 ### Added (v1.1.0)

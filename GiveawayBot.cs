@@ -2124,6 +2124,10 @@ public static class Loc
                                 Messenger?.SendBroadcast(adapter, $"⚠ Delete failed: {deleteError}", platform ?? "Twitch");
                             }
                         }
+                        if (CheckCmd(rawInput, "stats") || CheckCmd(sourceDetails, "stats"))
+                        {
+                            return await HandleStatsCommand(adapter, rawInput, platform ?? "Twitch");
+                        }
                     }
                     return true;
                 }
@@ -2979,10 +2983,23 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
             }
         }
 
-        // 2. Clean User Variables (Global Vars)
-        // Note: Clean up requires resolving UserID from name, which is not guaranteed for all profiles.
-        // Future enhancement: Iterate known user IDs from active profiles and clean associated globals.
-        // For now, entries removal covers the most critical data.
+        // 2. Clean User Variables (Global Vars) & Metrics
+        // Iterate metrics to resolve ID from Name if possible
+        if (_cachedMetrics != null && _cachedMetrics.UserMetrics != null)
+        {
+            var userMetricKeys = _cachedMetrics.UserMetrics
+                .Where(kvp => kvp.Value.UserName.Equals(targetUser, StringComparison.OrdinalIgnoreCase))
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var uid in userMetricKeys)
+            {
+                _cachedMetrics.UserMetrics.Remove(uid);
+                adapter.UnsetGlobalVar($"GiveawayBot_User_{uid}");
+                adapter.LogInfo($"[GDPR] Cleaned global metrics/vars for UserID: {uid}");
+                entriesRemoved++; // Count metric removal as a "record" removed
+            }
+        }
 
         // 3. Clean Historical Logs (Dumps)
         // Directory: Giveaway Helper/data/dumps (and others?)
@@ -3005,7 +3022,7 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
         // 4. Clean JSON State Files (for profiles not in config anymore?)
         // We already handled active profiles.
 
-        Messenger?.SendBroadcast(adapter, $"✅ Data deletion complete for '{targetUser}'. Removed from {profilesAffected} active profiles.", platform);
+        Messenger?.SendBroadcast(adapter, $"✅ Data deletion complete for '{targetUser}'. Removed from {profilesAffected} active profiles and cleaned global records.", platform);
     }
     catch (Exception ex)
     {
@@ -3016,6 +3033,62 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
     {
         _lock.Release();
     }
+    return true;
+}
+
+private async Task<bool> HandleStatsCommand(CPHAdapter adapter, string rawInput, string platform)
+{
+    await Task.CompletedTask;
+    // Usage: !giveaway stats [global|profileName]
+    // Default to global if no arg
+    
+    // Simple parsing
+    bool isGlobal = rawInput.ToLower().Contains("global") || !GlobalConfig.Profiles.Keys.Any(k => rawInput.Contains(k));
+    
+    if (isGlobal)
+    {
+        long totalEntries = 0;
+        long totalWinners = 0;
+        long uniqueUsers = 0;
+        
+        // Sum from States
+        foreach(var state in States.Values)
+        {
+            totalEntries += state.CumulativeEntries;
+            totalWinners += state.WinnerCount;
+        }
+
+        // Get unique users from Metrics if available, otherwise just count all current entries
+        if (_cachedMetrics != null)
+        {
+            uniqueUsers = _cachedMetrics.UserMetrics.Count;
+            // Also use global counters if available
+            if (_cachedMetrics.GlobalMetrics.TryGetValue("Entries_Total", out var gEntries)) totalEntries = Math.Max(totalEntries, gEntries);
+            if (_cachedMetrics.GlobalMetrics.TryGetValue("Winners_Total", out var gWinners)) totalWinners = Math.Max(totalWinners, gWinners);
+        }
+        else
+        {
+             // Fallback estimation
+             uniqueUsers = States.Values.SelectMany(s => s.Entries.Keys).Distinct().Count();
+        }
+
+        Messenger?.SendBroadcast(adapter, $"📊 [Global Stats] Entries: {totalEntries} | Winners: {totalWinners} | Unique Users: {uniqueUsers}", platform);
+    }
+    else
+    {
+        // Profile specific stats
+        // Find profile name in string
+        var profile = GlobalConfig.Profiles.Keys.FirstOrDefault(k => rawInput.Contains(k));
+        if (profile != null && States.TryGetValue(profile, out var state))
+        {
+             Messenger?.SendBroadcast(adapter, $"📊 [{profile}] active: {state.Entries.Count} | Total: {state.CumulativeEntries} | Winners: {state.WinnerCount} | Last Winner: {state.LastWinnerName ?? "None"}", platform);
+        }
+        else
+        {
+             Messenger?.SendBroadcast(adapter, "Profile not found or no stats available.", platform);
+        }
+    }
+
     return true;
 }
 
