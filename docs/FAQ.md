@@ -44,7 +44,7 @@ Giveaway Helper/
 
 1. Copy the entire `Giveaway Helper` folder
 2. **API Keys**: Re-enter your `WheelOfNamesApiKey` in plain text (encrypted keys are machine-specific)
-3. Streamer.bot global variables must be manually recreated (TODO: Change this, they auto import from config.json)
+3. Streamer.bot global variables auto import from your config.json
 
 ### Q: What's the difference between RunMode options?
 
@@ -132,7 +132,8 @@ _(Requires Windows 10/11 and Streamer.bot notifications enabled)_
 
 ### Q: How do I disable logging?
 
-**A:** Set `LogToStreamerBot: false` in `Globals`. File logs cannot be fully disabled (minimal overhead).
+**A:** Set `LogToStreamerBot: false` in `Globals`. File logs cannot be fully disabled but can be set to info level
+(minimal overhead).
 
 ### Q: What happens if I set `MaxEntriesPerMinute` too low?
 
@@ -144,8 +145,7 @@ _(Requires Windows 10/11 and Streamer.bot notifications enabled)_
 
 ### Q: Do I need to pay for Wheel of Names API?
 
-**A:** Wheel of Names has free and paid tiers. Check their [pricing page](https://wheelofnames.com/api-doc). The bot
-works with both.
+**A:** Wheel of Names has free. Check their [page](https://wheelofnames.com/api-doc).
 
 ### Q: My Wheel isn't showing in OBS. Why?
 
@@ -232,8 +232,8 @@ visual spin.
 
 ### Q: What's the rate limit for Wheel API calls?
 
-**A:** Wheel of Names API has rate limits (varies by plan). The bot includes **automatic retry with exponential
-backoff** if you hit limits. Check their API docs for your tier's limits.
+**A:** Wheel of Names API has rate limits. The bot includes **automatic retry with exponential
+backoff** if you hit limits.
 
 ---
 
