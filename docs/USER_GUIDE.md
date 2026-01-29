@@ -72,14 +72,23 @@ entirely within Streamer.bot but offers features usually found in standalone app
 
 ### Step 3: Add Basic Triggers
 
-Add separate **Command** triggers for the main controls:
+You must explicitly tell Streamer.bot when to run this code.
 
-- `!enter` (Everyone)
-- `!giveaway` (Moderator+)
-- `!start` (Moderator+)
-- `!end` (Moderator+)
-- `!draw` (Moderator+)
-- `!giveaway data delete` (Broadcaster+)
+1. Go to the **Commands** tab.
+2. Right-click -> **Add**.
+3. **Commands**: `!giveaway` (one line), `!ga` (another line).
+4. **Action**: Select `Giveaway Core` (the action you created in Step 1).
+5. Click **OK**.
+
+**Repeat** for other common aliases pointing to the **same** `Giveaway Core` action:
+
+- `!enter`
+- `!start`
+- `!end`
+- `!draw`
+
+> [!TIP]
+> This single "Giveaway Core" action handles ALL commands intelligently. You just need to route the chat commands to it.
 
 ### Step 4: System Verification (New!)
 
