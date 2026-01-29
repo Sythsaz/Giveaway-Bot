@@ -1,6 +1,8 @@
 # Frequently Asked Questions (FAQ)
 
-**[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
+> **Version**: 1.0.1
+>
+> **[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
 
 ---
 

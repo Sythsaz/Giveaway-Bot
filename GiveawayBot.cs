@@ -244,6 +244,8 @@ public class CPHInline
     /// </summary>
     public class GiveawayManager
     {
+        public const string VERSION = "1.0.1";
+
         // ==================== Instance Fields ====================
         
         private ConfigLoader _configLoader;

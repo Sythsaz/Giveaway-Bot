@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net481</TargetFramework>
+    <Version>1.0.1</Version>
     <LangVersion>13.0</LangVersion>
     <Nullable>enable</Nullable>
     <NoWarn>CS0114</NoWarn>

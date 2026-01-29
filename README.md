@@ -3,43 +3,67 @@
 > **Giveaway system for Streamer.bot**
 >
 > 📖 **Documentation**: [User Guide](USER_GUIDE.md) | [Advanced Guide](ADVANCED.md) | [FAQ](FAQ.md)
+>
+> 📥 **Installation**: [How to Install (Step-by-Step)](USER_GUIDE.md#installation--verification)
+> _Import `GiveawayBot.cs` into Streamer.bot C# Action_
+
+## ✨ Key Features
+
+- **Multi-Profile Support**: Run "Daily", "Weekly", and "Sub-Only" giveaways simultaneously.
+- **Enterprise-Grade Security**: AES-256-CBC encryption for API keys & anti-loop protection.
+- **Smart Validation**: Blocks bots using entropy checks and account age verification.
+- **Rich Feedback**: Windows **Toast Notifications** and highly visible chat alerts.
+- **Observability**: Real-time **OBS variables** and automated wheel spins.
 
 ## 🚀 Core Commands
 
-| Command  | Permission | Description               |
-| -------- | ---------- | ------------------------- |
-| `!enter` | Everyone   | Enter the active giveaway |
-| `!start` | Mod+       | Open giveaway for entries |
-| `!end`   | Mod+       | Close giveaway            |
-| `!draw`  | Mod+       | Pick a winner             |
+| Command                  | Permission | Description                                |
+| :----------------------- | :--------- | :----------------------------------------- |
+| `!enter`                 | Everyone   | Enter the "Main" giveaway                  |
+| `!giveaway`              | Mod+       | Base command (Alias: `!ga`)                |
+| `!start`                 | Mod+       | Open giveaway for entries                  |
+| `!end`                   | Mod+       | Close giveaway                             |
+| `!draw`                  | Mod+       | Pick a winner                              |
+| `!giveaway system test`  | Mod+       | **Run this first!** Full system diagnostic |
+| `!giveaway profile list` | Mod+       | Show all active giveaway profiles          |
 
 ## ⚙️ Essential Settings
 
+Copy to `config/giveaway_config.json`:
+
 ```json
 {
-  "RunMode": "Mirror", // Best for stability
-  "StatePersistenceMode": "Both", // Backup everywhere
-  "MaxEntriesPerMinute": 60, // Spam protection
-  "SubLuckMultiplier": 2, // Subs get 2x tickets
-  "EnableWheel": false, // Requires API key
-  "ExposeVariables": true // OBS integration
+  "RunMode": "Mirror", // Best for stability (Syncs File <-> Vars)
+  "StatePersistenceMode": "Both", // Backup active entries to Disk & Memory
+  "MaxEntriesPerMinute": 60, // Global spam protection
+  "SubLuckMultiplier": 2, // Subs get 2x tickets (0 to disable)
+  "EnableWheel": false, // Set true to spin Wheel of Names on draw
+  "WheelApiKeyVar": "WheelOfNamesApiKey", // Variable holding your API key
+  "ToastNotifications": {
+    // Windows Desktop Alerts
+    "WinnerSelected": true,
+    "GiveawayOpened": true,
+    "GiveawayClosed": true
+  }
 }
 ```
 
-## 📊 OBS Variables (if `ExposeVariables: true`)
+## 📊 OBS Variables
 
-- `%GiveawayBot_Main_IsActive%` - True/False
-- `%GiveawayBot_Main_EntryCount%` - Number of entrants
-- `%GiveawayBot_Main_WinnerName%` - Last winner
+If `ExposeVariables: true` in your profile config:
+
+- `%GiveawayBot_Main_IsActive%`
+- `%GiveawayBot_Main_EntryCount%`
+- `%GiveawayBot_Main_WinnerName%`
 
 ## 🔍 Troubleshooting Fast Track
 
-| Problem             | Solution                                                  |
-| ------------------- | --------------------------------------------------------- |
-| No entries accepted | Check `!giveaway system test`                             |
-| Bot not responding  | Verify triggers are set for `!enter`, `!start`, etc.      |
-| Config errors       | Run `!giveaway config check`                              |
-| Wheel not loading   | Verify `WheelOfNamesApiKey` is set (plain text first run) |
+| Problem            | Solution                                                   |
+| :----------------- | :--------------------------------------------------------- |
+| **First Run?**     | Run `!giveaway system test` to verify install              |
+| **No entries?**    | Check `AllowedExternalBots` if using Nightbot triggers     |
+| **Config errors?** | Run `!giveaway config check` to find typos                 |
+| **Wheel fail?**    | Set `WheelOfNamesApiKey` variable (Text is auto-encrypted) |
 
 ## 📁 File Locations
 
@@ -79,4 +103,4 @@ dotnet build
 
 ---
 
-**Version**: 1.0.0 | **C# Compatibility**: 7.3 | **Streamer.bot**: v0.2.3+
+**Version**: 1.0.1 | **C# Compatibility**: 7.3 | **Streamer.bot**: v0.2.3+

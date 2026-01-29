@@ -1,6 +1,6 @@
 # Streamer.bot Giveaway Assistant - Comprehensive User Guide
 
-> **Version**: 1.0.0
+> **Version**: 1.0.1
 > **Compatibility**: Streamer.bot v0.2.3+ (Targeting .NET Framework 4.8 / C# 7.3)
 > 📖 **Additional Documentation:**
 >
