@@ -329,7 +329,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.3.1"; // Semantic Versioning       
+        public const string Version = "1.3.2"; // Semantic Versioning       
         
         // ==================== Instance Fields ====================
         
@@ -1457,6 +1457,11 @@ public static class Loc
             {
                 adapter.Logger?.LogTrace(adapter, "System", "Syncing Global Configuration Variables...");
             }
+            
+            // Touch input overrides so they aren't pruned
+            adapter.TouchGlobalVar("GiveawayBot_RunMode");
+            adapter.TouchGlobalVar("GiveawayBot_ExposeVariables");
+            adapter.TouchGlobalVar("GiveawayBot_Profile_Config_Triggers");
 
             var g = GlobalConfig.Globals;
 
@@ -1566,7 +1571,8 @@ public static class Loc
 
         // Check for global override in variables
         bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("GiveawayBot_ExposeVariables", true));
-        bool isMirror = string.Equals(globals.RunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
+        string currentRunMode = ConfigLoader.GetRunMode(adapter); // Use authoritative mode (includes overrides)
+        bool isMirror = string.Equals(currentRunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
 
         if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
         {
@@ -1586,6 +1592,9 @@ public static class Loc
             
             // Dynamic Config Exposure
             SetGlobalVarIfChanged(adapter, prefix + "TimerDuration", config.TimerDuration ?? "", true);
+            SetGlobalVarIfChanged(adapter, prefix + "MaxEntriesPerMinute", config.MaxEntriesPerMinute, true);
+            SetGlobalVarIfChanged(adapter, prefix + "RequireSubscriber", config.RequireSubscriber, true);
+            SetGlobalVarIfChanged(adapter, prefix + "SubLuckMultiplier", config.SubLuckMultiplier, true);
 
             // Log trace only if we are actually syncing something relevant (based on IsActive state presence)
             if (!_lastSyncedValues.ContainsKey(prefix + "IsActive"))
@@ -2130,6 +2139,45 @@ public static class Loc
                             }
                         }
                     }
+
+                    // --- Phase 2: Dynamic Variable Updates ---
+
+                    // 1. MaxEntriesPerMinute (Validation: >= 0)
+                    string maxEntriesVarName = $"GiveawayBot_{name}_MaxEntriesPerMinute";
+                    string maxEntriesVal = adapter.GetGlobalVar<string>(maxEntriesVarName, true);
+                    if (int.TryParse(maxEntriesVal, out int newMaxEntries) && newMaxEntries >= 0)
+                    {
+                        if (newMaxEntries != profile.MaxEntriesPerMinute)
+                        {
+                            adapter.LogInfo($"[Config] MaxEntriesPerMinute for '{name}' updated: {profile.MaxEntriesPerMinute} -> {newMaxEntries}");
+                            profile.MaxEntriesPerMinute = newMaxEntries;
+                            dirty = true;
+                        }
+                    }
+
+                    // 2. RequireSubscriber (Validation: bool)
+                    string reqSubVarName = $"GiveawayBot_{name}_RequireSubscriber";
+                    string reqSubVal = adapter.GetGlobalVar<string>(reqSubVarName, true);
+                    bool? newReqSub = ParseBoolVariant(reqSubVal);
+                    if (newReqSub.HasValue && newReqSub.Value != profile.RequireSubscriber)
+                    {
+                        adapter.LogInfo($"[Config] RequireSubscriber for '{name}' updated: {profile.RequireSubscriber} -> {newReqSub.Value}");
+                        profile.RequireSubscriber = newReqSub.Value;
+                        dirty = true;
+                    }
+
+                    // 3. SubLuckMultiplier (Validation: >= 1.0)
+                    string subLuckVarName = $"GiveawayBot_{name}_SubLuckMultiplier";
+                    string subLuckVal = adapter.GetGlobalVar<string>(subLuckVarName, true);
+                    if (decimal.TryParse(subLuckVal, out decimal newSubLuck) && newSubLuck >= 1.0m)
+                    {
+                        if (newSubLuck != profile.SubLuckMultiplier)
+                        {
+                            adapter.LogInfo($"[Config] SubLuckMultiplier for '{name}' updated: {profile.SubLuckMultiplier} -> {newSubLuck}");
+                            profile.SubLuckMultiplier = newSubLuck;
+                            dirty = true;
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -2534,9 +2582,13 @@ public static class Loc
                 }
 
                 adapter.TryGetArg<bool>("isSubscribed", out var isSub);
-                int tickets = 1 + (isSub ? config.SubLuckMultiplier : 0);
+                int tickets = 1;
+                if (isSub && config.SubLuckMultiplier > 1.0m)
+                {
+                    tickets = (int)Math.Ceiling(tickets * config.SubLuckMultiplier);
+                }
 
-                adapter.LogDebug($"[{profileName}] Ticket Calculation for {userName} (Sub={isSub}): Base=1 + Bonus={(isSub ? config.SubLuckMultiplier : 0)} = {tickets}");
+                adapter.LogDebug($"[{profileName}] Ticket Calculation for {userName} (Sub={isSub}): Base=1 * Multiplier={(isSub ? config.SubLuckMultiplier : 1.0m)} = {tickets}");
 
                 // Create entry with ticket calculation based on sub status
                 state.Entries[userId] = new Entry
@@ -5572,8 +5624,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         
         public bool DumpWinnersOnDraw { get; set; } = true;
 
-        [JsonProperty("_luck_help")] public string LuckHelp { get; set; } = "SubLuckMultiplier: Bonus tickets for subs. (e.g., 1 = subs get 1 extra ticket).";
-        public int SubLuckMultiplier { get; set; } = 2;
+        [JsonProperty("_luck_help")] public string LuckHelp { get; set; } = "SubLuckMultiplier: Bonus tickets for subs. (e.g., 1.5 = subs get 1.5x tickets, rounded up).";
+        public decimal SubLuckMultiplier { get; set; } = 2.0m;
 
         // Entry Validation & Bot Detection Settings
         [JsonProperty("_username_pattern_help")] public string UsernamePatternHelp { get; set; } = "Regex pattern for username validation (null/empty = disabled). Example GW2: ^[A-Za-z0-9\\-\\_]{3,32}$";

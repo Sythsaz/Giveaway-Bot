@@ -26,6 +26,7 @@ namespace StreamerBot.Tests
             await Test_RunModeSwitching();
             await Test_RunMode_Mirror_Conflict();
             await Test_ImportGlobals();
+            await Test_DynamicVariableSync();
         }
 
         private static (GiveawayManager m, MockCPH cph) SetupWithCph()
@@ -37,6 +38,19 @@ namespace StreamerBot.Tests
             m.States.Clear(); // Although m is new, States is per instance, but GlobalConfig is static
             var adapter = new CPHAdapter(cph);
             adapter.Logger = cph.Logger;
+
+            // Force RunMode via GlobalVar override BEFORE Initialize to prevent "Mirror" default exposure
+            cph.Globals["GiveawayBot_RunMode"] = "FileSystem";
+
+            // Delete config file to ensure clean defaults (Expose=False)
+            // Path might depend on where tests are running, but assuming standard structure:
+            try
+            {
+                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
+                if (File.Exists(configPath)) File.Delete(configPath);
+            }
+            catch { }
+
             m.Initialize(adapter);
             // Ensure Main exists in a clean state
 #pragma warning disable IDE0074 // Use compound assignment - C# 7.3 doesn't support null-coalescing assignment
@@ -45,6 +59,9 @@ namespace StreamerBot.Tests
             var config = GiveawayManager.GlobalConfig;
             // Default to FileSystem for tests unless specified otherwise, to respect ExposeVariables toggle
             config.Globals.RunMode = "FileSystem";
+            // CheckForConfigUpdates/GetConfig might reload defaults (Mirror) if file missing.
+            // Force RunMode via GlobalVar override to ensure test isolation.
+            cph.Globals["GiveawayBot_RunMode"] = "FileSystem";
             return (m, cph);
         }
 
@@ -57,6 +74,12 @@ namespace StreamerBot.Tests
 
             // 1. Initially disabled
             config.ExposeVariables = false;
+
+            // Clear any globals set during Initialize (if RunMode default was Mirror)
+            // But preserve the RunMode override we need
+            c.Globals.Clear();
+            c.Globals["GiveawayBot_RunMode"] = "FileSystem";
+
             m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
             c.Args["userId"] = "V1";
             c.Args["user"] = "V1";
@@ -66,7 +89,16 @@ namespace StreamerBot.Tests
             if (c.Globals.ContainsKey("GiveawayBot_Main_EntryCount")) throw new Exception("Variables exposed while disabled!");
 
             // 2. Enable and sync
-            config.ExposeVariables = true;
+            GiveawayManager.GlobalConfig.Profiles["Main"].ExposeVariables = true;
+
+            // Workaround: Clear private _lastSyncedValues to force full sync (since we cleared Globals)
+            var field = typeof(GiveawayManager).GetField("_lastSyncedValues", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                var dict = (System.Collections.IDictionary)field.GetValue(m);
+                dict?.Clear();
+            }
+
             c.Args["userId"] = "V2";
             c.Args["user"] = "V2";
             await m.ProcessTrigger(new CPHAdapter(c));
@@ -74,8 +106,17 @@ namespace StreamerBot.Tests
             if (!c.Globals.TryGetValue("GiveawayBot_Main_EntryCount", out var count) || (int)count != 2)
                 throw new Exception($"Entry count mismatch: expected 2, got {count}");
 
-            if (!c.Globals.TryGetValue("GiveawayBot_Main_IsActive", out var active) || !(bool)active)
-                throw new Exception("IsActive mismatch");
+            if (!c.Globals.TryGetValue("GiveawayBot_Main_IsActive", out var active))
+            {
+                var keys = string.Join(", ", c.Globals.Keys);
+                throw new Exception($"IsActive mismatch - Missing from Globals. Available: {keys}");
+            }
+
+            if (active is bool b && !b)
+                throw new Exception($"IsActive mismatch - Value is False");
+
+            if (!(active is bool))
+                throw new Exception($"IsActive mismatch - Type is {active?.GetType().Name}, Value: {active}");
 
             // 3. Winner sync
             c.Args.Clear();
@@ -97,8 +138,11 @@ namespace StreamerBot.Tests
             m.States["Main"].Entries.Clear(); // Clear any existing entries from previous tests
 
             // 1. Profile enabled, but Global Override = false
-            config.ExposeVariables = true;
+            GiveawayManager.GlobalConfig.Profiles["Main"].ExposeVariables = true;
             c.SetGlobalVar("GiveawayBot_ExposeVariables", "false", true); // Set global variable override
+
+            // DEBUG: Ensure override is set
+            if (!c.Globals.ContainsKey("GiveawayBot_ExposeVariables")) Console.WriteLine("[TEST WARN] Override missing from Globals!");
             m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
 
             c.Args["userId"] = "GO1";
@@ -527,6 +571,57 @@ namespace StreamerBot.Tests
             }
 
             await Task.CompletedTask;
+        }
+
+        private static async Task Test_DynamicVariableSync()
+        {
+            Console.Write("[TEST] Dynamic Variable Sync (1.3.2): ");
+            var (m, cph) = SetupWithCph();
+
+            var adapter = new CPHAdapter(cph);
+
+            await m.Loader.CreateProfileAsync(adapter, "DynamicProfile");
+            GiveawayManager.GlobalConfig = m.Loader.GetConfig(adapter);
+
+            var config = GiveawayManager.GlobalConfig;
+            var profile = config.Profiles["DynamicProfile"];
+
+            // Set initial values
+            profile.MaxEntriesPerMinute = 10;
+            profile.RequireSubscriber = false;
+            profile.SubLuckMultiplier = 1.0m;
+
+            // Sync initial state (Push)
+            m.SyncAllVariables(adapter);
+
+            // Verify initial exposure
+            if (!cph.Globals.TryGetValue("GiveawayBot_DynamicProfile_MaxEntriesPerMinute", out var v1) || v1.ToString() != "10")
+                throw new Exception($"Initial Sync Failed: MaxEntriesPerMinute. Got {v1}");
+
+            if (!cph.Globals.TryGetValue("GiveawayBot_DynamicProfile_RequireSubscriber", out var v2) || v2.ToString() != "False")
+                throw new Exception($"Initial Sync Failed: RequireSubscriber. Got {v2}");
+
+            // 2. Simulate External Update (Pull)
+            cph.Globals["GiveawayBot_DynamicProfile_MaxEntriesPerMinute"] = "99";
+            cph.Globals["GiveawayBot_DynamicProfile_RequireSubscriber"] = "true";
+            cph.Globals["GiveawayBot_DynamicProfile_SubLuckMultiplier"] = "5.5";
+
+            // Trigger CheckForConfigUpdates
+            var checkMethod = m.GetType().GetMethod("CheckForConfigUpdates", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var task = (Task)checkMethod.Invoke(m, new object[] { adapter });
+            await task;
+
+            // Verify Config Update
+            if (profile.MaxEntriesPerMinute != 99)
+                throw new Exception(string.Format("Pull Sync Failed: MaxEntriesPerMinute. Expected 99, got {0}", profile.MaxEntriesPerMinute));
+
+            if (profile.RequireSubscriber != true)
+                throw new Exception(string.Format("Pull Sync Failed: RequireSubscriber. Expected True, got {0}", profile.RequireSubscriber));
+
+            if (profile.SubLuckMultiplier != 5.5m)
+                throw new Exception(string.Format("Pull Sync Failed: SubLuckMultiplier. Expected 5.5, got {0}", profile.SubLuckMultiplier));
+
+            Console.WriteLine("PASS");
         }
     }
 }
