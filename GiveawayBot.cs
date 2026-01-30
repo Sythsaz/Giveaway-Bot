@@ -18,6 +18,7 @@
 #pragma warning disable CS8603 // Possible null reference return
 #pragma warning disable CS8601 // Possible null reference assignment
 #pragma warning disable CS8618 // Non-nullable property initialization
+#pragma warning disable CS8610 // Nullability of reference types in type of parameter doesn't match overridden member
 #pragma warning disable CS8604 // Possible null reference argument
 #pragma warning disable CS8602 // Dereference of a possibly null reference
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type
@@ -270,12 +271,31 @@ public static class Loc
             { "Error_NoPermission", "You do not have permission to use this command." }
         };
 
+    public static IEnumerable<string> Keys => _defaults.Keys;
+
     public static string Get(string key, params object[] args)
+    {
+        return Get(key, null, args);
+    }
+
+    public static string Get(string key, string profileName, params object[] args)
     {
         string template = null;
 
-        // 1. Try Config Overrides
-        if (GiveawayManager.GlobalConfig?.Globals?.CustomStrings != null)
+        // 1. Try Profile Overrides
+        if (!string.IsNullOrEmpty(profileName) && GiveawayManager.GlobalConfig != null)
+        {
+            if (GiveawayManager.GlobalConfig.Profiles.TryGetValue(profileName, out var profile) && profile.Messages != null)
+            {
+                if (profile.Messages.TryGetValue(key, out var profileStr))
+                {
+                    template = profileStr;
+                }
+            }
+        }
+
+        // 2. Try Global Custom Strings
+        if (template == null && GiveawayManager.GlobalConfig?.Globals?.CustomStrings != null)
         {
             if (GiveawayManager.GlobalConfig.Globals.CustomStrings.TryGetValue(key, out var overrideStr))
             {
@@ -283,17 +303,17 @@ public static class Loc
             }
         }
 
-        // 2. Try Default Dictionary
+        // 3. Try Default Dictionary
         if (template == null && _defaults.TryGetValue(key, out var defStr))
         {
             template = defStr;
         }
 
-        // 3. Fallback
+        // 4. Fallback
         if (template == null) return $"[{key}]";
 
-        // 4. Format
-        if (args != null && args.Length > 0) // C# 7.3: args is object[]
+        // 5. Format
+        if (args != null && args.Length > 0)
         {
             try { return string.Format(template, args); }
             catch { return template; } // Fail safe
@@ -308,7 +328,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string VERSION = "1.1.0";
+        public const string VERSION = "1.3.0";
 
         // ==================== Instance Fields ====================
         
@@ -337,6 +357,47 @@ public static class Loc
         public GiveawayManager()
         {
             States = new ConcurrentDictionary<string, GiveawayState>();
+        }
+
+        // Timer for lifecycle events (timed giveaways)
+        private System.Threading.Timer _lifecycleTimer;
+
+        public static int? ParseDuration(string durationStr)
+        {
+            if (string.IsNullOrWhiteSpace(durationStr)) return null;
+            durationStr = durationStr.Trim().ToLowerInvariant();
+
+            int totalSeconds = 0;
+            bool matched = false;
+
+            // Regex to match "1h", "30m", "10s", "1d", "1w"
+            var matches = Regex.Matches(durationStr, @"(\d+)([wdhms])");
+            
+            foreach (Match m in matches)
+            {
+                if (int.TryParse(m.Groups[1].Value, out int val) && val > 0)
+                {
+                    matched = true;
+                    string unit = m.Groups[2].Value;
+                    int multiplier = 1;
+                    switch (unit)
+                    {
+                        case "s": multiplier = 1; break;
+                        case "m": multiplier = 60; break;
+                        case "h": multiplier = 3600; break;
+                        case "d": multiplier = 86400; break;
+                        case "w": multiplier = 604800; break;
+                    }
+                    totalSeconds += val * multiplier;
+                }
+            }
+
+            if (matched) return totalSeconds;
+
+            // Fallback for simple numbers (assumed seconds) or legacy single-unit strings without regex match (unlikely)
+            if (int.TryParse(durationStr, out int valSeconds) && valSeconds > 0) return valSeconds;
+            
+            return null;
         }
 
         /// <summary>
@@ -370,9 +431,9 @@ public static class Loc
         /// </summary>
         public void Dispose()
         {
-            // Threading.Timer does not have Stop(), Dispose is sufficient
-            _msgIdCleanupTimer?.Dispose();
+            //_msgIdCleanupTimer?.Dispose(); // Removed in refactor
             _dumpTimer?.Dispose();
+            _lifecycleTimer?.Dispose();
             _lock?.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -393,13 +454,73 @@ public static class Loc
 
         // Anti-Loop Protection: Tracks processed message IDs to prevent duplicate processing
         private readonly ConcurrentDictionary<string, DateTime> _processedMsgIds = new ConcurrentDictionary<string, DateTime>();
-        private System.Threading.Timer _msgIdCleanupTimer;
+        //private System.Threading.Timer _msgIdCleanupTimer; // Removed in refactor
+        private DateTime _lastMsgCleanup = DateTime.MinValue;
+        private DateTime _lastHeartbeat = DateTime.MinValue; // Heartbeat tracker
         
         // Anti-Loop Protection: Invisible token appended to bot messages for self-detection
         // Uses zero-width space (U+200B) followed by identifier for human-invisible marking
         public const string ANTI_LOOP_TOKEN = "\u200B[GiveawayBot]";
 
         public FileLogger Logger { get; set; }
+
+
+        /// <summary>
+        /// Periodic tick to check for timed giveaway expirations.
+        /// </summary>
+        private void LifecycleTick(object state)
+        {
+            var adapter = state as CPHAdapter;
+            if (adapter == null || States == null) return;
+
+            try
+            {
+                var now = DateTime.Now;
+                foreach (var kvp in States)
+                {
+                    var profileName = kvp.Key;
+                    var s = kvp.Value;
+
+                    // Check for Auto-Close
+                    if (s.IsActive && s.AutoCloseTime.HasValue && now >= s.AutoCloseTime.Value)
+                    {
+                        // Ensure config exists
+                        if (GlobalConfig != null && GlobalConfig.Profiles.TryGetValue(profileName, out var profile))
+                        {
+                            // Trigger Close
+                            adapter.LogInfo($"[Lifecycle] Auto-closing giveaway '{profileName}' (Time expired).");
+                            // Execute end synchronously on the timer thread is risky if it does heavy I/O, 
+                            // but HandleEnd is mostly state updates + async dumps.
+                            // We need to run it in a way that doesn't block the timer too long.
+                            // However, HandleEnd returns Task. We should fire and forget carefully.
+                            Task.Run(() => HandleEnd(adapter, profile, s, profileName, "Timer"));
+                        }
+                    }
+                }
+
+                // Periodic Message ID Cleanup (Throttled inside LifecycleTick)
+                if ((now - _lastMsgCleanup).TotalMilliseconds >= (GlobalConfig?.Globals?.MessageIdCleanupIntervalMs ?? 60000))
+                {
+                    _lastMsgCleanup = now;
+                    CleanupExpiredMessageIds(adapter);
+                }
+
+                // Heartbeat Logging (Every 5 minutes)
+                if ((now - _lastHeartbeat).TotalMinutes >= 5)
+                {
+                    _lastHeartbeat = now;
+                    int activeCount = States.Values.Count(s => s.IsActive);
+                    if (activeCount > 0) 
+                        adapter.LogVerbose($"[Lifecycle] Timer active. Active Profiles: {activeCount}");
+                }
+            }
+            catch (Exception ex)
+            {
+                adapter.LogVerbose($"[Lifecycle] Tick error: {ex.Message}");
+            }
+        }
+
+
 
         /// <summary>
         /// Sets up the manager dependencies and loads initial state.
@@ -438,6 +559,12 @@ public static class Loc
             Messenger.Register(Bus); // Subscribe to events
             Metrics = new MetricsService();
             _cachedMetrics = Metrics.LoadMetrics(adapter);
+
+            // Start lifecycle timer (1s interval)
+#pragma warning disable CS8622
+            _lifecycleTimer = new System.Threading.Timer(LifecycleTick, adapter, 1000, 1000);
+#pragma warning restore CS8622
+
             adapter.LogVerbose("[GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).");
 
             // Load persisted state for all known profiles to ensure we don't lose data on bot restart
@@ -465,13 +592,14 @@ public static class Loc
             
             // Start periodic cleanup timer for message ID cache (Threading.Timer)
             // Use adapter as state object
-            _msgIdCleanupTimer = new System.Threading.Timer(
+            /* 
+            // Timer consolidated into LifecycleTick
+             _msgIdCleanupTimer = new System.Threading.Timer(
                 state => CleanupExpiredMessageIds((CPHAdapter)state),
                 adapter,
                 TimeSpan.FromMilliseconds(GlobalConfig.Globals.MessageIdCleanupIntervalMs),
                 TimeSpan.FromMilliseconds(GlobalConfig.Globals.MessageIdCleanupIntervalMs));
-            
-            adapter.LogDebug("[GiveawayManager] Message ID cleanup timer started (60s interval)");
+            */
             
             adapter.LogInfo("[GiveawayManager] Initialization complete. All states rehydrated.");
 
@@ -1077,7 +1205,7 @@ public static class Loc
 
             // Fallback: treat as inline list
             adapter.LogTrace($"[ExternalBot] Using inline bot list ({allowedBots.Count} bot(s))");
-            return new List<string>(allowedBots);
+            return allowedBots.ToList();
         }
 
         /// <summary>
@@ -1431,7 +1559,16 @@ public static class Loc
 
                 // Configuration Settings
                 adapter.SetGlobalVar(prefix + "Config_Triggers", JsonConvert.SerializeObject(config.Triggers), true);
-
+                adapter.SetGlobalVar(prefix + "Config_Messages", JsonConvert.SerializeObject(config.Messages), true);
+                
+                // Expose Individual Message Variables (Granular 2-Way Sync)
+                foreach (var key in Loc.Keys)
+                {
+                    // Use Loc.Get to resolve the *effective* value (Profile > Global > Default)
+                    // This ensures the variable reflects what the bot is actually using
+                    string effectiveValue = Loc.Get(key, profileName);
+                    adapter.SetGlobalVar(prefix + "Msg_" + key, effectiveValue, true);
+                }
 
                 if (config.Triggers != null)
                 {
@@ -1938,10 +2075,65 @@ public static class Loc
                             adapter.SetGlobalVar("GiveawayBot_LastConfigErrors", err, true);
                         }
                     }
+                
+                    // Check Messages variable for 2-way sync
+                    string msgVarName = $"GiveawayBot_Profile_Config_Messages_{name}";
+                    string msgJson = adapter.GetGlobalVar<string>(msgVarName, true);
+                    if (!string.IsNullOrEmpty(msgJson))
+                    {
+                        // Optimization: Check cache 
+                        string cacheKey = name + "_msgs";
+                        if (!_triggersJsonCache.TryGetValue(cacheKey, out var cachedMsgJson) || cachedMsgJson != msgJson)
+                        {
+                            try
+                            {
+                                var incomingMsgs = JsonConvert.DeserializeObject<Dictionary<string, string>>(msgJson);
+                                if (incomingMsgs != null)
+                                {
+                                    _triggersJsonCache[cacheKey] = msgJson;
+                                    var currentMsgs = profile.Messages ?? new Dictionary<string, string>();
+                                    
+                                    // Simple count check or key check is insufficient, need content check
+                                    // But strictly speaking, if JSON changed, we should probably just update.
+                                    // The cache check handles the "no change" case efficiently.
+                                    
+                                    profile.Messages = incomingMsgs;
+                                    dirty = true;
+                                    adapter.LogInfo($"[Config] Detected external update to Messages for profile '{name}'.");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                adapter.LogWarn($"[Config] Failed to parse Messages JSON for '{name}': {ex.Message}");
+                            }
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     adapter.LogTrace($"[Sync] Error checking updates for {name}: {ex.Message}");
+                }
+
+                // Check Individual Message Variables (Granular 2-Way Sync)
+                // Checks GiveawayBot_<Profile>_Msg_<Key>
+                foreach (var key in Loc.Keys)
+                {
+                    string varName = $"GiveawayBot_{name}_Msg_{key}";
+                    string varValue = adapter.GetGlobalVar<string>(varName, true);
+                    
+                    // If variable exists
+                    if (varValue != null)
+                    {
+                        if (profile.Messages == null) profile.Messages = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        
+                        // Update if different from current config
+                        if (!profile.Messages.TryGetValue(key, out var currentVal) || currentVal != varValue)
+                        {
+                            profile.Messages[key] = varValue;
+                            dirty = true;
+                            adapter.LogInfo($"[Config] Detected external update to Message '{key}' for profile '{name}'.");
+                        }
+                    }
                 }
             }
 
@@ -2378,7 +2570,9 @@ public static class Loc
                 }
                 else
                 {
-                    // Fallback if EventBus is not available (should require EventBus, but safe coding)
+                    string acceptedMsg = Loc.Get("EntryAccepted", profileName, tickets, config.SubLuckMultiplier);
+                    if (isSub && config.SubLuckMultiplier == 0) acceptedMsg = Loc.Get("EntryAccepted_NoLuck", profileName, tickets);
+                        
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
                          adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {userName}");
                 }
@@ -2524,20 +2718,33 @@ public static class Loc
             await _lock.WaitAsync();
             try
             {
-                state.IsActive = true;
-                adapter.LogInfo($"[{profileName}] Giveaway is now OPEN.");
-                
-                // Persistence must happen before event publish so subscribers see latest state if they reload
-                PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
-                SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
+              state.IsActive = true;
+            state.Entries.Clear();
+            state.WinnerCount = 0;
+            state.LastWinnerName = null;
+            state.LastWinnerUserId = null;
+            state.AutoCloseTime = null; // Reset auto-close
 
-                if (Bus != null)
-                {
-                    Bus.Publish(new GiveawayStartedEvent(adapter, profileName, state, platform));
-                }
+            // Handle Timed Giveaway
+            var duration = ParseDuration(config.TimerDuration);
+            if (duration.HasValue)
+            {
+                state.AutoCloseTime = DateTime.Now.AddSeconds(duration.Value);
+                adapter.LogInfo($"[{profileName}] Timed giveaway started. Will auto-close in {duration.Value}s.");
+            }
+
+            PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals);
+            SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
+            
+            string msgKey = "GiveawayOpened";
+            if (profileName != "Main" && !GlobalConfig.Profiles.ContainsKey("Main")) msgKey = "GiveawayOpened_NoProfile"; // Legacy fallback
+            
+            string openMsg = Loc.Get(msgKey, profileName, profileName);
+            Messenger?.SendBroadcast(adapter, openMsg, platform);
+
+            if (Bus != null) Bus.Publish(new GiveawayStartedEvent(adapter, profileName, state, platform));
                 else
                 {
-                    Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayOpened", profileName), platform);
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
                         adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is OPEN!");
                 }
@@ -2561,21 +2768,24 @@ public static class Loc
             await _lock.WaitAsync();
             try
             {
-                state.IsActive = false;
-                adapter.LogInfo($"[{profileName}] Giveaway is now CLOSED.");
-                
-                // Persistence
-                if (config.DumpEntriesOnEnd) await DumpEntriesAsync(adapter, profileName, state, config);
-                PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
-                SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
+            if (!state.IsActive)
+            {
+                // Already closed
+                return true;
+            }
 
-                if (Bus != null)
-                {
-                    Bus.Publish(new GiveawayEndedEvent(adapter, profileName, state, platform));
-                }
+            state.IsActive = false;
+            state.AutoCloseTime = null; // Clear timer
+            
+            PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals);
+            SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
+
+            string closeMsg = Loc.Get("GiveawayClosed", profileName);
+            Messenger?.SendBroadcast(adapter, closeMsg, platform);
+            
+            if (Bus != null) Bus.Publish(new GiveawayEndedEvent(adapter, profileName, state, platform));
                 else
                 {
-                    Messenger?.SendBroadcast(adapter, Loc.Get("GiveawayClosed"), platform);
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
                         adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is CLOSED!");
                 }
@@ -5357,6 +5567,12 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public double WinChance { get; set; } = 1.0;
         public bool RequireSubscriber { get; set; } = false;
 
+        [JsonProperty("_messages_help")] public string MessagesHelp { get; set; } = "Override default messages. Key:Value pairs.";
+        public Dictionary<string, string> Messages { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        [JsonProperty("_timer_help")] public string TimerHelp { get; set; } = "Auto-close duration (e.g. '10m', '120s'). Null = manual only.";
+        public string TimerDuration { get; set; }
+
 
 
         [JsonExtensionData] public Dictionary<string, object> ExtensionData { get; set; }
@@ -5403,6 +5619,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         {
             _globalSpam = new List<DateTime>();
         }
+
+        public DateTime? AutoCloseTime { get; set; }
 
         public string LastWinnerName { get; set; }
         public string LastWinnerUserId { get; set; }
