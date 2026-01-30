@@ -5310,7 +5310,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             { "EntryRejected", false },
             { "WinnerSelected", true },
             { "GiveawayOpened", true },
-            { "GiveawayClosed", true }
+            { "GiveawayClosed", true },
+            { "UnauthorizedAccess", false }
         };
 
         // Missing properties fixed
