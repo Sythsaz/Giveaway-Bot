@@ -23,6 +23,8 @@
 ## ✨ Key Features
 
 - **Multi-Profile Support**: Run "Daily", "Weekly", and "Sub-Only" giveaways simultaneously.
+- **Timed Giveaways**: Set a duration (e.g., "10m") and the bot automatically closes the giveaway.
+- **Configurable Messages**: Customize every chat response to match your stream's personality.
 - **Enterprise Security**: AES-256-CBC (DPAPI) encryption, **GDPR Data Deletion** (`!giveaway data delete`),
   & anti-loop protection.
 - **Smart Validation**: Blocks bots using entropy checks and account age verification.
