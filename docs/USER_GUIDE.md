@@ -673,7 +673,8 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
   "EntryRejected": false,    // Alert when spam/bot blocked
   "WinnerSelected": true,    // Alert when winner drawn
   "GiveawayOpened": true,    // Alert when giveaway starts
-  "GiveawayClosed": true     // Alert when giveaway ends
+  "GiveawayClosed": true,    // Alert when giveaway ends
+  "UnauthorizedAccess": false // Alert when non-broadcaster attempts management command
 }
 ```
 

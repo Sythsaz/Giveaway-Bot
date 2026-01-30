@@ -2343,10 +2343,16 @@ public static class Loc
 
                 IncUserMetric(adapter, userId, userName, "EntriesTotal");
 
+                // Extract platform from trigger args (fallback: Twitch)
+                string platform = "Twitch";
+                if (adapter.TryGetArg<string>("platform", out var detectedPlatform) && !string.IsNullOrEmpty(detectedPlatform))
+                {
+                    platform = detectedPlatform;
+                }
+
                 if (Bus != null)
                 {
-                    // TODO: HandleEntry doesn't map platform yet, defaulting to "Twitch" or null
-                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, state, state.Entries[userId], "Twitch"));
+                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, state, state.Entries[userId], platform));
                 }
                 else
                 {
