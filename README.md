@@ -62,7 +62,7 @@ The bot uses a singleton manager pattern to handle state, configuration, and Str
 
 ```mermaid
 graph LR
-    User[User] -- !enter --> SB[Streamer.bot]
+    User[User] -- "!enter" --> SB[Streamer.bot]
     SB -- Trigger --> Manager[GiveawayManager]
     Manager -- Read/Write --> State[State File]
     Manager -- Sync --> Wheel[Wheel of Names]
