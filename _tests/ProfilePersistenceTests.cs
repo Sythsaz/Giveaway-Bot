@@ -352,6 +352,7 @@ namespace StreamerBot.Tests
         }
 #pragma warning restore CS1998
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_MissingProfileGracefulDegradation()
         {
             Console.Write("  - Missing profile graceful degradation:  ");
@@ -367,6 +368,7 @@ namespace StreamerBot.Tests
             // Should not crash, just log warning
             Console.WriteLine("PASS");
         }
+#pragma warning restore CS1998
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_InvalidDataTypeHandling()
@@ -426,6 +428,7 @@ namespace StreamerBot.Tests
                 Console.WriteLine("FAIL (Negative value accepted)");
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_ConcurrentModificationHandling()
         {
             Console.Write("  - Concurrent modification handling:      ");
@@ -452,6 +455,7 @@ namespace StreamerBot.Tests
             // Both should complete without corruption
             Console.WriteLine("PASS");
         }
+#pragma warning restore CS1998
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_StateDeserializationFailure()
@@ -525,7 +529,7 @@ namespace StreamerBot.Tests
                 // Verify backup exists
                 var deletedBackups = Directory.Exists(backupDir) ?
                     Directory.GetDirectories(backupDir, "deleted_RestoreTest_*") :
-                    new string[0];
+                    Array.Empty<string>();
 
                 if (deletedBackups.Length > 0)
                     Console.WriteLine("PASS");
