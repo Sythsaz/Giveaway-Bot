@@ -308,7 +308,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string VERSION = "1.0.1";
+        public const string VERSION = "1.1.0";
 
         // ==================== Instance Fields ====================
         
@@ -1418,6 +1418,11 @@ public static class Loc
                 adapter.SetGlobalVar(prefix + "GiveawayId", state.CurrentGiveawayId ?? "", true);
                 adapter.SetGlobalVar(prefix + "WinnerName", state.LastWinnerName ?? "", true);
                 adapter.SetGlobalVar(prefix + "WinnerUserId", state.LastWinnerUserId ?? "", true);
+                adapter.SetGlobalVar(prefix + "WinnerCount", state.WinnerCount, true);
+                adapter.SetGlobalVar(prefix + "CumulativeEntries", state.CumulativeEntries, true);
+                // Calculate Sub Count - O(N) but generally fast enough
+                int subCount = state.Entries.Values.Count(e => e.IsSub);
+                adapter.SetGlobalVar(prefix + "SubEntryCount", subCount, true);
 
 
                 adapter.Logger?.LogTrace(adapter, profileName, $"Syncing {profileName} config variables...");
@@ -1444,6 +1449,21 @@ public static class Loc
                 adapter.SetGlobalVar(prefix + "Config_DumpEntriesOnEnd", config.DumpEntriesOnEnd, true);
                 adapter.SetGlobalVar(prefix + "Config_DumpWinnersOnDraw", config.DumpWinnersOnDraw, true);
                 adapter.SetGlobalVar(prefix + "Config_SubLuckMultiplier", config.SubLuckMultiplier, true);
+                adapter.SetGlobalVar(prefix + "Config_MinAccountAgeDays", config.MinAccountAgeDays, true);
+                adapter.SetGlobalVar(prefix + "Config_EnableEntropyCheck", config.EnableEntropyCheck, true);
+                adapter.SetGlobalVar(prefix + "Config_UsernamePattern", config.UsernamePattern ?? "", true);
+                adapter.SetGlobalVar(prefix + "Config_WinChance", config.WinChance, true);
+                adapter.SetGlobalVar(prefix + "Config_RequireSubscriber", config.RequireSubscriber, true);
+                adapter.SetGlobalVar(prefix + "Config_DumpEntriesOnEntry", config.DumpEntriesOnEntry, true);
+                adapter.SetGlobalVar(prefix + "Config_DumpFormat", config.DumpFormat.ToString(), true);
+
+                if (config.ToastNotifications != null)
+                {
+                    foreach (var kvp in config.ToastNotifications)
+                    {
+                        adapter.SetGlobalVar(prefix + "Config_Toast_" + kvp.Key, kvp.Value, true);
+                    }
+                }
 
 
                 // Wheel Settings (Nested)
@@ -5181,7 +5201,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             "• Mirror      : Bidirectional sync between File and Global Variable (Redundant).",
             "--------------------------------------------------------------------------------",
             "VARIABLE SYSTEM (GiveawayBot_{Profile}_{Var}):",
-            "• [Live Stats]      : IsActive, EntryCount, TicketCount, Id, WinnerName."
+            "• [Live Stats]      : IsActive, EntryCount, TicketCount, Id, WinnerName, WinnerCount, SubEntryCount."
         };
 
 

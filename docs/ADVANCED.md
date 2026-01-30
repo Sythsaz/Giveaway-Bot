@@ -1,6 +1,6 @@
 # Advanced Topics & Technical Guide
 
-> **Version**: 1.0.1
+> **Version**: 1.1.0
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
 
@@ -209,15 +209,18 @@ C:\Users\<You>\Streamer.bot\data\Giveaway Helper\
 
 (Exposed when `ExposeVariables: true` in profile)
 
-| Variable Name                        | Type     | Update Frequency           | Example               |
-| ------------------------------------ | -------- | -------------------------- | --------------------- |
-| `GiveawayBot_<Profile>_IsActive`     | Boolean  | Immediate (on start/end)   | `true`                |
-| `GiveawayBot_<Profile>_EntryCount`   | Integer  | Per entry (+1)             | `47`                  |
-| `GiveawayBot_<Profile>_TicketCount`  | Integer  | Per entry (incl. sub luck) | `68`                  |
-| `GiveawayBot_<Profile>_WinnerName`   | String   | On draw                    | `CoolViewer123`       |
-| `GiveawayBot_<Profile>_WinnerUserId` | String   | On draw                    | `987654321`           |
-| `GiveawayBot_<Profile>_LastEntry`    | String   | Per entry                  | `NewUser456`          |
-| `GiveawayBot_<Profile>_DrawTime`     | DateTime | On draw                    | `2026-01-28 14:30:00` |
+| Variable Name                             | Type     | Update Frequency           | Example               |
+| ----------------------------------------- | -------- | -------------------------- | --------------------- |
+| `GiveawayBot_<Profile>_IsActive`          | Boolean  | Immediate (on start/end)   | `true`                |
+| `GiveawayBot_<Profile>_EntryCount`        | Integer  | Per entry (+1)             | `47`                  |
+| `GiveawayBot_<Profile>_TicketCount`       | Integer  | Per entry (incl. sub luck) | `68`                  |
+| `GiveawayBot_<Profile>_WinnerName`        | String   | On draw                    | `CoolViewer123`       |
+| `GiveawayBot_<Profile>_WinnerUserId`      | String   | On draw                    | `987654321`           |
+| `GiveawayBot_<Profile>_LastEntry`         | String   | Per entry                  | `NewUser456`          |
+| `GiveawayBot_<Profile>_DrawTime`          | DateTime | On draw                    | `2026-01-28 14:30:00` |
+| `GiveawayBot_<Profile>_WinnerCount`       | Integer  | Per Draw                   | `3`                   |
+| `GiveawayBot_<Profile>_CumulativeEntries` | Integer  | Per entry                  | `150`                 |
+| `GiveawayBot_<Profile>_SubEntryCount`     | Integer  | Per entry                  | `12`                  |
 
 ### Global Metrics
 
