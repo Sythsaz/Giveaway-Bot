@@ -1,6 +1,6 @@
 # Advanced Topics & Technical Guide
 
-> **Version**: 1.3.1
+> **Version**: 1.3.2
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
 
@@ -217,20 +217,23 @@ C:\Users\<You>\Streamer.bot\data\Giveaway Helper\
 
 (Exposed when `ExposeVariables: true` in profile)
 
-| Variable Name                             | Type     | Update Frequency           | Example               |
-| ----------------------------------------- | -------- | -------------------------- | --------------------- |
-| `GiveawayBot_<Profile>_IsActive`          | Boolean  | Immediate (on start/end)   | `true`                |
-| `GiveawayBot_<Profile>_EntryCount`        | Integer  | Per entry (+1)             | `47`                  |
-| `GiveawayBot_<Profile>_TicketCount`       | Integer  | Per entry (incl. sub luck) | `68`                  |
-| `GiveawayBot_<Profile>_WinnerName`        | String   | On draw                    | `CoolViewer123`       |
-| `GiveawayBot_<Profile>_WinnerUserId`      | String   | On draw                    | `987654321`           |
-| `GiveawayBot_<Profile>_LastEntry`         | String   | Per entry                  | `NewUser456`          |
-| `GiveawayBot_<Profile>_DrawTime`          | DateTime | On draw                    | `2026-01-28 14:30:00` |
-| `GiveawayBot_<Profile>_WinnerCount`       | Integer  | Per Draw                   | `3`                   |
-| `GiveawayBot_<Profile>_CumulativeEntries` | Integer  | Per entry                  | `150`                 |
-| `GiveawayBot_<Profile>_SubEntryCount`     | Integer  | Per entry                  | `12`                  |
-| `GiveawayBot_<Profile>_TimerDuration`     | String   | On config change           | `10m`                 |
-| `GiveawayBot_<Profile>_Msg_<Key>`         | String   | On config change           | `Winner is {0}!`      |
+| Variable Name                               | Type     | Update Frequency           | Example               |
+| ------------------------------------------- | -------- | -------------------------- | --------------------- |
+| `GiveawayBot_<Profile>_IsActive`            | Boolean  | Immediate (on start/end)   | `true`                |
+| `GiveawayBot_<Profile>_EntryCount`          | Integer  | Per entry (+1)             | `47`                  |
+| `GiveawayBot_<Profile>_TicketCount`         | Integer  | Per entry (incl. sub luck) | `68`                  |
+| `GiveawayBot_<Profile>_WinnerName`          | String   | On draw                    | `CoolViewer123`       |
+| `GiveawayBot_<Profile>_WinnerUserId`        | String   | On draw                    | `987654321`           |
+| `GiveawayBot_<Profile>_LastEntry`           | String   | Per entry                  | `NewUser456`          |
+| `GiveawayBot_<Profile>_DrawTime`            | DateTime | On draw                    | `2026-01-28 14:30:00` |
+| `GiveawayBot_<Profile>_WinnerCount`         | Integer  | Per Draw                   | `3`                   |
+| `GiveawayBot_<Profile>_CumulativeEntries`   | Integer  | Per entry                  | `150`                 |
+| `GiveawayBot_<Profile>_SubEntryCount`       | Integer  | Per entry                  | `12`                  |
+| `GiveawayBot_<Profile>_TimerDuration`       | String   | On config change           | `10m`                 |
+| `GiveawayBot_<Profile>_Msg_<Key>`           | String   | On config change           | `Winner is {0}!`      |
+| `GiveawayBot_<Profile>_MaxEntriesPerMinute` | Integer  | On config change           | `100`                 |
+| `GiveawayBot_<Profile>_RequireSubscriber`   | Boolean  | On config change           | `true`                |
+| `GiveawayBot_<Profile>_SubLuckMultiplier`   | Decimal  | On config change           | `1.5`                 |
 
 ### Global Metrics
 

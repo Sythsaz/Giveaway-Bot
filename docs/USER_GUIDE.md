@@ -841,6 +841,19 @@ Text Sources (syntax `%VariableName%`).
 - **Entries**: The system is tested to handle 10,000+ entries in memory.
 - **Persistence**: Using `Mirror` mode ensures data survives Streamer.bot crashes by syncing to disk every 30s.
 
+### Dynamic Configuration 🎛️
+
+You can update key settings on-the-fly using Streamer.bot Global Variables (no restart required):
+
+| Variable                                    | Type    | Description                                 |
+| :------------------------------------------ | :------ | :------------------------------------------ |
+| `GiveawayBot_<Profile>_TimerDuration`       | String  | Updates auto-close timer (e.g. `5m`, `30s`) |
+| `GiveawayBot_<Profile>_MaxEntriesPerMinute` | Int     | Updates spam rate limit                     |
+| `GiveawayBot_<Profile>_RequireSubscriber`   | Bool    | Toggles sub-only mode                       |
+| `GiveawayBot_<Profile>_SubLuckMultiplier`   | Decimal | Updates subscriber luck bonus               |
+
+_Changes take effect immediately on the next trigger execution._
+
 ---
 
 ## Integrations (Wheel & OBS)

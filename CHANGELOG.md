@@ -40,6 +40,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.3.2] - 2026-01-30
+
+### Added (v1.3.2)
+
+- **Dynamic Configuration**: `MaxEntriesPerMinute`, `RequireSubscriber`, and `SubLuckMultiplier` can now be updated
+  on-the-fly via Streamer.bot global variables (`GiveawayBot_<Profile>_<Key>`).
+- **Global Override Protection**: Configuration overrides (like `GiveawayBot_ExposeVariables`) are now explicitly
+  protected from being pruned by the variable cleanup logic.
+
+### Fixed (v1.3.2)
+
+- **Variable Sync Bug**: Resolved an issue where variables were incorrectly exposed in `Mirror` mode even when
+  `ExposeVariables` was disabled, ensuring strict adherence to configuration.
+- **Test Isolation**: Improved `ConfigSyncTests` to prevent cross-contamination between test runs by enforcing
+  cleaner state resets.
+
 ## [1.3.1] - 2026-01-30
 
 ### Changed (v1.3.1)

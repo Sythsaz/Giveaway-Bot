@@ -529,24 +529,28 @@ GiveawayBot_{ProfileName}_{VariableName}
 
 ### Per-Profile Variables
 
-| Variable                                  | Type      | Description                   | Example              |
-| ----------------------------------------- | --------- | ----------------------------- | -------------------- |
-| `GiveawayBot_{Profile}_IsActive`          | `boolean` | Giveaway open status          | `true`               |
-| `GiveawayBot_{Profile}_EntryCount`        | `int`     | Number of unique entries      | `15`                 |
-| `GiveawayBot_{Profile}_TicketCount`       | `int`     | Total tickets (with sub luck) | `23`                 |
-| `GiveawayBot_{Profile}_Id`                | `string`  | Current giveaway session ID   | `"ga_20260129_1234"` |
-| `GiveawayBot_{Profile}_WinnerName`        | `string`  | Last winner's display name    | `"CoolViewer42"`     |
-| `GiveawayBot_{Profile}_WinnerCount`       | `int`     | Total winners all-time        | `5`                  |
-| `GiveawayBot_{Profile}_CumulativeEntries` | `long`    | Total entries all-time        | `127`                |
-| `GiveawayBot_{Profile}_TimerDuration`     | `string`  | Current auto-close setting    | `"10m"`              |
-| `GiveawayBot_{Profile}_Msg_{Key}`         | `string`  | Custom message override       | `"Hello {0}!"`       |
+| Variable                                    | Type      | Description                   | Example              |
+| ------------------------------------------- | --------- | ----------------------------- | -------------------- |
+| `GiveawayBot_{Profile}_IsActive`            | `boolean` | Giveaway open status          | `true`               |
+| `GiveawayBot_{Profile}_EntryCount`          | `int`     | Number of unique entries      | `15`                 |
+| `GiveawayBot_{Profile}_TicketCount`         | `int`     | Total tickets (with sub luck) | `23`                 |
+| `GiveawayBot_{Profile}_Id`                  | `string`  | Current giveaway session ID   | `"ga_20260129_1234"` |
+| `GiveawayBot_{Profile}_WinnerName`          | `string`  | Last winner's display name    | `"CoolViewer42"`     |
+| `GiveawayBot_{Profile}_WinnerCount`         | `int`     | Total winners all-time        | `5`                  |
+| `GiveawayBot_{Profile}_CumulativeEntries`   | `long`    | Total entries all-time        | `127`                |
+| `GiveawayBot_{Profile}_TimerDuration`       | `string`  | Current auto-close setting    | `"10m"`              |
+| `GiveawayBot_{Profile}_Msg_{Key}`           | `string`  | Custom message override       | `"Hello {0}!"`       |
+| `GiveawayBot_{Profile}_MaxEntriesPerMinute` | `int`     | Rate limit override           | `100`                |
+| `GiveawayBot_{Profile}_RequireSubscriber`   | `bool`    | Subscriber-only toggle        | `false`              |
+| `GiveawayBot_{Profile}_SubLuckMultiplier`   | `decimal` | Subscriber luck bonus         | `2.5`                |
 
 ### Configuration Variables
 
-| Variable                              | Type   | Description                |
-| ------------------------------------- | ------ | -------------------------- |
-| `GiveawayBot_Profile_Config`          | `JSON` | Full profile configuration |
-| `GiveawayBot_Profile_Config_Triggers` | `JSON` | Trigger map only           |
+| Variable                              | Type   | Description                      |
+| ------------------------------------- | ------ | -------------------------------- |
+| `GiveawayBot_Profile_Config`          | `JSON` | Full profile configuration       |
+| `GiveawayBot_Profile_Config_Triggers` | `JSON` | Trigger map only                 |
+| `GiveawayBot_ExposeVariables`         | `Bool` | Global override for all profiles |
 
 ### OBS Integration
 
