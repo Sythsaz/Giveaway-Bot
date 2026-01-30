@@ -11,7 +11,7 @@
 > ![C# Version](https://img.shields.io/badge/C%23-7.3-blue)
 > ![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-purple)
 
-![Florals Giveaway Bot Banner](.github/assets/banner.png)
+![Giveaway Bot Banner](.github/assets/banner.png)
 
 ## 📖 Documentation
 
