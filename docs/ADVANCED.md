@@ -1,6 +1,6 @@
 # Advanced Topics & Technical Guide
 
-> **Version**: 1.1.0
+> **Version**: 1.3.0
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
 
