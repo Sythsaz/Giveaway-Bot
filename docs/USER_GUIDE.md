@@ -638,10 +638,10 @@ These affect the entire bot behavior (found under `"Globals"` key).
 | `LogRetentionDays`     | Int    | `90`                    | How many days to keep logs before deletion.                                           |
 | `LogSizeCapMB`         | Int    | `100`                   | Maximum size of the logs folder in MB (prunes oldest first).                          |
 | `WheelApiKeyVar`       | String | `WheelOfNamesApiKey`    | Name of the _Streamer.bot Variable_ holding your API key.                             |
-| `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | specific platforms to listen to and broadcast on.                                     |
+| `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | Specific platforms to listen to and broadcast on.                                     |
 | `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
 | `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
-| `ImportGlobals`        | Dict   | `{}`                    | Auto-import specific global variables on startup (e.g. `{"MyKey": "123"}`).           |
+| `ImportGlobals`        | Dict   | `null`                  | Auto-import variables from this config to Streamer.bot globals on startup.            |
 | `CustomStrings`        | Dict   | `{}`                    | Override bot response messages. Key=ID, Value=Text.                                   |
 
 ### Profile Settings
