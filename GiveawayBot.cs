@@ -2041,8 +2041,19 @@ public static class Loc
                             {
                                 adapter.TryGetArg<string>("user", out var user);
                                 adapter.LogWarn($"[Security] Unauthorized management attempt by {user}: {rawInput}");
-                                // TODO: Decide how to handle this
-                                // Messenger?.SendBroadcast(adapter, "Management commands are restricted to the Broadcaster only.", platform);
+                                
+                                // Silent denial for security - prevents information disclosure
+                                // Optional toast notification if enabled in ANY profile
+                                foreach (var profile in GlobalConfig.Profiles.Values)
+                                {
+                                    if (profile.ToastNotifications != null && 
+                                        profile.ToastNotifications.TryGetValue("UnauthorizedAccess", out var notify) && notify)
+                                    {
+                                        adapter.ShowToastNotification("Giveaway Bot - Security", 
+                                            $"Unauthorized command attempt by {user}");
+                                        break; // Only show once
+                                    }
+                                }
                                 return true;
                             }
                         }
