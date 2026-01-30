@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
 using StreamerBot;
 
 namespace StreamerBot.Tests
@@ -90,7 +91,7 @@ namespace StreamerBot.Tests
         public void ObsSetBrowserSource(string s, string o, string u) { Console.WriteLine($"[OBS] {s}/{o} -> {u}"); }
         public object GetEventType() => EventType;
 
-        public List<string> GetGlobalVarNames(bool persisted = true) => new List<string>(Globals.Keys);
+        public List<string> GetGlobalVarNames(bool persisted = true) => Globals.Keys.ToList();
         public void UnsetGlobalVar(string varName, bool persisted = true)
         {
             Globals.Remove(varName);
