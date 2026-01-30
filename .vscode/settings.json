@@ -1,0 +1,9 @@
+{
+  // Exclude .git/hooks from PowerShell analysis (they're bash scripts for Git Bash)
+  "powershell.codeFormatting.ignoreOneSpaceBeforeOpenBrace": true,
+  "files.associations": {
+    ".git/hooks/*": "shellscript"
+  },
+  // Exclude .git directory from PowerShell script analyzer
+  "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1"
+}
