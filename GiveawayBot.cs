@@ -353,6 +353,8 @@ public static class Loc
         
         // Cache for Trigger JSON strings to prevent redundant deserialization
         private Dictionary<string, string> _triggersJsonCache = new Dictionary<string, string>();
+        // Cache for last synced metric values to prevent log spam
+        private Dictionary<string, object> _lastSyncedMetricsValues = new Dictionary<string, object>();
 
         public GiveawayManager()
         {
@@ -893,43 +895,55 @@ public static class Loc
         /// <summary>
         /// Synchronizes enhanced metrics to Streamer.bot global variables.
         /// Exposes diagnostic counters for real-time monitoring in UI.
+        /// Optimized to only update variables that have changed to reduce log spam.
         /// </summary>
         private void SyncEnhancedMetrics(CPHAdapter adapter)
         {
             if (_cachedMetrics == null) return;
+
+            // Helper checks against _lastSyncedMetricsValues to avoid redundant SetGlobalVar calls
+            void SetMetric<T>(string suffix, T value)
+            {
+                string key = "GiveawayBot_Metrics_" + suffix;
+                if (!_lastSyncedMetricsValues.TryGetValue(key, out object last) || !object.Equals(last, value))
+                {
+                    _lastSyncedMetricsValues[key] = value;
+                    adapter.SetGlobalVar(key, value, true);
+                }
+            }
             
-            adapter.SetGlobalVar("GiveawayBot_Metrics_CacheSize", _cachedMetrics.MessageIdCacheSize, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_CleanupCount", _cachedMetrics.MessageIdCleanupCount, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_LoopDetected", _cachedMetrics.LoopDetectedCount, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_LoopByMsgId", _cachedMetrics.LoopDetectedByMsgId, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_LoopByToken", _cachedMetrics.LoopDetectedByToken, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_LoopByBotFlag", _cachedMetrics.LoopDetectedByBotFlag, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_ConfigReloads", _cachedMetrics.ConfigReloadCount, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_FileIOErrors", _cachedMetrics.FileIOErrors, true);
+            SetMetric("CacheSize", _cachedMetrics.MessageIdCacheSize);
+            SetMetric("CleanupCount", _cachedMetrics.MessageIdCleanupCount);
+            SetMetric("LoopDetected", _cachedMetrics.LoopDetectedCount);
+            SetMetric("LoopByMsgId", _cachedMetrics.LoopDetectedByMsgId);
+            SetMetric("LoopByToken", _cachedMetrics.LoopDetectedByToken);
+            SetMetric("LoopByBotFlag", _cachedMetrics.LoopDetectedByBotFlag);
+            SetMetric("ConfigReloads", _cachedMetrics.ConfigReloadCount);
+            SetMetric("FileIOErrors", _cachedMetrics.FileIOErrors);
             
-            adapter.SetGlobalVar("GiveawayBot_Metrics_EntriesProcessed", _cachedMetrics.EntriesProcessedCount, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_EntryProcessingTotalMs", _cachedMetrics.TotalEntryProcessingMs, true);
+            SetMetric("EntriesProcessed", _cachedMetrics.EntriesProcessedCount);
+            SetMetric("EntryProcessingTotalMs", _cachedMetrics.TotalEntryProcessingMs);
             // Computed average (avoid division by zero)
             long avgEntryMs = _cachedMetrics.EntriesProcessedCount > 0 
                 ? _cachedMetrics.TotalEntryProcessingMs / _cachedMetrics.EntriesProcessedCount 
                 : 0;
-            adapter.SetGlobalVar("GiveawayBot_Metrics_EntryProcessingAvgMs", avgEntryMs, true);
+            SetMetric("EntryProcessingAvgMs", avgEntryMs);
             
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WinnerDrawAttempts", _cachedMetrics.WinnerDrawAttempts, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WinnerDrawSuccesses", _cachedMetrics.WinnerDrawSuccesses, true);
+            SetMetric("WinnerDrawAttempts", _cachedMetrics.WinnerDrawAttempts);
+            SetMetric("WinnerDrawSuccesses", _cachedMetrics.WinnerDrawSuccesses);
             
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiCalls", _cachedMetrics.WheelApiCalls, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiTotalMs", _cachedMetrics.WheelApiTotalMs, true);
+            SetMetric("WheelApiCalls", _cachedMetrics.WheelApiCalls);
+            SetMetric("WheelApiTotalMs", _cachedMetrics.WheelApiTotalMs);
             long avgWheelMs = _cachedMetrics.WheelApiCalls > 0 
                 ? _cachedMetrics.WheelApiTotalMs / _cachedMetrics.WheelApiCalls 
                 : 0;
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiAvgMs", avgWheelMs, true);
+            SetMetric("WheelApiAvgMs", avgWheelMs);
 
-            adapter.SetGlobalVar("GiveawayBot_Metrics_ApiErrors", _cachedMetrics.ApiErrors, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiErrors", _cachedMetrics.WheelApiErrors, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiInvalidKeys", _cachedMetrics.WheelApiInvalidKeys, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiTimeouts", _cachedMetrics.WheelApiTimeouts, true);
-            adapter.SetGlobalVar("GiveawayBot_Metrics_WheelApiNetworkErrors", _cachedMetrics.WheelApiNetworkErrors, true);
+            SetMetric("ApiErrors", _cachedMetrics.ApiErrors);
+            SetMetric("WheelApiErrors", _cachedMetrics.WheelApiErrors);
+            SetMetric("WheelApiInvalidKeys", _cachedMetrics.WheelApiInvalidKeys);
+            SetMetric("WheelApiTimeouts", _cachedMetrics.WheelApiTimeouts);
+            SetMetric("WheelApiNetworkErrors", _cachedMetrics.WheelApiNetworkErrors);
         }
 
         private void IncGlobalMetric(CPHAdapter adapter, string n, long d = 1)
