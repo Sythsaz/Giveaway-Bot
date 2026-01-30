@@ -5,7 +5,9 @@
 > [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 > [![Streamer.bot](https://img.shields.io/badge/Streamer.bot-v0.2.3%2B-blueviolet)](https://streamer.bot)
 > [![GitHub release](https://img.shields.io/github/v/release/Sythsaz/Giveaway-Bot.svg)](https://github.com/Sythsaz/Giveaway-Bot/releases)
-> [![Build Status](https://github.com/Sythsaz/Giveaway-Bot/actions/workflows/markdown-lint.yml/badge.svg)](https://github.com/Sythsaz/Giveaway-Bot/actions)
+> [![Build Status](https://github.com/Sythsaz/Giveaway-Bot/actions/workflows/markdown-lint.yml/badge.svg)](https://github.com/Sythsaz/Giveaway-Bot/actions)  
+> ![C# Version](https://img.shields.io/badge/C%23-7.3-blue)
+> ![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-purple)
 
 ![Florals Giveaway Bot Banner](.github/assets/banner.png)
 
