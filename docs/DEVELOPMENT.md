@@ -28,7 +28,17 @@ These are **not** included in the repo. You must adhere to the Setup instruction
 
 ## C# 7.3 Constraints
 
-Streamer.bot compiles C# code using Roslyn with a language version target of **7.3**. This is a hard constraint.
+Streamer.bot compiles C# code using Roslyn with a language version target of **7.3**. This is a hard constraint **tied to
+Streamer.bot's runtime environment**. If Streamer.bot upgrades to a newer .NET runtime, this project will adopt modern
+C# features accordingly.
+
+### Enforcement
+
+This project enforces C# 7.3 compatibility at multiple layers:
+
+1. **Build Time**: `StreamerBot.csproj` sets `<LangVersion>7.3</LangVersion>` to prevent compilation of C# 8.0+ code
+2. **IDE**: `.editorconfig` suppresses suggestions for C# 8.0+ features
+3. **Pre-Commit**: Git hook (`.git/hooks/pre-commit`) scans staged files for C# 8.0+ features before allowing commits
 
 ### What works
 
@@ -39,12 +49,14 @@ Streamer.bot compiles C# code using Roslyn with a language version target of **7
 
 ### What DOES NOT work
 
+- `??=` (Null-coalescing assignment) → Use `if (x == null) x = value;`
 - `new()` (Target-typed new) -> Use `new ClassName()`
 - `record` types -> Use `class` or `struct`
 - `using var` -> Use `using (...) { }`
 - `switch` expressions -> Use `switch` statements
 - Nullable reference types (`string?`) -> Just use `string` (and assume it can be null)
 - File-scoped namespace -> Use block-scoped namespace
+- `#nullable` pragma -> Not supported
 
 The `.editorconfig` file is heavily tuned to hide suggestions for these modern features.
 
