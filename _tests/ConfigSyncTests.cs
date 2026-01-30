@@ -363,8 +363,7 @@ namespace StreamerBot.Tests
             // Create a temp config file with RunMode set to Mirror
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string configPath = Path.Combine(baseDir, "Giveaway Helper", "config", "giveaway_config.json");
-            string dirPath = Path.GetDirectoryName(configPath);
-            if (dirPath == null) dirPath = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string dirPath = Path.GetDirectoryName(configPath) ?? Path.Combine(baseDir, "Giveaway Helper", "config");
             if (!Directory.Exists(dirPath))
             {
                 Directory.CreateDirectory(dirPath);
