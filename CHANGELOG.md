@@ -40,6 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.3.0] - 2026-01-30
+
+### Added (v1.3.0)
+
+- **Timed Giveaways**: `TimerDuration` configuration (e.g., "10m", "30s") allows giveaways to automatically close.
+- **Configurable Messages**: `Messages` dictionary in profile config allows full customization of bot responses.
+- **Granular Sync**: New two-way sync for individual message variables (`GiveawayBot_<Profile>_Msg_<Key>`) for
+  easier editing in Streamer.bot.
+- **Heartbeat Logging**: Added a 5-minute heartbeat log to `LifecycleTick` to confirm timer health without spam.
+- **Message Placeholders**: Support for dynamic placeholders like `{0}` (Winner Name/Count) and `{1}` (Target Name)
+  in custom messages.
+- **Localization Keys**: Publicly exposed `Loc.Keys` to facilitate dynamic variable discovery.
+
 ## [1.2.0] - 2026-01-29
 
 ### Added (v1.2.0)
