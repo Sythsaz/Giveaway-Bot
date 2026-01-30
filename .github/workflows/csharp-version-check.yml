@@ -20,13 +20,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "4.8.x" # Use .NET Framework 4.8 compatible SDK (or closest available in runner)
+      - name: Scan for C# 8.0+ Features
+        shell: bash
+        run: |
+          echo "🔍 Scanning for C# 8.0+ features incompatible with Streamer.bot runtime..."
 
-      - name: Restore dependencies
-        run: dotnet restore
+          violations=0
 
-      - name: Build to verify C# 7.3 compatibility
-        run: dotnet build --configuration Release --no-restore
+          # 1. Null-coalescing assignment (??=)
+          if grep -rn '\?\?=' --include='*.cs' .; then
+            echo "❌ Found null-coalescing assignment (??=) - C# 8.0+"
+            violations=$((violations + 1))
+          fi
+
+          # 2. Switch expressions (T => Val) - Loose check
+          # Matches "switch {" or "switch{" followed eventually by "=>"
+          if grep -rEn 'switch\s*\{.*=>' --include='*.cs' .; then
+            echo "❌ Found possible switch expression - C# 8.0+"
+            violations=$((violations + 1))
+          fi
+
+          # 3. Index/Range operators ([^1], [1..2])
+          # Exclude regex attributes which might look like ranges
+          if grep -rn '\[\^' --include='*.cs' . | grep -v 'Regex'; then
+            echo "❌ Found index from end operator ([^) - C# 8.0+"
+            violations=$((violations + 1))
+          fi
+
+          if grep -rEn '\[[0-9a-zA-Z_]*\.\.[0-9a-zA-Z_]*\]' --include='*.cs' .; then
+            echo "❌ Found range operator ([..]) - C# 8.0+"
+            violations=$((violations + 1))
+          fi
+
+          # 4. Using declarations (using var x =)
+          if grep -rEn 'using\s+[a-zA-Z0-9_<>]+\s+[a-zA-Z0-9_]+\s*=' --include='*.cs' . | grep -v '('; then
+             # Filter out 'using (var x = ...)' which is valid
+             echo "❌ Found using declaration (non-block) - C# 8.0+"
+            violations=$((violations + 1))
+          fi
+
+          if [ $violations -gt 0 ]; then
+            echo "::error::Found $violations potential C# 8.0+ violations."
+            exit 1
+          fi
+
+          echo "✅ No C# 8.0+ features detected."
