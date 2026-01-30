@@ -108,6 +108,8 @@ Configuration for an individual giveaway profile.
 | `AllowedExternalBots`               | `List<string>`               | `[]`            | Bot usernames allowed to trigger actions     |
 | `ExternalListeners`                 | `List<BotListenerRule>`      | `[]`            | Regex rules for external bot parsing         |
 | `ToastNotifications`                | `Dictionary<string, bool>`   | See below       | Toast notification toggles                   |
+| `Messages`                          | `Dictionary<string, string>` | `null`          | Custom overrides for bot messages            |
+| `TimerDuration`                     | `string`                     | `null`          | Auto-close duration (e.g., "10m", "1h")      |
 | `WinChance`                         | `double`                     | `1.0`           | Win probability multiplier                   |
 | `RequireSubscriber`                 | `bool`                       | `false`         | Subscriber-only entries                      |
 | `WheelSettings`                     | `WheelConfig`                | `{}`            | Wheel of Names configuration                 |
@@ -149,6 +151,7 @@ Runtime state for a giveaway profile. **Auto-managed** - do not edit manually.
 | ------------------- | --------------------------- | ------------------------------------------- |
 | `CurrentGiveawayId` | `string`                    | Unique ID for current giveaway session      |
 | `IsActive`          | `bool`                      | Whether giveaway is open for entries        |
+| `AutoCloseTime`     | `DateTime?`                 | Scheduled close time (if timed)             |
 | `Entries`           | `Dictionary<string, Entry>` | All entries indexed by username (lowercase) |
 | `HistoryLog`        | `List<string>`              | Event log for this profile                  |
 | `LastWinnerName`    | `string`                    | Most recent winner's display name           |
@@ -643,7 +646,11 @@ Output format for entry/winner dumps.
       },
       "MaxEntriesPerMinute": 100,
       "SubLuckMultiplier": 2,
-      "ExposeVariables": true
+      "ExposeVariables": true,
+      "TimerDuration": "10m",
+      "Messages": {
+        "GiveawayOpened": "🚨 HYPE! A 10-minute giveaway has started!"
+      }
     }
   },
   "Globals": {

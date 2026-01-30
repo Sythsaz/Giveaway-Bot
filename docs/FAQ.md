@@ -1,6 +1,6 @@
 # Frequently Asked Questions (FAQ)
 
-> **Version**: 1.0.1
+> **Version**: 1.3.0
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
 
@@ -138,6 +138,17 @@ _(Requires Windows 10/11 and Streamer.bot notifications enabled)_
 ### Q: What happens if I set `MaxEntriesPerMinute` too low?
 
 **A:** Legitimate users may get blocked during high-traffic periods. Recommended: 60+ for small streams, 200+ for large.
+
+### Q: How do I make the giveaway close automatically?
+
+**A:** Add `"TimerDuration": "10m"` (or "30s", "1h") to your profile config. The bot will automatically run `!end`
+when time runs out.
+
+### Q: Can I change what the bot says?
+
+**A:** Yes! You can override any message (like "Winner Selected") by adding a `"Messages"` block to your config, or
+by simply setting a global variable like `GiveawayBot_Main_Msg_WinnerSelected`. See the [User Guide](USER_GUIDE.md)
+for details.
 
 ---
 
