@@ -1406,7 +1406,9 @@ public static class Loc
 
             // Check for global override in variables
             bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("GiveawayBot_ExposeVariables", true));
-            if (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables)
+            bool isMirror = string.Equals(globals.RunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
+
+            if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
             {
                 // Runtime State
                 adapter.SetGlobalVar(prefix + "IsActive", state.IsActive, true);

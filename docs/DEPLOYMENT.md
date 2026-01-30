@@ -42,11 +42,12 @@ Follow these 5 steps to run your first giveaway:
 
 1. Open **Streamer.bot**
 2. Go to the **Actions** tab
-3. Right-click in the actions list → **Import**
-4. Select the `GiveawayBot.cs` file you downloaded
-5. Click **Open**
+3. Right-click the sub-actions list → **Add** → **Code** → **Execute C# Code**
+4. Paste the contents of `GiveawayBot.cs` into the code editor
+5. Click **Find Refs** → **Compile**
+6. Click **OK**
 
-> **✅ Success**: You should see "Florals Giveaway Bot" in your actions list
+> **✅ Success**: You should see "Giveaway Bot" in your sub-actions list
 
 ### Step 3: Configure Basic Triggers
 
@@ -57,28 +58,28 @@ The bot needs to know when to respond to commands. Set up these 4 essential trig
 1. In Streamer.bot, go to the **Triggers** tab
 1. Click **Add** → **Chat Command**
 1. Set command to: `!enter`
-1. Link to action: `Florals Giveaway Bot - Enter`
+1. Link to action: `Giveaway Bot - Enter`
 1. Check **Enabled**
 
 #### Trigger 2: !start
 
 1. Click **Add** → **Chat Command**
 2. Set command to: `!start`
-3. Link to action: `Florals Giveaway Bot - Open`
+3. Link to action: `Giveaway Bot - Open`
 4. Check **Enabled**
 
 #### Trigger 3: !draw
 
 1. Click **Add** → **Chat Command**
 2. Set command to: `!draw`
-3. Link to action: `Florals Giveaway Bot - Winner`
+3. Link to action: `Giveaway Bot - Winner`
 4. Check **Enabled**
 
 #### Trigger 4: !end
 
 1. Click **Add** → **Chat Command**
 2. Set command to: `!end`
-3. Link to action: `Florals Giveaway Bot - Close`
+3. Link to action: `Giveaway Bot - Close`
 4. Check **Enabled**
 
 ### Step 4: Run System Test
@@ -95,8 +96,8 @@ Verify everything is working:
 
    ```text
    =========================================
-   FLORALS GIVEAWAY BOT - SYSTEM TEST
-   Version: 1.0.0
+   GIVEAWAY BOT - SYSTEM TEST
+   Version: 1.1.0
    =========================================
    ✓ Config loaded successfully
    ✓ 1 profile found: Main
@@ -180,20 +181,15 @@ Verify everything is working:
 1. Open **Streamer.bot**
 2. Click the **Actions** tab (left sidebar)
 3. Right-click in the empty actions area
-4. Select **Import** from context menu
-5. Navigate to the `GiveawayBot.cs` file
-6. Click **Open**
-7. **Confirmation**: "Action imported successfully"
-
-#### What Gets Imported
-
-The import creates **one action** called "Florals Giveaway Bot" with multiple sub-actions:
-
-- Enter (accept entries)
-- Winner (draw winner)
-- Open (start giveaway)
-- Close (end giveaway)
-- Giveaway (management commands)
+4. Select **Add** from context menu, and set your **Name**/**Group**/**Queue** names
+5. Everything else can be left at the defaults. Click **Ok**
+6. Right-click in the empty sub-actions list
+7. Select **Code** from context menu
+8. Select **Execute C# Code**
+9. Paste the contents of `GiveawayBot.cs` into the code editor
+10. Click **Find Refs** → **Compile**
+11. Click **OK**
+12. **Confirmation**: "Code compiled successfully"
 
 ### Setting Up Triggers (Detailed)
 
@@ -203,22 +199,17 @@ Triggers tell Streamer.bot when to run the giveaway bot. Here's how to set up ea
 
 **!enter Trigger**:
 
-1. **Triggers** tab → **Add**
-2. Select **Commands** → **Chat Message**
+1. **Triggers** tab right-click empty space → **Add**
+2. Select **Core** → **Commands** → **Command Triggered**
 3. **Command**: `!enter`
-4. **From**: `Anywhere` (allows viewers to enter)
-5. **Action**: Select "Florals Giveaway Bot"
-6. **Sub-Action**: Select "Enter"
-7. Click **OK**
+4. Click **OK**
 
 **!giveaway Trigger** (Management):
 
-1. **Add** → **Commands** → **Chat Message**
-2. **Command**: `!giveaway`
-3. **From**: `Chat` (allows mod/broadcaster management)
-4. **Action**: "Florals Giveaway Bot"
-5. **Sub-Action**: "Giveaway"
-6. Click **OK**
+1. **Triggers** tab right-click empty space → **Add**
+2. Select **Core** → **Commands** → **Command Triggered**
+3. **Command**: `!giveaway`
+4. Click **OK**
 
 Repeat for `!start`, `!end`, `!draw` using the appropriate sub-actions.
 
@@ -229,9 +220,7 @@ If you have a Stream Deck:
 1. **Triggers** tab → **Add**
 2. Select **Stream Deck** → **Button Press**
 3. **Button**: Press the physical button you want to use
-4. **Action**: "Florals Giveaway Bot"
-5. **Sub-Action**: Select desired action (e.g., "Winner")
-6. **Label**: Name it (e.g., "Draw Winner")
+4. **Label**: Name it (e.g., "Draw Winner")
 
 #### Optional: Hotkey Triggers
 
@@ -240,9 +229,7 @@ For keyboard shortcuts:
 1. **Triggers** tab → **Add**
 2. Select **Hotkey**
 3. **Key**: Press your desired key combo (e.g., F5)
-4. **Action**: "Florals Giveaway Bot"
-5. **Sub-Action**: Select desired action
-6. Click **OK**
+4. Click **OK**
 
 ### Configuration
 
@@ -369,7 +356,8 @@ Show/hide a scene element based on giveaway status:
 4. **Variable**: `GiveawayBot_Main_IsActive`
 5. **Condition**: Show when `true`, Hide when `false`
 
-> **⚠️ Important**: Set `ExposeVariables: true` in your profile config for OBS integration to work
+> **⚠️ Important**: Set `ExposeVariables: true` in your profile config (or use `RunMode: Mirror`) for OBS integration
+> to work
 
 ### Wheel of Names Integration
 
