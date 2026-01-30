@@ -87,25 +87,25 @@ Verify everything is working:
 
 1. In your streaming platform chat, type:
 
-```bash
-!giveaway system test
-```
+   ```bash
+   !giveaway system test
+   ```
 
-2. **Expected Response**:
+1. **Expected Response**:
 
-```text
-=========================================
-FLORALS GIVEAWAY BOT - SYSTEM TEST
-Version: 1.0.0
-=========================================
-✓ Config loaded successfully
-✓ 1 profile found: Main
-✓ File system access OK
-✓ State files accessible
-✓ Log files writable
-✓ All checks passed!
-=========================================
-```
+   ```text
+   =========================================
+   FLORALS GIVEAWAY BOT - SYSTEM TEST
+   Version: 1.0.0
+   =========================================
+   ✓ Config loaded successfully
+   ✓ 1 profile found: Main
+   ✓ File system access OK
+   ✓ State files accessible
+   ✓ Log files writable
+   ✓ All checks passed!
+   =========================================
+   ```
 
 > **⚠️ If errors appear**: See [Troubleshooting](#troubleshooting) section below
 
@@ -334,28 +334,28 @@ Display giveaway info on your stream using Streamer.bot global variables.
 #### Setting Up Entry Counter
 
 1. In OBS, add a **Text (GDI+)** source
-2. Name it: "Giveaway Entry Count"
-3. In the **Text** field, enter:
+1. Name it: "Giveaway Entry Count"
+1. In the **Text** field, enter:
 
-```text
-Entries: %GiveawayBot_Main_EntryCount%
-```
+   ```text
+   Entries: %GiveawayBot_Main_EntryCount%
+   ```
 
-4. Style the text (font, color, size)
-5. Position on your scene
-6. ✅ The count will update automatically
+1. Style the text (font, color, size)
+1. Position on your scene
+1. ✅ The count will update automatically
 
 #### Setting Up Giveaway Status
 
 1. Add another **Text (GDI+)** source
-2. Name it: "Giveaway Status"
-3. In the **Text** field, enter:
+1. Name it: "Giveaway Status"
+1. In the **Text** field, enter:
 
-```text
-Giveaway: %GiveawayBot_Main_IsActive%
-```
+   ```text
+   Giveaway: %GiveawayBot_Main_IsActive%
+   ```
 
-4. _(Optional)_ Use **Color Alteration** filter:
+1. _(Optional)_ Use **Color Alteration** filter:
    - Green when "true"
    - Red when "false"
 

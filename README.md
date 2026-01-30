@@ -71,6 +71,16 @@ graph LR
 
 See [Architecture Docs](docs/ARCHITECTURE.md) for details.
 
+## 📚 Documentation
+
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - First-time setup walkthrough (5 minutes from zero to first giveaway)
+- **[User Guide](docs/USER_GUIDE.md)** - Complete usage guide with all commands and features
+- **[API Reference](docs/API_REFERENCE.md)** - Technical documentation for all configuration options and commands
+- **[Advanced Guide](docs/ADVANCED.md)** - Power-user features and customization
+- **[FAQ](docs/FAQ.md)** - Frequently asked questions and troubleshooting
+- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing and development setup
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and component overview
+
 ## 🔧 Compatibility
 
 **Runtime Environment**: C# 7.3 / .NET Framework 4.8 (Streamer.bot's current runtime)
