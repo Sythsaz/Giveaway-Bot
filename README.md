@@ -38,7 +38,7 @@
    - Create a new Action named "Giveaway Bot".
    - Add a "Code > Execute C# Code" sub-action.
    - Paste the contents of `GiveawayBot.cs`.
-   - Click "Compile" (Ensure you have references added: `System.Net.Http.dll`, `System.Core.dll`).
+   - Click "Compile" (Ensure you have added the references first).
 3. **Configure**:
    - The bot will generate a config file at `.../Streamer.bot/data/Giveaway Helper/config/giveaway_config.json`.
    - Edit this file or use the [Example Configs](examples/).
