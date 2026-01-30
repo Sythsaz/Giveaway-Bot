@@ -5,5 +5,12 @@
     ".git/hooks/*": "shellscript"
   },
   // Exclude .git directory from PowerShell script analyzer
-  "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1"
+  "powershell.scriptAnalysis.settingsPath": ".vscode/PSScriptAnalyzerSettings.psd1",
+
+  // Markdown formatting - enforce 120 character line length
+  "[markdown]": {
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 120,
+    "editor.rulers": [120]
+  }
 }
