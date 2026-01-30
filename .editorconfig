@@ -39,9 +39,27 @@ dotnet_diagnostic.CA1861.severity = none   # Prefer 'static readonly' fields ove
 dotnet_diagnostic.IDE0090.severity = none  # Use 'new(...)' 
 csharp_style_implicit_object_creation_when_type_is_apparent = false
 
+# C# 7.3 / .NET Framework 4.8 Compatibility Suppressions
+
 # C# 8.0+ Null-Coalescing Assignment (??=)
-dotnet_diagnostic.IDE0074.severity = none  # Use compound assignment
+dotnet_diagnostic.IDE0074.severity = none
 csharp_style_prefer_null_coalescing_assignment = false
+
+# Collection expressions (C# 12.0+) and simplified initialization
+dotnet_diagnostic.IDE0028.severity = none
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_diagnostic.IDE0301.severity = none
+dotnet_diagnostic.IDE0305.severity = none
+csharp_style_prefer_collection_expression = false
+
+# string.Contains(char) overload (not available in .NET Framework 4.8)
+dotnet_diagnostic.CA1847.severity = none
+
+# string.Contains(string, StringComparison) overload (not available in .NET Framework 4.8)
+dotnet_diagnostic.CA1862.severity = none
+
+# Prefer readonly fields (informational only - can be implemented but noisy)
+dotnet_diagnostic.IDE0044.severity = none
 
 # C# 8.0+ Using Declarations  
 dotnet_diagnostic.IDE0063.severity = none  # Use simple 'using' statement
