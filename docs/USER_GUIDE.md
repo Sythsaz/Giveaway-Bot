@@ -1,6 +1,6 @@
 # Streamer.bot Giveaway Assistant - Comprehensive User Guide
 
-> **Version**: 1.1.0
+> **Version**: 1.3.0
 > **Compatibility**: Streamer.bot v0.2.3+ (Targeting .NET Framework 4.8 / C# 7.3)
 > 📖 **Additional Documentation:**
 >
@@ -641,8 +641,59 @@ These affect the entire bot behavior (found under `"Globals"` key).
 | `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | Specific platforms to listen to and broadcast on.                                     |
 | `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
 | `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
-| `ImportGlobals`        | Dict   | `null`                  | Auto-import variables from this config to Streamer.bot globals on startup.            |
+| `ImportGlobals`        | Dict   | `null`                  | Auto-import variables to global vars on startup.                                      |
 | `CustomStrings`        | Dict   | `{}`                    | Override bot response messages. Key=ID, Value=Text.                                   |
+
+### Timed Giveaways (Auto-Close)
+
+You can set a giveaway to automatically close after a specific duration. This is perfect for "quick fire" giveaways or
+keeping a strict schedule without manual intervention.
+
+In your `giveaway_config.json` profile:
+
+```json
+"TimerDuration": "10m"
+```
+
+Supported formats: `30s` (seconds), `5m` (minutes), `1h` (hours).
+When you run `!giveaway start`, the bot will announce the time and automatically close it when the timer expires.
+
+### Configurable Chat Messages
+
+You can customize the bot's chat responses for each profile to match your branding or language.
+
+Add a `"Messages"` block to your profile config:
+
+```json
+"Messages": {
+  "GiveawayOpened": "🚨 HYPE TRAIN! The giveaway for {0} is GO! Type !enter now! 🚨",
+  "GiveawayClosed": "🛑 STOP! The gates are closed.",
+  "EntryAccepted": "Gotcha @{1}! You have {0} tickets.",
+  "WinnerSelected": "👑 ALL HAIL @{0}! You won!"
+}
+```
+
+| Key                        | Description               | Arguments                                |
+| :------------------------- | :------------------------ | :--------------------------------------- |
+| `GiveawayOpened`           | Start message             | `{0}` = Profile Name                     |
+| `GiveawayClosed`           | End message               | None                                     |
+| `EntryAccepted`            | User entered successfully | `{0}` = Total Tickets, `{1}` = User Name |
+| `WinnerSelected`           | Winner announcement       | `{0}` = Winner Name                      |
+| `EntryRejected_MaxEntries` | User hit rate limit       | None                                     |
+
+> [!TIP]
+> **Placeholders**: Text like `{0}` and `{1}` are placeholders. The bot replaces them with actual data (like names
+> or numbers) when the message is sent. You can move them around or remove them, but keep the brackets! Example:
+> `Congrats {0}!` vs `Winner is {0}!`.
+
+**Method 2: Global Variable Sync (Streamer.bot)**
+You can update messages dynamically by setting global variables directly in Streamer.bot (no JSON required!).
+
+- **Variable Name**: `GiveawayBot_<ProfileName>_Msg_<Key>`
+- **Example Variable**: `GiveawayBot_Main_Msg_EntryAccepted`
+- **Example Value**: `Success! You have {0} tickets.`
+
+The bot checks these variables automatically. To revert to the default or profile config, just delete the global variable.
 
 ### Profile Settings
 
