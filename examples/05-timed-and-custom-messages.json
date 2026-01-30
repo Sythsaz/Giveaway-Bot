@@ -1,0 +1,36 @@
+{
+  "Profiles": {
+    "FlashGiveaway": {
+      "Triggers": {
+        "command:!flash": "Enter",
+        "command:!flashstart": "Open",
+        "command:!flashend": "Close",
+        "command:!flashdraw": "Winner"
+      },
+      "MaxEntriesPerMinute": 200,
+      "SubLuckMultiplier": 2,
+      
+      "//": "Auto-close the giveaway after 5 minutes",
+      "TimerDuration": "5m",
+
+      "//": "Custom messages for this profile",
+      "Messages": {
+        "GiveawayOpened": "⚡ FLASH GIVEAWAY STARTED! Type !flash to enter! Ends in 5 minutes! ⚡",
+        "GiveawayClosed": "⚡ FLASH GIVEAWAY OVER! No more entries.",
+        "WinnerSelected": "🏆 FAST FINGERS! @{0} is the winner!",
+        "EntryAccepted": "Got it {1}! You're in for the flash draw."
+      },
+
+      "//": "Enable desktop notifications for key events",
+      "ToastNotifications": {
+        "WinnerSelected": true,
+        "GiveawayOpened": true,
+        "GiveawayClosed": true
+      }
+    }
+  },
+  "Globals": {
+    "RunMode": "Mirror",
+    "LogLevel": "INFO"
+  }
+}

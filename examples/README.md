@@ -40,3 +40,11 @@ Focuses on the visual experience:
 - **Wheel Integrated**: Automatically sends entries to Wheel of Names.
 - **OBS Control**: Switches scenes automatically.
 - **Toast Notifications**: Detailed desktop alerts.
+
+### [05-timed-and-custom-messages.json](05-timed-and-custom-messages.json)
+
+Showcasing v1.3.0 features:
+
+- **Timed Giveaway**: A "Flash Giveaway" profile that closes automatically after 5 minutes (`TimerDuration`).
+- **Custom Messages**: Customized "HYPE" messages using the `Messages` dictionary.
+- **Toast Notifications**: Enabled for high-priority events.
