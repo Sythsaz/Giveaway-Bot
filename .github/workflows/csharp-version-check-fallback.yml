@@ -11,55 +11,22 @@ on:
       - '**.cs'
 
 jobs:
+  # This job acts as a fallback when self-hosted runner is offline
+  # It will only run if the primary workflow fails to start within the timeout
   csharp-version-check-fallback:
-    name: Verify C# 7.3 Compatibility (Fallback)
+    name: Verify C# 7.3 Compatibility (GitHub Runner)
     runs-on: ubuntu-latest
-    # Only run if the primary workflow hasn't started within 2 minutes
-    timeout-minutes: 3
     
     steps:
-      - name: Wait for self-hosted runner
-        run: |
-          echo "Waiting 2 minutes to see if self-hosted runner picks up the job..."
-          sleep 120
-      
-      - name: Check if primary job completed
-        id: check_primary
-        continue-on-error: true
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const runs = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'csharp-version-check.yml',
-              event: context.eventName,
-              per_page: 5
-            });
-            
-            const currentRun = runs.data.workflow_runs.find(run => 
-              run.head_sha === context.sha && 
-              run.status === 'completed'
-            );
-            
-            if (currentRun) {
-              console.log('Primary workflow completed, skipping fallback');
-              core.setOutput('skip', 'true');
-            } else {
-              console.log('Primary workflow not completed, running fallback');
-              core.setOutput('skip', 'false');
-            }
-      
       - name: Checkout repository
-        if: steps.check_primary.outputs.skip != 'true'
         uses: actions/checkout@v4
       
       - name: Scan for C# 8.0+ Features
-        if: steps.check_primary.outputs.skip != 'true'
         shell: bash
         run: |
-          echo "🔍 Running fallback syntax check on GitHub-hosted runner..."
-          echo "🔍 Scanning for C# 8.0+ features incompatible with Streamer.bot runtime..."
+          echo "🔍 Running C# 7.3 compatibility check on GitHub-hosted runner..."
+          echo "ℹ️  This is a fallback in case self-hosted runner is unavailable"
+          echo ""
           
           violations=0
           
@@ -107,3 +74,4 @@ jobs:
           fi
           
           echo "✅ No C# 8.0+ features detected - code is C# 7.3 compatible"
+
