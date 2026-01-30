@@ -3,71 +3,30 @@ name: C# 7.3 Compatibility Check
 on:
   pull_request:
     paths:
-      - '**.cs'
+      - "**.cs"
   push:
     branches:
       - main
     paths:
-      - '**.cs'
+      - "**.cs"
 
 jobs:
   csharp-version-check:
     name: Verify C# 7.3 Compatibility
     runs-on: [self-hosted, linux, x64, giveaway-bot]
     timeout-minutes: 5
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
-      - name: Scan for C# 8.0+ Features
-        shell: bash
-        run: |
-          echo "🔍 Scanning for C# 8.0+ features incompatible with Streamer.bot runtime..."
-          
-          violations=0
-          
-          # Null-coalescing assignment (??=)
-          if grep -rn '\?\?=' --include='*.cs' .; then
-            echo "❌ Found null-coalescing assignment operator (??=) - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          # Switch expressions
-          if grep -rEn 'switch.*=>.*}' --include='*.cs' .; then
-            echo "❌ Found switch expressions - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          # Index from end operator
-          if grep -rn '\[\^' --include='*.cs' .; then
-            echo "❌ Found index from end operator ([^) - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          # Range operator
-          if grep -rEn '\[\.\.(?!\.)' --include='*.cs' .; then
-            echo "❌ Found range operator ([..) - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          # Nullable pragmas
-          if grep -rn '#nullable' --include='*.cs' .; then
-            echo "❌ Found #nullable pragma - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          # Using declarations (using var)
-          if grep -rEn 'using\s+var\s+' --include='*.cs' .; then
-            echo "❌ Found using declarations (using var) - C# 8.0+"
-            violations=$((violations + 1))
-          fi
-          
-          if [ $violations -gt 0 ]; then
-            echo ""
-            echo "::error::Found $violations C# 8.0+ feature(s). Please use C# 7.3 compatible syntax."
-            echo "See CONTRIBUTING.md for C# 7.3 constraints and alternatives."
-            exit 1
-          fi
-          
-          echo "✅ No C# 8.0+ features detected - code is C# 7.3 compatible"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "4.8.x" # Use .NET Framework 4.8 compatible SDK (or closest available in runner)
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build to verify C# 7.3 compatibility
+        run: dotnet build --configuration Release --no-restore
