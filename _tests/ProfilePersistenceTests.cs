@@ -313,6 +313,7 @@ namespace StreamerBot.Tests
             await Test_PermissionErrorHandling();
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_MalformedJsonRecovery()
         {
             Console.Write("  - Malformed JSON recovery:               ");
@@ -349,6 +350,7 @@ namespace StreamerBot.Tests
                 try { if (File.Exists(configPath)) File.Delete(configPath); } catch { }
             }
         }
+#pragma warning restore CS1998
 
         private static async Task Test_MissingProfileGracefulDegradation()
         {
@@ -366,6 +368,7 @@ namespace StreamerBot.Tests
             Console.WriteLine("PASS");
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_InvalidDataTypeHandling()
         {
             Console.Write("  - Invalid data type handling:            ");
@@ -401,6 +404,7 @@ namespace StreamerBot.Tests
                 try { if (File.Exists(configPath)) File.Delete(configPath); } catch { }
             }
         }
+#pragma warning restore CS1998
 
         private static async Task Test_OutOfBoundsValueClamping()
         {
@@ -449,6 +453,7 @@ namespace StreamerBot.Tests
             Console.WriteLine("PASS");
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         private static async Task Test_StateDeserializationFailure()
         {
             Console.Write("  - State deserialization failure:         ");
@@ -479,6 +484,7 @@ namespace StreamerBot.Tests
                 try { if (File.Exists(statePath)) File.Delete(statePath); } catch { }
             }
         }
+#pragma warning restore CS1998
 
         private static async Task Test_MissingStateFileRecovery()
         {
