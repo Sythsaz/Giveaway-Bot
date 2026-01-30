@@ -8,15 +8,15 @@ giveaway state locally.
 
 ```mermaid
 graph TD
-    subgraph "Streamer.bot Environment"
+    subgraph Streamer.bot Environment
         SB[Streamer.bot Core]
         CPH[CPH Interface]
         Vars[Global Variables]
         Toast[Toast Notification]
     end
 
-    subgraph "Giveaway Bot"
-        GM[GiveawayManager (Singleton)]
+    subgraph Giveaway Bot
+        GM[GiveawayManager]
         CL[ConfigLoader]
         Log[FileLogger]
         WoN[WheelOfNamesClient]
@@ -28,7 +28,7 @@ graph TD
         GM -->|Uses| Log
     end
 
-    subgraph "External Services"
+    subgraph External Services
         Twitch[Twitch Chat/Events]
         YouTube[YouTube Chat]
         WheelAPI[Wheel of Names API]
