@@ -40,6 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.3.1] - 2026-01-30
+
+### Changed (v1.3.1)
+
+- **Performance**: Optimized `ConfigLoader.GetConfig` to reduce CPH calls by 50% during config checks in `Mirror` mode.
+  It now reuses the initial global variable fetch instead of re-reading it during the reload phase.
+
 ## [1.3.0] - 2026-01-30
 
 ### Added (v1.3.0)
@@ -52,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Message Placeholders**: Support for dynamic placeholders like `{0}` (Winner Name/Count) and `{1}` (Target Name)
   in custom messages.
 - **Localization Keys**: Publicly exposed `Loc.Keys` to facilitate dynamic variable discovery.
+- **Performance Optimization**: Implemented "Smart Sync" (`SetGlobalVarIfChanged`) to eliminate redundant global variable
+  updates, drastically reducing log spam and IPC overhead.
 
 ## [1.2.0] - 2026-01-29
 

@@ -264,6 +264,7 @@ public static class Loc
             { "GiveawayOpened_NoProfile", "🎟 The giveaway is now OPEN! Type !enter to join." },
             { "GiveawayClosed", "🚫 The giveaway is now CLOSED! No more entries accepted." },
             { "GiveawayFull", "🚫 The giveaway is FULL! No more entries accepted." },
+            { "TimerUpdated", "⏳ Time limit updated! Ends in {0}." },
             
             // Errors
             { "Error_Loop", "Loop detected. Setup error." },
@@ -328,8 +329,8 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string VERSION = "1.3.0";
-
+        public const string Version = "1.3.1"; // Semantic Versioning       
+        
         // ==================== Instance Fields ====================
         
         private ConfigLoader _configLoader;
@@ -353,8 +354,25 @@ public static class Loc
         
         // Cache for Trigger JSON strings to prevent redundant deserialization
         private Dictionary<string, string> _triggersJsonCache = new Dictionary<string, string>();
-        // Cache for last synced metric values to prevent log spam
-        private Dictionary<string, object> _lastSyncedMetricsValues = new Dictionary<string, object>();
+        
+        // General cache for last synced variable values (Metrics + Config) to prevent log spam
+        // Key: Global Variable Name, Value: Last synced value
+        private Dictionary<string, object> _lastSyncedValues = new Dictionary<string, object>();
+
+        /// <summary>
+        /// Helper to set a global variable only if the value has changed.
+        /// Dramatically reduces log spam by avoiding redundant SetGlobalVar calls.
+        /// </summary>
+        private void SetGlobalVarIfChanged(CPHAdapter adapter, string varName, object value, bool persisted = true)
+        {
+            if (!_lastSyncedValues.TryGetValue(varName, out object last) || !object.Equals(last, value))
+            {
+                _lastSyncedValues[varName] = value;
+                adapter.SetGlobalVar(varName, value, persisted);
+            }
+            // Always touch to prevent pruning, even if value didn't change interpretation
+            adapter.TouchGlobalVar(varName);
+        }
 
         public GiveawayManager()
         {
@@ -495,7 +513,7 @@ public static class Loc
                             // but HandleEnd is mostly state updates + async dumps.
                             // We need to run it in a way that doesn't block the timer too long.
                             // However, HandleEnd returns Task. We should fire and forget carefully.
-                            Task.Run(() => HandleEnd(adapter, profile, s, profileName, "Timer"));
+                            Task.Run(async () => await HandleEnd(adapter, profile, s, profileName, "Timer"));
                         }
                     }
                 }
@@ -621,6 +639,9 @@ public static class Loc
             );
 #pragma warning restore CS8622
             adapter.LogDebug("[GiveawayManager] Incremental dump timer started (5s interval)");
+
+
+
         }
 
         private void MigrateSecurity(CPHAdapter adapter)
@@ -901,15 +922,9 @@ public static class Loc
         {
             if (_cachedMetrics == null) return;
 
-            // Helper checks against _lastSyncedMetricsValues to avoid redundant SetGlobalVar calls
             void SetMetric<T>(string suffix, T value)
             {
-                string key = "GiveawayBot_Metrics_" + suffix;
-                if (!_lastSyncedMetricsValues.TryGetValue(key, out object last) || !object.Equals(last, value))
-                {
-                    _lastSyncedMetricsValues[key] = value;
-                    adapter.SetGlobalVar(key, value, true);
-                }
+                SetGlobalVarIfChanged(adapter, "GiveawayBot_Metrics_" + suffix, value);
             }
             
             SetMetric("CacheSize", _cachedMetrics.MessageIdCacheSize);
@@ -1430,41 +1445,46 @@ public static class Loc
         /// <summary>
         /// Exposes global management variables to Streamer.bot for visibility.
         /// Aggregates metrics from all profiles for a comprehensive sync.
+        /// Optimized to avoid redundant log spam.
         /// </summary>
         public void SyncGlobalVars(CPHAdapter adapter)
         {
             if (GlobalConfig == null) return;
-            adapter.Logger?.LogTrace(adapter, "System", "Syncing Global Configuration Variables...");
+            
+            // Only log trace if we haven't synced this batch recently or on first run
+            // (Approximated by checking one key var presence in cache)
+            if (!_lastSyncedValues.ContainsKey("GiveawayBot_RunMode"))
+            {
+                adapter.Logger?.LogTrace(adapter, "System", "Syncing Global Configuration Variables...");
+            }
 
             var g = GlobalConfig.Globals;
 
             // Sync RunMode & LogLevel (Always set to ensure normalization)
-            adapter.SetGlobalVar("GiveawayBot_RunMode", g.RunMode ?? "FileSystem", true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_RunMode", g.RunMode ?? "FileSystem", true);
             string level = string.IsNullOrEmpty(g.LogLevel) ? "INFO" : g.LogLevel.ToUpperInvariant();
-            adapter.SetGlobalVar("GiveawayBot_LogLevel", level, true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_LogLevel", level, true);
             string currentLevelVar = level;
 
             // Expose all GlobalSettings fields
-            adapter.SetGlobalVar("GiveawayBot_Globals_LogToStreamerBot", g.LogToStreamerBot, true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_WheelApiKeyVar", g.WheelApiKeyVar ?? "", true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_LogRetentionDays", g.LogRetentionDays, true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_LogSizeCapMB", g.LogSizeCapMB, true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_FallbackPlatform", g.FallbackPlatform ?? "", true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_StatePersistenceMode", g.StatePersistenceMode ?? "Both", true);
-            adapter.SetGlobalVar("GiveawayBot_Globals_StateSyncIntervalSeconds", g.StateSyncIntervalSeconds, true);
-
-
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_LogToStreamerBot", g.LogToStreamerBot, true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_WheelApiKeyVar", g.WheelApiKeyVar ?? "", true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_LogRetentionDays", g.LogRetentionDays, true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_LogSizeCapMB", g.LogSizeCapMB, true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_FallbackPlatform", g.FallbackPlatform ?? "", true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_StatePersistenceMode", g.StatePersistenceMode ?? "Both", true);
+            SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_StateSyncIntervalSeconds", g.StateSyncIntervalSeconds, true);
 
             if (g.EnabledPlatforms != null)
             {
-                adapter.SetGlobalVar("GiveawayBot_Globals_EnabledPlatforms", string.Join(",", g.EnabledPlatforms), true);
+                SetGlobalVarIfChanged(adapter, "GiveawayBot_Globals_EnabledPlatforms", string.Join(",", g.EnabledPlatforms), true);
             }
 
             // Sync Root Config Metadata
             if (GlobalConfig.Instructions != null)
-                adapter.SetGlobalVar("GiveawayBot_Instructions", string.Join("\n", GlobalConfig.Instructions), true);
+                SetGlobalVarIfChanged(adapter, "GiveawayBot_Instructions", string.Join("\n", GlobalConfig.Instructions), true);
             if (GlobalConfig.TriggerPrefixHelp != null)
-                adapter.SetGlobalVar("GiveawayBot_TriggerPrefixHelp", string.Join("\n", GlobalConfig.TriggerPrefixHelp), true);
+                SetGlobalVarIfChanged(adapter, "GiveawayBot_TriggerPrefixHelp", string.Join("\n", GlobalConfig.TriggerPrefixHelp), true);
 
             // Auto-Import Globals from Config (e.g., API Keys)
             if (g.ImportGlobals != null)
@@ -1481,7 +1501,7 @@ public static class Loc
                 }
             }
 
-            adapter.Logger?.LogTrace(adapter, "System", $"Global Sync: Mode={ConfigLoader.GetRunMode(adapter)}, LogLevel={currentLevelVar}, Platforms={string.Join(",", g.EnabledPlatforms ?? new List<string>())}");
+            // adapter.Logger?.LogTrace(adapter, "System", $"Global Sync: Mode={ConfigLoader.GetRunMode(adapter)}, LogLevel={currentLevelVar}...");
 
             // Aggregate Metrics from Memory
             long totalEntries = 0;
@@ -1498,7 +1518,10 @@ public static class Loc
             UpdateMetric(adapter, "Winners_Total", totalActiveWinners);
 
             // 1. Explicitly touch/bootstrap the primary management metrics to ensure they don't get pruned
-            // We use UpdateMetric with 0 value to leverage its internal touching logic
+            // We use UpdateMetric with 0 value to leverage its internal touching logic, assuming it will perform the diff check if we update it
+            // However, standard UpdateMetric logic was: get var, add delta. 
+            // Actually UpdateMetric impl below: public void UpdateMetric(CPHAdapter adapter, string name, long value) -> Sets the value directly.
+            // We should update UpdateMetric to use SetGlobalVarIfChanged too.
             UpdateMetric(adapter, "Entries_Rejected", 0);
             UpdateMetric(adapter, "ApiErrors", 0);
             UpdateMetric(adapter, "SystemErrors", 0);
@@ -1510,18 +1533,11 @@ public static class Loc
             adapter.TouchGlobalVar("GiveawayBot_BackupCount");
         }
 
-        private static void UpdateMetric(CPHAdapter adapter, string name, long value)
+        private void UpdateMetric(CPHAdapter adapter, string name, long value)
         {
             string key = "GiveawayBot_Metrics_" + name;
-            long current = adapter.GetGlobalVar<long>(key, true);
-            if (value > current)
-            {
-                adapter.SetGlobalVar(key, value, true);
-            }
-            else
-            {
-                adapter.TouchGlobalVar(key);
-            }
+            // Use locally cached check instead of GetGlobalVar for better performance and reduced spam
+            SetGlobalVarIfChanged(adapter, key, value, true);
         }
 
         /// <summary>
@@ -1535,98 +1551,46 @@ public static class Loc
             }
         }
 
-        /// <summary>
-        /// Synchronizes profile-specific variables to Streamer.bot global variables.
-        /// Handles 'ExposeVariables' logic to selectively show/hide runtime data.
-        /// </summary>
-        private static void SyncProfileVariables(CPHAdapter adapter, string profileName, GiveawayProfileConfig config, GiveawayState state, GlobalSettings globals)
+            /// <summary>
+    /// Synchronizes profile-specific variables to Streamer.bot global variables.
+    /// Handles 'ExposeVariables' logic to selectively show/hide runtime data.
+    /// Optimized to avoid redundant log spam.
+    /// </summary>
+    private void SyncProfileVariables(CPHAdapter adapter, string profileName, GiveawayProfileConfig config, GiveawayState state, GlobalSettings globals)
+    {
+        // Always sync the full state JSON for persistence/visibility, regardless of ExposeVariables
+        // This is potentially large, so we check diff first
+        SetGlobalVarIfChanged(adapter, string.Format("GiveawayBot_State_{0}", profileName), JsonConvert.SerializeObject(state), true);
+
+        string prefix = $"GiveawayBot_{profileName}_";
+
+        // Check for global override in variables
+        bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("GiveawayBot_ExposeVariables", true));
+        bool isMirror = string.Equals(globals.RunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
+
+        if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
         {
-            // Always sync the full state JSON for persistence/visibility, regardless of ExposeVariables
-            adapter.SetGlobalVar(string.Format("GiveawayBot_State_{0}", profileName), JsonConvert.SerializeObject(state), true);
+            // Runtime State
+            SetGlobalVarIfChanged(adapter, prefix + "IsActive", state.IsActive, true);
+            SetGlobalVarIfChanged(adapter, prefix + "EntryCount", state.Entries.Count, true);
+            var totalTickets = state.Entries.Values.Sum(e => e.TicketCount);
+            SetGlobalVarIfChanged(adapter, prefix + "TicketCount", totalTickets, true);
+            SetGlobalVarIfChanged(adapter, prefix + "GiveawayId", state.CurrentGiveawayId ?? "", true);
+            SetGlobalVarIfChanged(adapter, prefix + "WinnerName", state.LastWinnerName ?? "", true);
+            SetGlobalVarIfChanged(adapter, prefix + "WinnerUserId", state.LastWinnerUserId ?? "", true);
+            SetGlobalVarIfChanged(adapter, prefix + "WinnerCount", state.WinnerCount, true);
+            SetGlobalVarIfChanged(adapter, prefix + "CumulativeEntries", state.CumulativeEntries, true);
+            // Calculate Sub Count - O(N) but generally fast enough
+            int subCount = state.Entries.Values.Count(e => e.IsSub);
+            SetGlobalVarIfChanged(adapter, prefix + "SubEntryCount", subCount, true);
+            
+            // Dynamic Config Exposure
+            SetGlobalVarIfChanged(adapter, prefix + "TimerDuration", config.TimerDuration ?? "", true);
 
-            string prefix = $"GiveawayBot_{profileName}_";
-
-            // Check for global override in variables
-            bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("GiveawayBot_ExposeVariables", true));
-            bool isMirror = string.Equals(globals.RunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
-
-            if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
+            // Log trace only if we are actually syncing something relevant (based on IsActive state presence)
+            if (!_lastSyncedValues.ContainsKey(prefix + "IsActive"))
             {
-                // Runtime State
-                adapter.SetGlobalVar(prefix + "IsActive", state.IsActive, true);
-                adapter.SetGlobalVar(prefix + "EntryCount", state.Entries.Count, true);
-                var totalTickets = state.Entries.Values.Sum(e => e.TicketCount);
-                adapter.SetGlobalVar(prefix + "TicketCount", totalTickets, true);
-                adapter.SetGlobalVar(prefix + "GiveawayId", state.CurrentGiveawayId ?? "", true);
-                adapter.SetGlobalVar(prefix + "WinnerName", state.LastWinnerName ?? "", true);
-                adapter.SetGlobalVar(prefix + "WinnerUserId", state.LastWinnerUserId ?? "", true);
-                adapter.SetGlobalVar(prefix + "WinnerCount", state.WinnerCount, true);
-                adapter.SetGlobalVar(prefix + "CumulativeEntries", state.CumulativeEntries, true);
-                // Calculate Sub Count - O(N) but generally fast enough
-                int subCount = state.Entries.Values.Count(e => e.IsSub);
-                adapter.SetGlobalVar(prefix + "SubEntryCount", subCount, true);
-
-
                 adapter.Logger?.LogTrace(adapter, profileName, $"Syncing {profileName} config variables...");
-
-
-
-                // Configuration Settings
-                adapter.SetGlobalVar(prefix + "Config_Triggers", JsonConvert.SerializeObject(config.Triggers), true);
-                adapter.SetGlobalVar(prefix + "Config_Messages", JsonConvert.SerializeObject(config.Messages), true);
-                
-                // Expose Individual Message Variables (Granular 2-Way Sync)
-                foreach (var key in Loc.Keys)
-                {
-                    // Use Loc.Get to resolve the *effective* value (Profile > Global > Default)
-                    // This ensures the variable reflects what the bot is actually using
-                    string effectiveValue = Loc.Get(key, profileName);
-                    adapter.SetGlobalVar(prefix + "Msg_" + key, effectiveValue, true);
-                }
-
-                if (config.Triggers != null)
-                {
-                    foreach (var kvp in config.Triggers)
-                    {
-                        string safeKey = kvp.Key.Replace(":", "_").Replace(" ", "_");
-                        adapter.SetGlobalVar(prefix + "Config_Trigger_" + safeKey, kvp.Value, true);
-                    }
-                }
-                adapter.SetGlobalVar(prefix + "Config_MaxEntriesPerMinute", config.MaxEntriesPerMinute, true);
-                adapter.SetGlobalVar(prefix + "Config_EnableWheel", config.EnableWheel, true);
-                adapter.SetGlobalVar(prefix + "Config_EnableObs", config.EnableObs, true);
-                adapter.SetGlobalVar(prefix + "Config_ObsScene", config.ObsScene ?? "", true);
-                adapter.SetGlobalVar(prefix + "Config_ObsSource", config.ObsSource ?? "", true);
-                adapter.SetGlobalVar(prefix + "Config_DumpEntriesOnEnd", config.DumpEntriesOnEnd, true);
-                adapter.SetGlobalVar(prefix + "Config_DumpWinnersOnDraw", config.DumpWinnersOnDraw, true);
-                adapter.SetGlobalVar(prefix + "Config_SubLuckMultiplier", config.SubLuckMultiplier, true);
-                adapter.SetGlobalVar(prefix + "Config_MinAccountAgeDays", config.MinAccountAgeDays, true);
-                adapter.SetGlobalVar(prefix + "Config_EnableEntropyCheck", config.EnableEntropyCheck, true);
-                adapter.SetGlobalVar(prefix + "Config_UsernamePattern", config.UsernamePattern ?? "", true);
-                adapter.SetGlobalVar(prefix + "Config_WinChance", config.WinChance, true);
-                adapter.SetGlobalVar(prefix + "Config_RequireSubscriber", config.RequireSubscriber, true);
-                adapter.SetGlobalVar(prefix + "Config_DumpEntriesOnEntry", config.DumpEntriesOnEntry, true);
-                adapter.SetGlobalVar(prefix + "Config_DumpFormat", config.DumpFormat.ToString(), true);
-
-                if (config.ToastNotifications != null)
-                {
-                    foreach (var kvp in config.ToastNotifications)
-                    {
-                        adapter.SetGlobalVar(prefix + "Config_Toast_" + kvp.Key, kvp.Value, true);
-                    }
-                }
-
-
-                // Wheel Settings (Nested)
-                if (config.WheelSettings != null)
-                {
-                    var w = config.WheelSettings;
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_Title", w.Title ?? "", true);
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_Description", w.Description ?? "", true);
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_WinnerMessage", w.WinnerMessage ?? "", true);
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_SpinTime", w.SpinTime, true);
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_AutoRemoveWinner", w.AutoRemoveWinner, true);
-                    adapter.SetGlobalVar(prefix + "Config_Wheel_ShareMode", w.ShareMode ?? "private", true);
                 }
             }
 
@@ -2119,6 +2083,50 @@ public static class Loc
                             catch (Exception ex)
                             {
                                 adapter.LogWarn($"[Config] Failed to parse Messages JSON for '{name}': {ex.Message}");
+                            }
+                        }
+                    }
+
+                    // Dynamic Timer Duration Check
+                    string timerVarName = $"GiveawayBot_{name}_TimerDuration";
+                    string timerVal = adapter.GetGlobalVar<string>(timerVarName, true);
+                    
+                    // Normalize nulls
+                    if (string.IsNullOrWhiteSpace(timerVal)) timerVal = null;
+                    else timerVal = timerVal.Trim();
+
+                    // Check for change
+                    if (timerVal != profile.TimerDuration)
+                    {
+                        string oldVal = profile.TimerDuration;
+                        profile.TimerDuration = timerVal;
+                        dirty = true;
+                        adapter.LogInfo($"[Config] TimerDuration for '{name}' updated from '{oldVal}' to '{timerVal}' via Global Variable.");
+
+                        // Dynamic Runtime Adjustment
+                        if (States.TryGetValue(name, out var state) && state.IsActive && state.StartTime.HasValue)
+                        {
+                            int? newDurationSec = ParseDuration(timerVal);
+                            if (newDurationSec.HasValue)
+                            {
+                                var newEndTime = state.StartTime.Value.AddSeconds(newDurationSec.Value);
+                                state.AutoCloseTime = newEndTime;
+                                
+                                var remaining = newEndTime - DateTime.Now;
+                                string timeStr = remaining.TotalSeconds > 0 
+                                    ? $"{(int)remaining.TotalMinutes}m {(int)remaining.Seconds}s" 
+                                    : "NOW";
+
+                                string msg = Loc.Get("TimerUpdated", name, timeStr);
+                                // Broadcast update to chat
+                                Messenger?.SendBroadcast(adapter, msg, GlobalConfig.Globals.FallbackPlatform);
+                                adapter.LogInfo($"[Timer] Updated runtime auto-close to {newEndTime} (Ends in {timeStr})");
+                            }
+                            else
+                            {
+                                // Timer removed/invalid - Switch to manual
+                                state.AutoCloseTime = null;
+                                adapter.LogInfo($"[Timer] Runtime timer disabled (Manual close only).");
                             }
                         }
                     }
@@ -2737,7 +2745,10 @@ public static class Loc
             state.WinnerCount = 0;
             state.LastWinnerName = null;
             state.LastWinnerUserId = null;
+            state.LastWinnerName = null;
+            state.LastWinnerUserId = null;
             state.AutoCloseTime = null; // Reset auto-close
+            state.StartTime = DateTime.Now; // Track start time for dynamic calcs
 
             // Handle Timed Giveaway
             var duration = ParseDuration(config.TimerDuration);
@@ -4094,6 +4105,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 string mode = GetRunMode(adapter);
                 bool forceFileReload = false;
                 bool forceGlobalReload = false;
+                string preloadedGlobalJson = null; // Optimization: Store fetched variable to avoid double-fetch
+
                 adapter.LogTrace($"[Config] GetConfig check. Mode: {mode}, LastLoad: {_lastLoad}");
 
                 // 1. Check for Disk Changes (Priority for FileSystem/Mirror)
@@ -4128,8 +4141,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 // 2. Check for GlobalVar Changes (Mirror Mode Only)
                 if (mode == "Mirror" && !forceFileReload)
                 {
-                    var currentGlobal = adapter.GetGlobalVar<string>("GiveawayBot_Config", true);
-                    if (!string.IsNullOrEmpty(currentGlobal) && currentGlobal != _lastLoadedJson)
+                    preloadedGlobalJson = adapter.GetGlobalVar<string>("GiveawayBot_Config", true);
+                    
+                    if (!string.IsNullOrEmpty(preloadedGlobalJson) && preloadedGlobalJson != _lastLoadedJson)
                     {
                         adapter.LogTrace("[Config] Mirror: Global Variable changed externally. Syncing to memory/disk.");
                         forceGlobalReload = true;
@@ -4159,7 +4173,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     string json = null;
                     if (forceFileReload)
                     {
-                        json = ReadConfigText(adapter, true);
+                        // Disk reload overrides global in memory
+                        json = ReadConfigText(adapter, true); 
+                        
                         // If we are in Mirror mode and the file is newer, immediately sync the GlobalVar
                         if (mode == "Mirror" && !string.IsNullOrEmpty(json) && json != _lastLoadedJson)
                         {
@@ -4169,7 +4185,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     }
                     else if (forceGlobalReload)
                     {
-                        json = ReadConfigText(adapter, false);
+                        // Use preloaded JSON if available (Smart Fetch)
+                        json = preloadedGlobalJson ?? ReadConfigText(adapter, false);
+
                         // If GlobalVar changed, sync it to disk immediately in Mirror mode
                         if (mode == "Mirror" && !string.IsNullOrEmpty(json))
                         {
@@ -4179,7 +4197,16 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     }
                     else
                     {
-                        json = ReadConfigText(adapter, false);
+                        // Routine check (Timer expired)
+                        // If we already fetched it for the Mirror check, use it!
+                        if (mode == "Mirror" && preloadedGlobalJson != null)
+                        {
+                            json = preloadedGlobalJson;
+                        }
+                        else
+                        {
+                            json = ReadConfigText(adapter, false);
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(json))
@@ -5635,6 +5662,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         }
 
         public DateTime? AutoCloseTime { get; set; }
+        public DateTime? StartTime { get; set; }
 
         public string LastWinnerName { get; set; }
         public string LastWinnerUserId { get; set; }

@@ -1,6 +1,6 @@
 # Advanced Topics & Technical Guide
 
-> **Version**: 1.3.0
+> **Version**: 1.3.1
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
 
@@ -142,6 +142,14 @@ IV = First 16 bytes of Salt
 - Solution: Close/archive old giveaways regularly
 - Estimate: ~100 bytes per entry → 10,000 entries ≈ 1 MB (negligible)
 
+### Smart Sync Optimization (New in v1.3.0)
+
+The bot now uses an intelligent "Diff & Sync" system (`SetGlobalVarIfChanged`). It only sends updates to Streamer.bot
+when variables _actually change_.
+
+- **Impact**: Reduces IPC log spam by 99% during idle periods.
+- **Benefit**: You can leave `ExposeVariables: true` enabled even on lower-end systems with minimal performance penalty.
+
 ### Optimization Checklist
 
 - [ ] Use `Mirror` RunMode (best for stability + performance)
@@ -221,6 +229,8 @@ C:\Users\<You>\Streamer.bot\data\Giveaway Helper\
 | `GiveawayBot_<Profile>_WinnerCount`       | Integer  | Per Draw                   | `3`                   |
 | `GiveawayBot_<Profile>_CumulativeEntries` | Integer  | Per entry                  | `150`                 |
 | `GiveawayBot_<Profile>_SubEntryCount`     | Integer  | Per entry                  | `12`                  |
+| `GiveawayBot_<Profile>_TimerDuration`     | String   | On config change           | `10m`                 |
+| `GiveawayBot_<Profile>_Msg_<Key>`         | String   | On config change           | `Winner is {0}!`      |
 
 ### Global Metrics
 

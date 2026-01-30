@@ -1,6 +1,6 @@
 # Frequently Asked Questions (FAQ)
 
-> **Version**: 1.3.0
+> **Version**: 1.3.1
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
 
@@ -8,47 +8,75 @@
 
 ## 📑 Table of Contents
 
-1. [Installation & Setup](#installation--setup)
-2. [Commands & Operations](#commands--operations)
-3. [Configuration](#configuration)
-4. [Integration (Wheel & OBS)](#integration-wheel--obs)
-5. [Security & Privacy](#security--privacy)
-6. [Performance & Limits](#performance--limits)
-7. [Troubleshooting](#troubleshooting)
-8. [Error Messages Index](#error-messages-index)
+1. [Common Errors](#common-errors)
+2. [Bot Detection & Security](#bot-detection--security)
+3. [Wheel of Names Connection](#wheel-of-names-connection)
+4. [Configuration & State](#configuration--state)
+5. [Commands & Operations](#commands--operations)
 
 ---
 
-## Installation & Setup
+## Common Errors
 
-### Q: Do I need to install anything besides Streamer.bot?
+### "Ticket count inconsistent"
 
-**A:** No external dependencies required. The bot runs entirely within Streamer.bot using only standard .NET
-Framework 4.8 libraries (C# 7.3).
+**Error:** `[Code: InvalidState] Ticket count inconsistent`
+**Cause:** The number of tickets in the internal tracker doesn't match the sum of entries.
+**Fix:** Run `!giveaway p config <profile> check`. It will recalculate tickets.
 
-### Q: Where are the bot files stored?
+### "Loop Detected" / "Anti-Loop Triggered"
 
-**A:** All data is stored in `Streamer.bot/data/Giveaway Helper/`:
+**Error:** `[AntiLoop] Ignoring trigger: Bot Token Detected`
+**Cause:** The bot heard itself or another bot responding to it.
+**Fix:**
 
-```text
-Giveaway Helper/
-├── config/giveaway_config.json  (Settings)
-├── dumps/Main/                   (Entry/winner lists)
-├── logs/General/                 (Debug logs)
-└── state/Main.json               (Active giveaway data)
-```
+- Ensure other bots (Nightbot, etc.) aren't repeating the exact command.
+- Check `AllowedExternalBots` in `giveaway_config.json`.
 
-### Q: Can I move the bot to another PC?
+### "Config not found (Check RunMode)!"
 
-**A:** Yes, but:
+**Cause:** Bot cannot find a valid config source.
+**Fix:**
 
-1. Copy the entire `Giveaway Helper` folder
-2. **API Keys**: Re-enter your `WheelOfNamesApiKey` in plain text (encrypted keys are machine-specific)
-3. Streamer.bot global variables auto import from your config.json
+- If RunMode is `FileSystem`, ensure `giveaway_config.json` is in `data/Giveaway Helper/config/`.
+- If RunMode is `GlobalVar`, ensure `GiveawayBot_Config` variable is populated.
 
-### Q: What's the difference between RunMode options?
+---
 
-**A:**
+## Bot Detection & Security
+
+### How does the bot detect fake accounts?
+
+1. **Entropy Check:** Analyzes username randomness. e.g. `asdkljfkj123` has high entropy. `JohnDoe` has low.
+2. **Account Age:** Checks how old the account is (requires Streamer.bot to have this data available).
+3. **Regex:** Checks against `UsernamePattern` (e.g. banning "hoss00312\_...").
+
+### Why is my legit account blocked?
+
+Check logs for `[Entry] Rejected`.
+
+- **Reason: Entropy**: Disable `EnableEntropyCheck` in config.
+- **Reason: Account Age**: Lower `MinAccountAgeDays`.
+
+---
+
+## Wheel of Names Connection
+
+### "Wheel API Error: 403 Forbidden"
+
+- **Cause:** Invalid API Key.
+- **Fix:** Update `WheelOfNamesApiKey` global variable. Wait for bot to encrypt it (check logs).
+
+### "Wheel spin failed to start"
+
+- **Cause:** Browser source not open or not connected.
+- **Fix:** Ensure the overlay is active in OBS.
+
+---
+
+## Configuration & State
+
+### Which RunMode should I use?
 
 - **`FileSystem`**: Config in JSON only. Fast, but Streamer.bot vars won't update.
 - **`GlobalVar`**: Config in Streamer.bot variables only. Good for UI editing.

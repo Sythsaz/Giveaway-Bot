@@ -39,10 +39,12 @@ namespace StreamerBot.Tests
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             // Ensure Main exists in a clean state
-#pragma warning disable IDE0074 // Use compound assignment - C# 7.3 doesn't support ??= operator
+#pragma warning disable IDE0074 // Use compound assignment - C# 7.3 doesn't support null-coalescing assignment
             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
 #pragma warning restore IDE0074
             var config = GiveawayManager.GlobalConfig;
+            // Default to FileSystem for tests unless specified otherwise, to respect ExposeVariables toggle
+            config.Globals.RunMode = "FileSystem";
             return (m, cph);
         }
 
@@ -128,6 +130,8 @@ namespace StreamerBot.Tests
 
             // Set mode to GlobalVar and inject config into variable
             c.SetGlobalVar("GiveawayBot_RunMode", "GlobalVar", true);
+            // We need to ensure global settings reflect this too if default was FileSystem
+            GiveawayManager.GlobalConfig = null; // Reset to force reload logic if any
             var configJson = "{\"Globals\":{\"RunMode\":\"GlobalVar\"},\"Profiles\":{\"GlobalProfile\":{\"ExposeVariables\":true}}}";
             c.SetGlobalVar("GiveawayBot_Config", configJson, true);
 
@@ -359,7 +363,8 @@ namespace StreamerBot.Tests
             // Create a temp config file with RunMode set to Mirror
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string configPath = Path.Combine(baseDir, "Giveaway Helper", "config", "giveaway_config.json");
-            string dirPath = Path.GetDirectoryName(configPath) ?? Path.Combine(baseDir, "Giveaway Helper", "config");
+            string dirPath = Path.GetDirectoryName(configPath);
+            if (dirPath == null) dirPath = Path.Combine(baseDir, "Giveaway Helper", "config");
             if (!Directory.Exists(dirPath))
             {
                 Directory.CreateDirectory(dirPath);

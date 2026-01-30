@@ -1,6 +1,6 @@
 # Streamer.bot Giveaway Assistant - Comprehensive User Guide
 
-> **Version**: 1.3.0
+> **Version**: 1.3.1
 > **Compatibility**: Streamer.bot v0.2.3+ (Targeting .NET Framework 4.8 / C# 7.3)
 > 📖 **Additional Documentation:**
 >
@@ -657,6 +657,16 @@ In your `giveaway_config.json` profile:
 
 Supported formats: `30s` (seconds), `5m` (minutes), `1h` (hours).
 When you run `!giveaway start`, the bot will announce the time and automatically close it when the timer expires.
+
+#### Dynamic Updates (New!)
+
+You can change the time limit _while the giveaway is running_ by updating the global variable:
+`GiveawayBot_<ProfileName>_TimerDuration` (e.g., set to `2m`)
+
+The bot will immediately:
+
+1. Recalculate the end time based on when the giveaway _started_.
+2. Announce the new time remaining in chat (e.g., "⏳ Time limit updated! Ends in 5 minutes.").
 
 ### Configurable Chat Messages
 

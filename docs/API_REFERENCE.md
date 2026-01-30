@@ -538,6 +538,8 @@ GiveawayBot_{ProfileName}_{VariableName}
 | `GiveawayBot_{Profile}_WinnerName`        | `string`  | Last winner's display name    | `"CoolViewer42"`     |
 | `GiveawayBot_{Profile}_WinnerCount`       | `int`     | Total winners all-time        | `5`                  |
 | `GiveawayBot_{Profile}_CumulativeEntries` | `long`    | Total entries all-time        | `127`                |
+| `GiveawayBot_{Profile}_TimerDuration`     | `string`  | Current auto-close setting    | `"10m"`              |
+| `GiveawayBot_{Profile}_Msg_{Key}`         | `string`  | Custom message override       | `"Hello {0}!"`       |
 
 ### Configuration Variables
 
