@@ -64,11 +64,12 @@ The bot uses a singleton manager pattern to handle state, configuration, and Str
 
 ```mermaid
 graph LR
-    User[User] -- "!enter" --> SB[Streamer.bot]
+    User[Viewer] -- "!enter" --> SB[Streamer.bot]
     SB -- Trigger --> Manager[GiveawayManager]
-    Manager -- Read/Write --> State[State File]
+    Manager -- Read/Write --> State["State<br/>(File / GlobalVars)"]
     Manager -- Sync --> Wheel[Wheel of Names]
     Manager -- Broadcast --> Chat[Twitch/YT/Kick]
+    Manager -- Alert --> Toast[Toast Notify]
 ```
 
 See [Architecture Docs](docs/ARCHITECTURE.md) for details.

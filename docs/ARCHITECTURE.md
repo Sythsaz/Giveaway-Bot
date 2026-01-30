@@ -12,6 +12,7 @@ graph TD
         SB[Streamer.bot Core]
         CPH[CPH Interface]
         Vars[Global Variables]
+        Toast[Toast Notification]
     end
 
     subgraph "Giveaway Bot"
@@ -35,6 +36,7 @@ graph TD
     end
 
     SB -->|Triggers| GM
+    CPH -->|Trigger| Toast
     GM -->|Broadcasts| Twitch
     GM -->|Broadcasts| YouTube
     WoN -->|HTTP Requests| WheelAPI
