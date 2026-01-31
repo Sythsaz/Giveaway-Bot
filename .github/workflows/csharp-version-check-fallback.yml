@@ -31,8 +31,8 @@ jobs:
           violations=0
 
           # Null-coalescing assignment (??=)
-          if grep -rn '\?\?=' --include='*.cs' .; then
-            echo "❌ Found null-coalescing assignment operator (??=) - C# 8.0+"
+          if grep -rnF '??=' --include='*.cs' .; then
+            echo "❌ Found null-coalescing assignment (??=) - C# 8.0+"
             violations=$((violations + 1))
           fi
 
@@ -49,8 +49,9 @@ jobs:
           fi
 
           # Range operator
-          if grep -rEn '\[\.\.(?!\.)' --include='*.cs' .; then
-            echo "❌ Found range operator ([..) - C# 8.0+"
+          # Match [start..end] pattern roughly
+          if grep -rEn '\[.*[0-9a-zA-Z_]\.\.[0-9a-zA-Z_].*\]' --include='*.cs' .; then
+            echo "❌ Found range operator ([..]) - C# 8.0+"
             violations=$((violations + 1))
           fi
 

@@ -28,7 +28,7 @@ jobs:
           violations=0
 
           # 1. Null-coalescing assignment (??=)
-          if grep -rn '\?\?=' --include='*.cs' .; then
+          if grep -rnF '??=' --include='*.cs' .; then
             echo "❌ Found null-coalescing assignment (??=) - C# 8.0+"
             violations=$((violations + 1))
           fi
