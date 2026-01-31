@@ -53,7 +53,8 @@ jobs:
           fi
 
           # 4. Using declarations (using var x =)
-          if grep -rEn 'using\s+[a-zA-Z0-9_<>]+\s+[a-zA-Z0-9_]+\s*=' --include='*.cs' . | grep -v '('; then
+          # Regex: using [space] Type [space] Name [space] =
+          if grep -rEn 'using[[:space:]]+[a-zA-Z0-9_<>]+[[:space:]]+[a-zA-Z0-9_]+[[:space:]]*=' --include='*.cs' . | grep -v '('; then
              # Filter out 'using (var x = ...)' which is valid
              echo "❌ Found using declaration (non-block) - C# 8.0+"
             violations=$((violations + 1))
