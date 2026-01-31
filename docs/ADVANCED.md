@@ -25,7 +25,9 @@
 The bot uses **AES-256-CBC** encryption for API keys with the following implementation:
 
 **Auto-Encryption (New in 1.3.2):**
-If you set the global variable `GiveawayBot_Globals_WheelApiKey` to a plain text key (e.g. `abc-123`), the bot will immediately detect it, validate it with the Wheel of Names API, and if valid, **encrypt it automatically** (replacing the value with `ENC:...`).
+If you set the global variable `GiveawayBot_Globals_WheelApiKey` to a plain text key (e.g. `abc-123`), the bot will
+immediately detect it, validate it with the Wheel of Names API, and if valid, **encrypt it automatically**
+(replacing the value with `ENC:...`).
 
 **Key Derivation:**
 
