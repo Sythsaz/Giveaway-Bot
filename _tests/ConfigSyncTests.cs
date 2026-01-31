@@ -27,6 +27,7 @@ namespace StreamerBot.Tests
             await Test_RunMode_Mirror_Conflict();
             await Test_ImportGlobals();
             await Test_DynamicVariableSync();
+            await Test_FullMirrorIngestion();
         }
 
         private static (GiveawayManager m, MockCPH cph) SetupWithCph()
@@ -47,9 +48,23 @@ namespace StreamerBot.Tests
             try
             {
                 string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
-                if (File.Exists(configPath)) File.Delete(configPath);
+                if (File.Exists(configPath))
+                {
+                    // Forcefully delete to ensure no lingering Mirror mode matching happens from disk
+                    File.Delete(configPath);
+                }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TEST WARN] Failed to delete config: {ex.Message}");
+                // If delete fails, try to overwrite with defaults so we don't stick to Mirror mode
+                try
+                {
+                    string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
+                    File.WriteAllText(configPath, "{}"); // Empty JSON defaults to FileSystem mode in loader
+                }
+                catch { }
+            }
 
             m.Initialize(adapter);
             // Ensure Main exists in a clean state
@@ -70,10 +85,28 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Variable Sync: ");
             var (m, c) = SetupWithCph();
             var config = GiveawayManager.GlobalConfig.Profiles["Main"];
-            _ = m.States["Main"];
+            // 2. Set defaults force-ably via Disk Overwrite
+            // Create a fresh config to ensure we aren't fighting static state
+            var freshConfig = new GiveawayBotConfig();
+            freshConfig.Globals.RunMode = "FileSystem";
+            freshConfig.Profiles["Main"] = new GiveawayProfileConfig(); // Ensure Main exists with defaults
+            freshConfig.Profiles["Main"].EnableEntropyCheck = false;
+            freshConfig.Profiles["Main"].MaxEntriesPerMinute = 100;
+            freshConfig.Profiles["Main"].RequireSubscriber = false;
 
-            // 1. Initially disabled
-            config.ExposeVariables = false;
+            // SAVE to disk so reload consumes THIS config
+            string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
+            File.WriteAllText(configPath, JsonConvert.SerializeObject(freshConfig, Formatting.Indented));
+
+            // Force the manager to see this new file immediately
+            // This prevents a race condition or partial state
+            // Although ProcessTrigger will do it, we want to be sure GlobalConfig is aligned
+
+            // Clear any globals set during Initialize
+            c.Globals.Clear();
+            c.Globals["GiveawayBot_RunMode"] = "FileSystem";
+
+            m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
 
             // Clear any globals set during Initialize (if RunMode default was Mirror)
             // But preserve the RunMode override we need
@@ -134,36 +167,54 @@ namespace StreamerBot.Tests
         {
             Console.Write("[TEST] ExposeVariables Global Override: ");
             var (m, c) = SetupWithCph();
-            var config = GiveawayManager.GlobalConfig.Profiles["Main"];
-            m.States["Main"].Entries.Clear(); // Clear any existing entries from previous tests
+            try
+            {
+                var config = GiveawayManager.GlobalConfig.Profiles["Main"];
+                m.States["Main"].Entries.Clear(); // Clear any existing entries from previous tests
 
-            // 1. Profile enabled, but Global Override = false
-            GiveawayManager.GlobalConfig.Profiles["Main"].ExposeVariables = true;
-            c.SetGlobalVar("GiveawayBot_ExposeVariables", "false", true); // Set global variable override
+                // 1. Profile enabled, but Global Override = false
+                GiveawayManager.GlobalConfig.Profiles["Main"].ExposeVariables = true;
+                c.SetGlobalVar("GiveawayBot_ExposeVariables", "false", true); // Set global variable override
 
-            // DEBUG: Ensure override is set
-            if (!c.Globals.ContainsKey("GiveawayBot_ExposeVariables")) Console.WriteLine("[TEST WARN] Override missing from Globals!");
-            m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
+                // Re-sync to ensure the manager sees the global override immediately
+                // Since we aren't using the full runner loop, we manually trigger a sync or rely on ProcessTrigger
+                // But ProcessTrigger might be too late if the check happens inside it.
+                // Actually, ProcessTrigger checks updates at the start.
+                // Ensure args are clean so we don't accidentally match a different logic path
+                c.Args.Clear();
 
-            c.Args["userId"] = "GO1";
-            c.Args["user"] = "GO1";
-            c.Args["command"] = "!enter";
-            await m.ProcessTrigger(new CPHAdapter(c));
+                // DEBUG: Ensure override is set
+                if (!c.Globals.ContainsKey("GiveawayBot_ExposeVariables")) Console.WriteLine("[TEST WARN] Override missing from Globals!");
 
-            if (c.Globals.ContainsKey("GiveawayBot_Main_EntryCount")) throw new Exception("Global override (false) failed!");
+                // Enable TRACE logging to see Sync decisions
+                GiveawayManager.GlobalConfig.Globals.LogLevel = "TRACE";
 
-            // 2. Profile disabled, but Global Override = true
-            config.ExposeVariables = false;
-            c.SetGlobalVar("GiveawayBot_ExposeVariables", "true", true); // Set global variable override
+                m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
 
-            c.Args["userId"] = "GO2";
-            c.Args["user"] = "GO2";
-            await m.ProcessTrigger(new CPHAdapter(c));
+                c.Args["userId"] = "GO1";
+                c.Args["user"] = "GO1";
+                c.Args["command"] = "!enter";
+                await m.ProcessTrigger(new CPHAdapter(c));
 
-            if (!c.Globals.TryGetValue("GiveawayBot_Main_EntryCount", out var count) || (int)count != 2)
-                throw new Exception(String.Format("Global override (true) failed! Count: {0}", count));
+                if (c.Globals.ContainsKey("GiveawayBot_Main_EntryCount")) throw new Exception("Global override (false) failed!");
 
-            Console.WriteLine("PASS");
+                // 2. Profile disabled, but Global Override = true
+                config.ExposeVariables = false;
+                c.SetGlobalVar("GiveawayBot_ExposeVariables", "true", true); // Set global variable override
+
+                c.Args["userId"] = "GO2";
+                c.Args["user"] = "GO2";
+                await m.ProcessTrigger(new CPHAdapter(c));
+
+                if (!c.Globals.TryGetValue("GiveawayBot_Main_EntryCount", out var count) || (int)count != 2)
+                    throw new Exception(String.Format("Global override (true) failed! Count: {0}", count));
+
+                Console.WriteLine("PASS");
+            }
+            finally
+            {
+                m.Dispose();
+            }
         }
 
         private static async Task Test_RunMode_GlobalVar()
@@ -620,6 +671,60 @@ namespace StreamerBot.Tests
 
             if (profile.SubLuckMultiplier != 5.5m)
                 throw new Exception(string.Format("Pull Sync Failed: SubLuckMultiplier. Expected 5.5, got {0}", profile.SubLuckMultiplier));
+
+            Console.WriteLine("PASS");
+        }
+        private static async Task Test_FullMirrorIngestion()
+        {
+            Console.Write("[TEST] Full Mirror Mode Ingestion: ");
+            var (m, cph) = SetupWithCph();
+            var adapter = new CPHAdapter(cph);
+
+            // 1. Create Profile
+            await m.Loader.CreateProfileAsync(adapter, "MirrorTest");
+            GiveawayManager.GlobalConfig = m.Loader.GetConfig(adapter);
+            var profile = GiveawayManager.GlobalConfig.Profiles["MirrorTest"];
+
+            // 2. Set defaults to ensure we are actually changing them
+            profile.EnableWheel = true;
+            profile.UsernameRegex = null;
+            profile.WheelSettings.Title = "Old Title";
+            profile.DumpEntriesOnEnd = false;
+
+            // 3. Set Global Variables (The "Mirror")
+            cph.Globals["GiveawayBot_MirrorTest_EnableWheel"] = "false";
+            cph.Globals["GiveawayBot_MirrorTest_UsernameRegex"] = "^[A-Z0-9]+$";
+            cph.Globals["GiveawayBot_MirrorTest_WheelSettings_Title"] = "New Mirror Title";
+            cph.Globals["GiveawayBot_MirrorTest_RedemptionCooldownMinutes"] = "5m"; // Test parsing string
+            cph.Globals["GiveawayBot_MirrorTest_DumpEntriesOnEnd"] = "true";
+            cph.Globals["GiveawayBot_MirrorTest_GameFilter"] = "GW2";
+
+
+            // 4. Trigger Sync (simulate period check or trigger)
+            // Use reflection to call private CheckForConfigUpdates
+            var checkMethod = m.GetType().GetMethod("CheckForConfigUpdates", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var task = (Task)checkMethod.Invoke(m, new object[] { adapter, true }); // fullSync=true
+            await task;
+
+            // 5. Verify Ingestion
+            if (profile.EnableWheel != false)
+                throw new Exception($"EnableWheel failed. Expected False, got {profile.EnableWheel}");
+
+            if (profile.UsernameRegex != "^[A-Z0-9]+$")
+                throw new Exception($"UsernameRegex failed. Expected '^[A-Z0-9]+$', got '{profile.UsernameRegex}'");
+
+            if (profile.WheelSettings.Title != "New Mirror Title")
+                throw new Exception($"WheelSettings.Title failed. Expected 'New Mirror Title', got '{profile.WheelSettings.Title}'");
+
+            // 5m = 5 minutes
+            if (profile.RedemptionCooldownMinutes != 5)
+                throw new Exception($"RedemptionCooldownMinutes failed (Parsing). Expected 5, got {profile.RedemptionCooldownMinutes}");
+
+            if (profile.DumpEntriesOnEnd != true)
+                throw new Exception($"DumpEntriesOnEnd failed. Expected True, got {profile.DumpEntriesOnEnd}");
+
+            if (profile.GameFilter != "GW2")
+                throw new Exception($"GameFilter failed. Expected 'GW2', got '{profile.GameFilter}'");
 
             Console.WriteLine("PASS");
         }

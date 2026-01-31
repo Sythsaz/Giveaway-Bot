@@ -157,14 +157,14 @@ namespace StreamerBot.Tests
                 if (s4 && m.Loader.GetConfig(adapter).Profiles["TestU"].WheelSettings.SpinTime == 15) Console.WriteLine("PASS");
                 else Console.WriteLine("FAIL");
 
-                // 5. Test UsernamePattern (Regex validation)
-                Console.Write("  - UsernamePattern (valid regex):         ");
-                var (s5, e5) = await m.Loader.UpdateProfileConfigAsync(adapter, "TestU", "UsernamePattern", "^[A-Z]+$");
-                if (s5 && m.Loader.GetConfig(adapter).Profiles["TestU"].UsernamePattern == "^[A-Z]+$") Console.WriteLine("PASS");
+                // 5. Test UsernameRegex (Regex validation)
+                Console.Write("  - UsernameRegex (valid regex):           ");
+                var (s5, e5) = await m.Loader.UpdateProfileConfigAsync(adapter, "TestU", "UsernameRegex", "^[A-Z]+$");
+                if (s5 && m.Loader.GetConfig(adapter).Profiles["TestU"].UsernameRegex == "^[A-Z]+$") Console.WriteLine("PASS");
                 else Console.WriteLine("FAIL");
 
-                Console.Write("  - UsernamePattern (invalid regex):       ");
-                var (s6, e6) = await m.Loader.UpdateProfileConfigAsync(adapter, "TestU", "UsernamePattern", "[");
+                Console.Write("  - UsernameRegex (invalid regex):         ");
+                var (s6, e6) = await m.Loader.UpdateProfileConfigAsync(adapter, "TestU", "UsernameRegex", "[");
                 if (!s6) Console.WriteLine("PASS");
                 else Console.WriteLine("FAIL (Accepted invalid regex)");
 

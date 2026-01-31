@@ -170,6 +170,9 @@ namespace StreamerBot.Tests
             Console.Write("  - Backup zip rotation logic:            ");
             cph.SetGlobalVar("GiveawayBot_BackupCount", 3, true);
 
+            string zipPath = Path.Combine(backupDir, "config_history.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
             // Create multiple config changes to generate backups
             for (int i = 0; i < 5; i++)
             {
@@ -181,7 +184,7 @@ namespace StreamerBot.Tests
             }
 
             // Check zip file
-            string zipPath = Path.Combine(backupDir, "config_history.zip");
+            // zipPath already defined above
             if (!File.Exists(zipPath))
             {
                 Console.WriteLine("SKIP (No zip created)");

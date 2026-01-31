@@ -23,15 +23,17 @@
 ## ✨ Key Features
 
 - **Multi-Profile Support**: Run "Daily", "Weekly", and "Sub-Only" giveaways simultaneously.
+- **Remote Control & Automation**: Control giveaways programmatically via Streamer.bot variables (Stream Deck ready).
 - **Timed Giveaways**: Set a duration (e.g., "10m") and the bot automatically closes the giveaway.
 - **Configurable Messages**: Customize every chat response to match your stream's personality.
-- **Enterprise Security**: AES-256-CBC (DPAPI) encryption, **GDPR Data Deletion** (`!giveaway data delete`),
+- **Enterprise Security**: AES-256-CBC (DPAPI) **Auto-Encryption** for API Keys, **GDPR Data Deletion**,
   & anti-loop protection.
 - **Smart Validation**: Blocks bots using entropy checks and account age verification.
 - **Rich Feedback**: Windows **Toast Notifications**, **Localization** support, and highly visible chat alerts.
 - **Automated Config**: Auto-Import global variables (API keys) from JSON on startup.
 - **Observability**: Real-time **OBS variables** and automated wheel spins.
 - **Wheel of Names Integration**: Seamlessly sync entries to the wheel and trigger spins.
+- **Auto-Update**: Built-in command `!giveaway update` to check for and download the latest version.
 
 ## 🚀 Quick Start
 

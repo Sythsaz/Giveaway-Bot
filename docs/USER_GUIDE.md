@@ -109,6 +109,15 @@ Before going live, run the built-in health check.
 
 If any step fails, the bot will tell you exactly what is wrong.
 
+### Step 5: Check for Updates
+
+Keep your bot running smoothly with the latest features.
+
+1. Type `!giveaway update`
+2. If an update is found, the bot will download it to `Giveaway Helper/updates/`.
+3. You will receive a **Toast Notification** with the exact file path.
+4. Open the new file, copy the code, and paste it into your `Giveaway Core` action (replacing the old code).
+
 ---
 
 ## Getting Started Tutorial: Your First Giveaway
@@ -603,6 +612,8 @@ See [FAQ.md](FAQ.md) for common questions and [ADVANCED.md](ADVANCED.md) for tec
 | `!giveaway config gen`                  | Force-generates a default `giveaway_config.json` if missing.  |
 | `!giveaway config check`                | Validates your current JSON configuration for errors/typos.   |
 | `!giveaway regex test <pattern> <text>` | Test regex pattern against sample text. Returns match result. |
+| `!giveaway stats`                       | Displays global or profile stats (Entries, Winners, etc).     |
+| `!giveaway update`                      | **New**: Checks GitHub for updates and downloads them.        |
 
 ### Profile Management Commands (Advanced)
 
@@ -631,18 +642,21 @@ You can edit this file directly or use the `!giveaway profile config` commands.
 
 These affect the entire bot behavior (found under `"Globals"` key).
 
-| Setting                | Type   | Default                 | Description                                                                           |
-| :--------------------- | :----- | :---------------------- | :------------------------------------------------------------------------------------ |
-| `RunMode`              | String | `Mirror`                | `FileSystem` (File only), `GlobalVar` (Memory only), `Mirror` (Syncs both - Recom'd). |
-| `StatePersistenceMode` | String | `Both`                  | Where to save active entries: `File`, `GlobalVar`, `Both`.                            |
-| `LogRetentionDays`     | Int    | `90`                    | How many days to keep logs before deletion.                                           |
-| `LogSizeCapMB`         | Int    | `100`                   | Maximum size of the logs folder in MB (prunes oldest first).                          |
-| `WheelApiKeyVar`       | String | `WheelOfNamesApiKey`    | Name of the _Streamer.bot Variable_ holding your API key.                             |
-| `EnabledPlatforms`     | List   | `["Twitch", "YouTube"]` | Specific platforms to listen to and broadcast on.                                     |
-| `FallbackPlatform`     | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
-| `MinUsernameEntropy`   | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
-| `ImportGlobals`        | Dict   | `null`                  | Auto-import variables to global vars on startup.                                      |
-| `CustomStrings`        | Dict   | `{}`                    | Override bot response messages. Key=ID, Value=Text.                                   |
+| Setting                           | Type   | Default                 | Description                                                                           |
+| :-------------------------------- | :----- | :---------------------- | :------------------------------------------------------------------------------------ |
+| `RunMode`                         | String | `Mirror`                | `FileSystem` (File only), `GlobalVar` (Memory only), `Mirror` (Syncs both - Recom'd). |
+| `StatePersistenceMode`            | String | `Both`                  | Where to save active entries: `File`, `GlobalVar`, `Both`.                            |
+| `LogRetentionDays`                | Int    | `90`                    | How many days to keep logs before deletion.                                           |
+| `LogSizeCapMB`                    | Int    | `100`                   | Maximum size of the logs folder in MB (prunes oldest first).                          |
+| `GiveawayBot_Globals_WheelApiKey` | String | _(Empty)_               | **New**: Set this Global Variable directly! (Recommended).                            |
+| `WheelApiKeyVar`                  | String | `WheelOfNamesApiKey`    | **Legacy**: Name of the _Streamer.bot Variable_ holding your API key.                 |
+| `EnabledPlatforms`                | List   | `["Twitch", "YouTube"]` | Specific platforms to listen to and broadcast on.                                     |
+| `FallbackPlatform`                | String | `Twitch`                | Default platform for messages if bot is offline.                                      |
+| `MinUsernameEntropy`              | Double | `2.5`                   | Sensitivity for "smash name" detection (higher = stricter).                           |
+| `ImportGlobals`                   | Dict   | `null`                  | Auto-import variables to global vars on startup.                                      |
+| `CustomStrings`                   | Dict   | `{}`                    | Override bot response messages. Key=ID, Value=Text.                                   |
+| `LogPruneProbability`             | Int    | `100`                   | 1-in-N chance to prune logs on startup (higher = less frequent).                      |
+| `ConfigBackupCount`               | Int    | `10`                    | Number of config backups to keep.                                                     |
 
 ### Timed Giveaways (Auto-Close)
 
@@ -709,20 +723,26 @@ The bot checks these variables automatically. To revert to the default or profil
 
 Each Profile (e.g. `"Main"`) has its own independent settings.
 
-| Setting                      | Type  | Default | Description                                                                     |
-| :--------------------------- | :---- | :------ | :------------------------------------------------------------------------------ |
-| `MaxEntriesPerMinute`        | Int   | `60`    | Global rate limit to prevent chat floods/DOS.                                   |
-| `SubLuckMultiplier`          | Int   | `2`     | Bonus tickets for Subscribers (0 = disabled).                                   |
-| `MinAccountAgeDays`          | Int   | `0`     | Rejects users whose Twitch account is newer than X days.                        |
-| `UsernamePattern`            | Regex | `null`  | Reject usernames not matching this Regex (e.g. `^[A-Za-z0-9_]+$`).              |
-| `EnableEntropyCheck`         | Bool  | `false` | Enable "smash name" detection (e.g. `asdfgh`).                                  |
-| `EnableWheel`                | Bool  | `false` | Uploads entrants to Wheel of Names API on `!draw`.                              |
-| `EnableObs`                  | Bool  | `false` | Updates OBS Browser Source on `!draw`.                                          |
-| `ExposeVariables`            | Bool  | `false` | **New**: If true, publishes all live stats to `GiveawayBot_<Profile>_...`.      |
-| `DumpEntriesOnEnd`           | Bool  | `true`  | Saves a `.txt` file of all entrants when closed.                                |
-| `DumpEntriesOnEntry`         | Bool  | `false` | Writes entries to txt file as accepted (real-time, throttled).                  |
-| `DumpEntriesOnEntryThrottle` | Int   | `10`    | Seconds between batch writes (min: 5, max: 300). Auto-clamped if out of bounds. |
-| `DumpWinnersOnDraw`          | Bool  | `true`  | Saves a `.txt` file of winners when drawn.                                      |
+| Setting                      | Type   | Default | Description                                                                     |
+| :--------------------------- | :----- | :------ | :------------------------------------------------------------------------------ |
+| `MaxEntriesPerMinute`        | Int    | `60`    | Global rate limit to prevent chat floods/DOS.                                   |
+| `SubLuckMultiplier`          | Int    | `2`     | Bonus tickets for Subscribers (0 = disabled).                                   |
+| `MinAccountAgeDays`          | Int    | `0`     | Rejects users whose Twitch account is newer than X days.                        |
+| `UsernamePattern`            | Regex  | `null`  | Reject usernames not matching this Regex (e.g. `^[A-Za-z0-9_]+$`).              |
+| `EnableEntropyCheck`         | Bool   | `true`  | Enable "smash name" detection (e.g. `asdfgh`).                                  |
+| `EnableWheel`                | Bool   | `false` | Uploads entrants to Wheel of Names API on `!draw`.                              |
+| `EnableObs`                  | Bool   | `false` | Updates OBS Browser Source on `!draw`.                                          |
+| `ExposeVariables`            | Bool   | `false` | **New**: If true, publishes all live stats to `GiveawayBot_<Profile>_...`.      |
+| `DumpEntriesOnEnd`           | Bool   | `true`  | Saves a `.txt` file of all entrants when closed.                                |
+| `DumpEntriesOnEntry`         | Bool   | `false` | Writes entries to txt file as accepted (real-time, throttled).                  |
+| `DumpEntriesOnEntryThrottle` | Int    | `10`    | Seconds between batch writes (min: 5, max: 300). Auto-clamped if out of bounds. |
+| `DumpWinnersOnDraw`          | Bool   | `true`  | Saves a `.txt` file of winners when drawn.                                      |
+| `DumpFormat`                 | String | `TXT`   | Output format for dumps: `TXT`, `CSV`, `JSON`.                                  |
+| `RedemptionCooldownMinutes`  | Int    | `0`     | Per-user cooldown between entries in minutes (0 = disabled).                    |
+| `TimerDuration`              | String | `null`  | Auto-close duration (e.g., `10m`, `1h`).                                        |
+| `RequireSubscriber`          | Bool   | `false` | If true, only subscribers can enter (Profile override).                         |
+| `WinChance`                  | Double | `1.0`   | Probability (0.0-1.0) that ANY entry is accepted (Gatekeeper).                  |
+| `GameFilter`                 | String | `null`  | Presets (e.g. `GW2`). Overrides Regex/Entropy settings if set.                  |
 
 ### Toast Notifications
 
@@ -731,11 +751,11 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
 ```json
 "ToastNotifications": {
   "EntryAccepted": false,    // Alert on every entry (Use with caution!)
-  "EntryRejected": false,    // Alert when spam/bot blocked
+  "EntryRejected": true,     // Alert when spam/bot blocked
   "WinnerSelected": true,    // Alert when winner drawn
   "GiveawayOpened": true,    // Alert when giveaway starts
   "GiveawayClosed": true,    // Alert when giveaway ends
-  "UnauthorizedAccess": false // Alert when non-broadcaster attempts management command
+  "UnauthorizedAccess": true // Alert when non-broadcaster attempts management command
 }
 ```
 
@@ -745,6 +765,12 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
 ---
 
 ## Advanced Features
+
+### Remote Control & Automation
+
+> [!TIP]
+> **Power Users**: You can start/stop giveaways automatically using Stream Deck or other Actions by toggling variables.
+> See the [Advanced Guide](ADVANCED.md#remote-control--automation) for details.
 
 ### External Bot Integration
 

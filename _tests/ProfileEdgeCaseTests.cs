@@ -221,9 +221,9 @@ namespace StreamerBot.Tests
                 var (s5b, _) = await m.Loader.UpdateProfileConfigAsync(adapter, "ConfigEdgeTest", "WheelSettings.SpinTime", "20");
                 if (s5b) Console.WriteLine("PASS"); else Console.WriteLine("FAIL");
 
-                // Test 5c: Regex pattern (UsernamePattern)
-                Console.Write("  - UsernamePattern supported:             ");
-                var (s5c, _) = await m.Loader.UpdateProfileConfigAsync(adapter, "ConfigEdgeTest", "UsernamePattern", "^[A-Z]{3}$");
+                // Test 5c: Regex pattern (UsernameRegex)
+                Console.Write("  - UsernameRegex supported:               ");
+                var (s5c, _) = await m.Loader.UpdateProfileConfigAsync(adapter, "ConfigEdgeTest", "UsernameRegex", "^[A-Z]{3}$");
                 if (s5c) Console.WriteLine("PASS"); else Console.WriteLine("FAIL");
 
                 // Test 5d: Genuine unknown key

@@ -24,6 +24,9 @@
 
 The bot uses **AES-256-CBC** encryption for API keys with the following implementation:
 
+**Auto-Encryption (New in 1.3.2):**
+If you set the global variable `GiveawayBot_Globals_WheelApiKey` to a plain text key (e.g. `abc-123`), the bot will immediately detect it, validate it with the Wheel of Names API, and if valid, **encrypt it automatically** (replacing the value with `ENC:...`).
+
 **Key Derivation:**
 
 ```text
@@ -154,10 +157,33 @@ when variables _actually change_.
 
 - [ ] Use `Mirror` RunMode (best for stability + performance)
 - [ ] Set LogLevel to `INFO` or higher (avoid `TRACE`/`DEBUG` in production)
+- [ ] Set LogLevel to `INFO` or higher. NOTE: `TRACE` level will output high-frequency variable sync logs (spammy).
 - [ ] Disable `DumpEntriesOnEntry` for streams >500 viewers
 - [ ] Increase `StateSyncIntervalSeconds` if on slow HDD
 - [ ] Enable `EnableEntropyCheck` if seeing bot/fake accounts
 - [ ] Use Wheel API **Animate** mode (lower overhead than interactive)
+
+---
+
+## Remote Control & Automation
+
+As of v1.3.3, you can control the bot **programmatically** by setting specific Global Variables in Streamer.bot.
+This allows you to start/end giveaways from your own Actions, Stream Deck, or other integration logic without
+simulating chat commands.
+
+### How to use Integration Control
+
+To trigger an action, use the **Core -> Global Variables -> Set Global Variable** sub-action in Streamer.bot.
+
+| Goal               | Variable Name                         | Set Value to... | Effect                                                  |
+| :----------------- | :------------------------------------ | :-------------- | :------------------------------------------------------ |
+| **Start Giveaway** | `GiveawayBot_<Profile>_IsActive`      | `True`          | Opens the giveaway (if closed). Triggers `HandleStart`. |
+| **End Giveaway**   | `GiveawayBot_<Profile>_IsActive`      | `False`         | Closes the giveaway (if open). Triggers `HandleEnd`.    |
+| **Change Timer**   | `GiveawayBot_<Profile>_TimerDuration` | `"5m"`          | Updates auto-close timer and announces new time.        |
+
+> [!IMPORTANT]
+> **System Override**: Variable-based triggers bypass the usual "Moderator" permission check,
+> allowing automated systems to control the bot.
 
 ---
 
@@ -239,27 +265,30 @@ C:\Users\<You>\Streamer.bot\data\Giveaway Helper\
 
 (Always available)
 
-| Variable Name                                  | Type    | Description                                           |
-| ---------------------------------------------- | ------- | ----------------------------------------------------- |
-| `GiveawayBot_Metrics_Entries_Total`            | Integer | Lifetime entries accepted.                            |
-| `GiveawayBot_Metrics_Entries_Rejected`         | Integer | Spam/bots/regex-mismatches blocked.                   |
-| `GiveawayBot_Metrics_Winners_Total`            | Integer | Total winners drawn.                                  |
-| `GiveawayBot_Metrics_ApiErrors`                | Integer | Wheel API failures.                                   |
-| `GiveawayBot_Metrics_SystemErrors`             | Integer | Internal exceptions rooted in bot logic.              |
-| `GiveawayBot_Metrics_LoopDetected`             | Integer | Anti-loop protection triggers fired.                  |
-| `GiveawayBot_Metrics_WheelApiCalls`            | Integer | Total calls to Wheel of Names API.                    |
-| `GiveawayBot_Metrics_WheelApiTotalMs`          | Integer | Total time spent waiting for Wheel API (latency).     |
-| `GiveawayBot_Metrics_Validation_RegexTimeouts` | Integer | Count of Regex operations aborted (ReDoS protection). |
+| Variable Name                                  | Type    | Description                                                  |
+| ---------------------------------------------- | ------- | ------------------------------------------------------------ |
+| `GiveawayBot_Metrics_Entries_Total`            | Integer | Lifetime entries accepted.                                   |
+| `GiveawayBot_Metrics_Entries_Rejected`         | Integer | Spam/bots/regex-mismatches blocked.                          |
+| `GiveawayBot_Metrics_Winners_Total`            | Integer | Total winners drawn.                                         |
+| `GiveawayBot_Metrics_ApiErrors`                | Integer | Wheel API failures.                                          |
+| `GiveawayBot_Metrics_SystemErrors`             | Integer | Internal exceptions rooted in bot logic.                     |
+| `GiveawayBot_Metrics_LoopDetected`             | Integer | Anti-loop protection triggers fired.                         |
+| `GiveawayBot_Metrics_WheelApiCalls`            | Integer | Total calls to Wheel of Names API.                           |
+| `GiveawayBot_Metrics_WheelApiTotalMs`          | Integer | Total time spent waiting for Wheel API (latency).            |
+| `GiveawayBot_Metrics_Validation_RegexTimeouts` | Integer | Count of Regex operations aborted (ReDoS protection).        |
+| `GiveawayBot_Globals_WheelApiKeyStatus`        | String  | "Configured (Direct)", "Configured (Indirect)", or "Missing" |
 
 ### Configuration Variables
 
 (Editable in Streamer.bot UI)
 
-| Variable Name          | Default   | Description                    |
-| ---------------------- | --------- | ------------------------------ |
-| `GiveawayBot_RunMode`  | `Mirror`  | Config sync mode               |
-| `GiveawayBot_LogLevel` | `INFO`    | Minimum log severity           |
-| `WheelOfNamesApiKey`   | _(empty)_ | Wheel API key (auto-encrypted) |
+| Variable Name                     | Default   | Description                                            |
+| --------------------------------- | --------- | ------------------------------------------------------ |
+| `GiveawayBot_RunMode`             | `Mirror`  | Config sync mode                                       |
+| `GiveawayBot_LogLevel`            | `INFO`    | Minimum log severity                                   |
+| `GiveawayBot_LogMaxFileSizeMB`    | `10`      | Max size of a single log file                          |
+| `GiveawayBot_LogSizeCapMB`        | `100`     | Total log directory size cap                           |
+| `GiveawayBot_Globals_WheelApiKey` | _(empty)_ | Wheel API key (Auto-Encrypts if entered as plain text) |
 
 **OBS Usage Example:**
 

@@ -40,6 +40,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.4.0] - 2026-01-31
+
+### Added (v1.4.0)
+
+- **Auto-Update Notification System**: New `!giveaway update` command to check for updates from GitHub.
+- **Update Service**: Automatically checks `RELEASE_NOTES.md` on startup and alerts via Toast/Chat if a new version is available.
+- **Privacy-Focused**: Downloads updates to a local `updates/` folder and notifies via Toast to avoid exposing file paths
+  in streaming chat.
+
+### Fixed (v1.4.0)
+
+- **Toast Notifications**: Fixed `CPHAdapter.ShowToastNotification` signature to correctly invoke Streamer.bot method
+  (was causing crashes).
+- **Code Quality**: Addressed nullability warnings in `UpdateService` and refactored it for better encapsulation.
+
+## [1.3.3] - 2026-01-30
+
+### Added (v1.3.3)
+
+- **Remote Control**: implemented `CheckForConfigUpdates` monitoring for `GiveawayBot_<Profile>_IsActive`.
+  Setting this to `true` (if inactive) starts the giveaway; setting to `false` (if active) ends it.
+- **System Override**: Updated `HandleEnd` to allow system-triggered endings (bypassing permissions checks).
+
 ## [1.3.2] - 2026-01-30
 
 ### Added (v1.3.2)
@@ -50,6 +73,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   protected from being pruned by the variable cleanup logic.
 
 ### Fixed (v1.3.2)
+
+- **Log Suppression**: Refactored trace logging to respect the standard `LogLevel` setting (specifically "TRACE")
+  instead of requiring a custom flag, eliminating "ghost update" spam by default while preserving debug capabilities.
 
 - **Variable Sync Bug**: Resolved an issue where variables were incorrectly exposed in `Mirror` mode even when
   `ExposeVariables` was disabled, ensuring strict adherence to configuration.

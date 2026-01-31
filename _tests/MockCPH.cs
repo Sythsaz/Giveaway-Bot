@@ -74,6 +74,12 @@ namespace StreamerBot.Tests
         public void SendMessage(string m, bool b = true) { Console.WriteLine($"[CHAT] {m}"); ChatHistory.Add(m); }
         public void SendYouTubeMessage(string m) { Console.WriteLine($"[YT] {m}"); ChatHistory.Add(m); }
         public void SendKickMessage(string m) { Console.WriteLine($"[KICK] {m}"); ChatHistory.Add(m); }
+        public void TwitchReplyToMessage(string message, string replyId, bool useBot = true, bool fallback = true)
+        {
+            Console.WriteLine($"[TWITCH REPLY to {replyId}] {message}");
+            ChatHistory.Add($"@reply:{replyId}:{message}");
+        }
+
 
         public bool IsTwitchLive() => IsTwitchLiveValue;
         public bool IsYouTubeLive() => IsYouTubeLiveValue;
