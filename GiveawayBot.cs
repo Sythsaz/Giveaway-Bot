@@ -4009,7 +4009,15 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 #if EXTERNAL_EDITOR || GIVEAWAY_TESTS
              Console.WriteLine($"[TOAST] {title}: {message}");
 #else
-             InvokeSafe("ShowToastNotification", new object[] { title, message }, 2);
+             try
+             {
+                 // Use dynamic dispatch to handle optional parameters (e.g. icon path) which vary by SB version
+                 ((dynamic)_cph).ShowToastNotification(title, message);
+             }
+             catch (Exception ex)
+             {
+                 try { _t.GetMethod("LogDebug", new Type[] { typeof(string) })?.Invoke(_cph, new object[] { "[CPH] Toast failed: " + ex.Message }); } catch { }
+             }
 #endif
         }
 
