@@ -144,7 +144,7 @@ namespace StreamerBot
     }
 
 /*
- * Streamer.bot Giveaway Helper
+ * Streamer.bot Giveaway Bot
  * 
  * Target Environment: Streamer.bot Execute C# Code Action
  * Compatibility: .NET Framework 4.8 / C# 7.3
@@ -330,7 +330,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.4.0"; // Semantic Versioning       
+        public const string Version = "1.4.2"; // Semantic Versioning       
         
         // ==================== Instance Fields ====================
         
@@ -3317,7 +3317,7 @@ public static class Loc
         {
             try
             {
-                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "dumps", profileName);
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "dumps", profileName);
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                 
                 // Determine format
@@ -3374,7 +3374,7 @@ public static class Loc
         {
             try
             {
-                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "dumps", profileName);
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "dumps", profileName);
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
                 // Determine format
@@ -3440,7 +3440,7 @@ public static class Loc
             };
             try
             {
-                string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "logs");
+                string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "logs");
                 results.Add($"• Log Directory: {logDir}");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
 
@@ -3480,7 +3480,7 @@ public static class Loc
             // File System Check
             try
             {
-                string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper");
+                string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot");
                 string logDir = Path.Combine(baseDir, "logs", "General");
                 string testFile = Path.Combine(logDir, "write_test.tmp");
                 if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
@@ -3669,7 +3669,7 @@ public static class Loc
                 
                 if (batch.Count == 0) return;
                 
-                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "dumps", profileName);
+                string dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "dumps", profileName);
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                 
                 var path = Path.Combine(dir, $"{DateTime.Now:yyyyMMdd}_Entries_Incremental.txt");
@@ -3775,8 +3775,8 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
         }
 
         // 3. Clean Historical Logs (Dumps)
-        // Directory: Giveaway Helper/data/dumps (and others?)
-        string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper");
+        // Directory: Giveaway Bot/data/dumps (and others?)
+        string baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot");
         if (Directory.Exists(baseDir))
         {
             var files = Directory.GetFiles(baseDir, "*.txt", SearchOption.AllDirectories); // .txt logs
@@ -4382,8 +4382,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public ConfigLoader() { }
         private GiveawayBotConfig _cached = new GiveawayBotConfig();
         private DateTime _lastLoad = DateTime.MinValue;
-        private readonly string _dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config");
-        private readonly string _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
+        private readonly string _dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config");
+        private readonly string _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config", "giveaway_config.json");
 
         private string _lastError = "";
 
@@ -4842,7 +4842,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 var config = GetConfig(adapter);
                 if (!config.Profiles.TryGetValue(profileName, out var profile)) return (false, $"Profile '{profileName}' not found", "");
 
-                string exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "exports");
+                string exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "exports");
                 if (!Directory.Exists(exportDir)) Directory.CreateDirectory(exportDir);
 
                 string fileName = $"{profileName}_Export_{DateTime.Now:yyyyMMdd_HHmm}.json";
@@ -4874,7 +4874,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 string usedTargetName = targetName;
 
                 // 1. Resolve Source (File vs JSON)
-                string importDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "import");
+                string importDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "import");
                 if (!Directory.Exists(importDir)) Directory.CreateDirectory(importDir);
 
                 // Check if source is a file path
@@ -5662,7 +5662,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         /// Resolves the absolute file path for a profile's state JSON.
         /// </summary>
         private static string GetStatePath(string p) =>
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "state", $"{p}.json");
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "state", $"{p}.json");
 
         /// <summary>
         /// Saves the giveaway state to disk and/or global variables based on persistence mode.
@@ -5765,7 +5765,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public FileLogger(string basePath = null)
         {
             if (string.IsNullOrEmpty(basePath))
-                _base = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "logs");
+                _base = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "logs");
             else
                 _base = basePath;
         }
@@ -7132,7 +7132,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         /// </summary>
         public MetricsService()
         {
-            _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "data", "metrics.json");
+            _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "data", "metrics.json");
         }
 
         /// <summary>
@@ -7237,7 +7237,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                     // Ensure we don't double up path separators or fail on different setups
-                    string folder = Path.Combine(baseDir, "Giveaway Helper", "updates");
+                    string folder = Path.Combine(baseDir, "Giveaway Bot", "updates");
 
                     if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
