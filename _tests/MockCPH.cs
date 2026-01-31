@@ -18,7 +18,7 @@ namespace StreamerBot.Tests
         public List<string> Logs { get; set; } = new List<string>();
         public List<string> ChatHistory { get; set; } = new List<string>();
         public string EventType { get; set; } = "CommandTriggered";
-        public FileLogger Logger { get; set; } = new FileLogger(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestLogs"));
+        public FileLogger Logger { get; set; } = new FileLogger(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "TestLogs"));
 
         public void LogInfo(string m) { Console.WriteLine($"[INFO] {m}"); Logs.Add(m); }
         public void LogWarn(string m) { Console.WriteLine($"[WARN] {m}"); Logs.Add(m); }

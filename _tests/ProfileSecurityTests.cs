@@ -174,7 +174,7 @@ namespace StreamerBot.Tests
                 // Cleanup
                 try
                 {
-                    string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
+                    string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config", "giveaway_config.json");
                     if (File.Exists(configPath)) File.Delete(configPath);
                     if (File.Exists(logFile)) File.Delete(logFile);
                 }

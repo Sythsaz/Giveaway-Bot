@@ -44,7 +44,7 @@ namespace StreamerBot.Tests
         private static async Task RunTestsAsync()
         {
             // Cleanup storage to ensure clean test environment
-            string storageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper");
+            string storageDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot");
             if (Directory.Exists(storageDir))
             {
                 // Try to delete, but ignore if locked
@@ -64,7 +64,7 @@ namespace StreamerBot.Tests
             var cph10 = new MockCPH();
             var m10 = new GiveawayManager();
             m10.Initialize(new CPHAdapter(cph10));
-            
+
         }
     }
 

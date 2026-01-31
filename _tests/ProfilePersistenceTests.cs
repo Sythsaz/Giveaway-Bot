@@ -27,7 +27,7 @@ namespace StreamerBot.Tests
             m.Initialize(new CPHAdapter(cph));
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configDir = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
             string configPath = Path.Combine(configDir, "giveaway_config.json");
             string zipPath = Path.Combine(configDir, "backups", "config_history.zip");
 
@@ -79,10 +79,10 @@ namespace StreamerBot.Tests
             cph.Args["isBroadcaster"] = true;
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configDir = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
             string configPath = Path.Combine(configDir, "giveaway_config.json");
             string backupDir = Path.Combine(configDir, "backups");
-            string stateDir = Path.Combine(baseDir, "Giveaway Helper", "state");
+            string stateDir = Path.Combine(baseDir, "Giveaway Bot", "state");
 
             // Ensure clean state
             if (Directory.Exists(backupDir))
@@ -322,7 +322,7 @@ namespace StreamerBot.Tests
             Console.Write("  - Malformed JSON recovery:               ");
             var cph = new MockCPH();
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configDir = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
             string configPath = Path.Combine(configDir, "giveaway_config.json");
 
             try
@@ -379,7 +379,7 @@ namespace StreamerBot.Tests
             Console.Write("  - Invalid data type handling:            ");
             var cph = new MockCPH();
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configDir = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
             string configPath = Path.Combine(configDir, "giveaway_config.json");
 
             try
@@ -466,7 +466,7 @@ namespace StreamerBot.Tests
             Console.Write("  - State deserialization failure:         ");
             var cph = new MockCPH();
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string stateDir = Path.Combine(baseDir, "Giveaway Helper", "state");
+            string stateDir = Path.Combine(baseDir, "Giveaway Bot", "state");
             string statePath = Path.Combine(stateDir, "Main.json");
 
             try
@@ -513,7 +513,7 @@ namespace StreamerBot.Tests
             Console.Write("  - Backup restoration:                    ");
             var cph = new MockCPH();
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            string configDir = Path.Combine(baseDir, "Giveaway Helper", "config");
+            string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
             string backupDir = Path.Combine(configDir, "backups");
 
             try

@@ -118,6 +118,7 @@ dotnet_diagnostic.IDE0052.severity = none  # Remove unread private member
 dotnet_diagnostic.IDE0055.severity = none  # Fix formatting
 dotnet_diagnostic.IDE0059.severity = none  # Unnecessary assignment of a value
 dotnet_diagnostic.IDE0060.severity = none  # Remove unused parameter
+dotnet_diagnostic.IDE0071.severity = none  # Simplify interpolation
 dotnet_diagnostic.IDE0075.severity = none  # Simplify conditional expression
 dotnet_diagnostic.JSON002.severity = none  # Probable JSON string detected
 
