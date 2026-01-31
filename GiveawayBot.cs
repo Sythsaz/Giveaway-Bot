@@ -1,5 +1,6 @@
 // Suppress "modernization" suggestions to maintain compatibility with Streamer.bot's internal compiler
-// (Equivalent to .NET Framework 4.8 / C# 7.3 environment)
+// Streamer.bot uses .NET Framework 4.8 / C# 7.3
+// CI Verification Trigger environment)
 #pragma warning disable IDE0028 // Simplify collection initialization
 #pragma warning disable IDE0300 // Use collection expression
 #pragma warning disable IDE0301 // Use collection expression
