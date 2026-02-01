@@ -14,6 +14,7 @@ namespace StreamerBot.Tests
         public static async Task Run()
         {
             Console.WriteLine("\n=== Configuration & Sync Tests ===");
+            await Test_GlobalSettingsSync();
             await Test_VariableSync();
             await Test_ExposeVariables_GlobalOverride();
             await Test_RunMode_GlobalVar();
@@ -114,8 +115,8 @@ namespace StreamerBot.Tests
             c.Globals["GiveawayBot_RunMode"] = "FileSystem";
 
             m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
-            c.Args["userId"] = "V1";
-            c.Args["user"] = "V1";
+            c.Args["userId"] = "ValidUserOne";
+            c.Args["user"] = "ValidUserOne";
             c.Args["command"] = "!enter";
             await m.ProcessTrigger(new CPHAdapter(c));
 
@@ -132,8 +133,8 @@ namespace StreamerBot.Tests
                 dict?.Clear();
             }
 
-            c.Args["userId"] = "V2";
-            c.Args["user"] = "V2";
+            c.Args["userId"] = "ValidUserTwo";
+            c.Args["user"] = "ValidUserTwo";
             await m.ProcessTrigger(new CPHAdapter(c));
 
             if (!c.Globals.TryGetValue("GiveawayBot_Main_EntryCount", out var count) || (int)count != 2)
@@ -191,8 +192,8 @@ namespace StreamerBot.Tests
 
                 m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
 
-                c.Args["userId"] = "GO1";
-                c.Args["user"] = "GO1";
+                c.Args["userId"] = "GlobalOverrideOne";
+                c.Args["user"] = "GlobalOverrideOne";
                 c.Args["command"] = "!enter";
                 await m.ProcessTrigger(new CPHAdapter(c));
 
@@ -202,8 +203,8 @@ namespace StreamerBot.Tests
                 config.ExposeVariables = false;
                 c.SetGlobalVar("GiveawayBot_ExposeVariables", "true", true); // Set global variable override
 
-                c.Args["userId"] = "GO2";
-                c.Args["user"] = "GO2";
+                c.Args["userId"] = "GlobalOverrideTwo";
+                c.Args["user"] = "GlobalOverrideTwo";
                 await m.ProcessTrigger(new CPHAdapter(c));
 
                 if (!c.Globals.TryGetValue("GiveawayBot_Main_EntryCount", out var count) || (int)count != 2)
@@ -725,6 +726,39 @@ namespace StreamerBot.Tests
 
             if (profile.GameFilter != "GW2")
                 throw new Exception($"GameFilter failed. Expected 'GW2', got '{profile.GameFilter}'");
+
+            Console.WriteLine("PASS");
+        }
+
+        private static async Task Test_GlobalSettingsSync()
+        {
+            Console.Write("[TEST] Global Settings Sync: ");
+            var (m, cph) = SetupWithCph();
+            var adapter = new CPHAdapter(cph);
+
+            // Initialize configuration
+            m.Initialize(adapter);
+
+            // Set initial state
+            GiveawayManager.GlobalConfig.Globals.LogLevel = "INFO";
+            GiveawayManager.GlobalConfig.Globals.FallbackPlatform = "Twitch";
+            // Note: SetupWithCph sets RunMode="FileSystem"
+
+            // Set external Global Variables
+            cph.Globals["GiveawayBot_LogLevel"] = "TRACE";
+            cph.Globals["GiveawayBot_Globals_FallbackPlatform"] = "YouTube";
+
+            // Trigger Sync via reflection
+            var checkMethod = m.GetType().GetMethod("CheckForConfigUpdates", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var task = (Task)checkMethod.Invoke(m, new object[] { adapter, true }); // fullSync=true
+            await task;
+
+            // Verify
+            if (GiveawayManager.GlobalConfig.Globals.LogLevel != "TRACE")
+                throw new Exception($"LogLevel sync failed. Expected TRACE, got {GiveawayManager.GlobalConfig.Globals.LogLevel}");
+
+            if (GiveawayManager.GlobalConfig.Globals.FallbackPlatform != "YouTube")
+                throw new Exception($"FallbackPlatform sync failed. Expected YouTube, got {GiveawayManager.GlobalConfig.Globals.FallbackPlatform}");
 
             Console.WriteLine("PASS");
         }

@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
-## [1.4.0] - 2026-01-31
+## [1.4.2] - 2026-01-31\n\n### Fixed (v1.4.2)\n\n- **Global Settings Sync**: `CheckForConfigUpdates` now correctly synchronizes Global variables (`RunMode`, `LogLevel`, `FallbackPlatform`, `EnableSecurityToasts`) when changed via Streamer.bot, ensuring bi-directional config management.\n- **Test Suite**: Fixed `ProfileSecurityTests` to support the new AM/PM timestamp format in logs, resolving false failures.\n\n## [1.4.0] - 2026-01-31
 
 ### Added (v1.4.0)
 
@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Update Service**: Automatically checks `RELEASE_NOTES.md` on startup and alerts via Toast/Chat if a new version is available.
 - **Privacy-Focused**: Downloads updates to a local `updates/` folder and notifies via Toast to avoid exposing file paths
   in streaming chat.
+- **Security Alerts**: Added `EnableSecurityToasts` (default: true) to trigger Windows notifications for
+  unauthorized command attempts, spam detection (rate limits), and API key failures.
 
 ### Fixed (v1.4.0)
 

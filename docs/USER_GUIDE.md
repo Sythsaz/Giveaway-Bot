@@ -761,6 +761,10 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
 
 > [!NOTE]
 > Toasts use standard Windows notifications. Ensure "Streamer.bot" is allowed to send notifications in Windows Settings.
+>
+> **Global Security Alerts**:
+> You can toggle security-specific toasts (Spam, Unauthorized Access, API Errors) via the
+> `EnableSecurityToasts` Global Setting (Default: `true`).
 
 ---
 

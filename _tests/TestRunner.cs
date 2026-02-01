@@ -51,12 +51,13 @@ namespace StreamerBot.Tests
                 try { Directory.Delete(storageDir, true); } catch { }
             }
 
+            await ConfigSyncTests.Run(); // Moved to top for verification
             await ProfileTests.Run();
             await ProfilePersistenceTests.Run();
             await ProfileConfigTests.Run();
             await ProfileSecurityTests.Run();
             await ProfileEdgeCaseTests.Run();
-            await ConfigSyncTests.Run();
+            // await ConfigSyncTests.Run(); // Moved up
             await ProfileLogicTests.Run();
             await IntegrationTests.Run();
             await CoreTests.Run();

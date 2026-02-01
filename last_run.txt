@@ -1,0 +1,213 @@
+=================================
+   GiveawayBot Final Verification 
+=================================
+
+=== Configuration & Sync Tests ===
+[TEST] Global Settings Sync: [DEBUG] [GiveawayManager] Starting Initialize...
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: Never
+[DEBUG] [Config] Mirror/FS: Disk file is newer (1/31/2026 12:28:53 PM > 1/1/0001 12:00:00 AM). Reloading...
+[DEBUG] [Config] Sync: Loaded from disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\config\giveaway_config.json
+[DEBUG] [Config] Deserialized OK. Profiles Found: Main, Weekly
+[DEBUG] [GiveawayManager] Primary configuration loaded. Profiles found: Main, Weekly
+[INFO] [Security] No Encryption Salt found. Generating new portable salt...
+[DEBUG] [GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Main
+[DEBUG] [Persistence] LoadState for Main (Mode: Both)
+[DEBUG] [Persistence] State file not found for Main: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json
+[DEBUG] [Persistence] No persistent state found for profile Main.
+[DEBUG] [GiveawayManager] Generated new Giveaway ID for Main: 6aa6d0ff-6c9e-4369-9ab3-f99ed856f951
+[DEBUG] [Persistence] Critical state saved to file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json
+[DEBUG] [Persistence] Critical state saved to GlobalVar for Main
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Weekly
+[DEBUG] [Persistence] LoadState for Weekly (Mode: Both)
+[DEBUG] [Persistence] State file not found for Weekly: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Weekly.json
+[DEBUG] [Persistence] No persistent state found for profile Weekly.
+[DEBUG] [GiveawayManager] Generated new Giveaway ID for Weekly: 2c03acc4-e492-4b4f-906f-a1a5300e1f3e
+[DEBUG] [Persistence] Critical state saved to file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Weekly.json
+[DEBUG] [Persistence] Critical state saved to GlobalVar for Weekly
+[DEBUG] [GiveawayManager] Syncing variables...
+[DEBUG] [Sync] Starting full variable synchronization and pruning...
+[DEBUG] [Prune] Auditing global variables for orphans...
+[DEBUG] [Prune] No orphans found. All 0 managed variables are currently active.
+[INFO] [GiveawayManager] Initialization complete. All states rehydrated.
+[DEBUG] [GiveawayManager] System Check - Storage Base: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\
+[DEBUG] [GiveawayManager] Incremental dump timer started (5s interval)
+[DEBUG] [GiveawayManager] Starting Initialize...
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: Never
+[DEBUG] [Config] Mirror/FS: Disk file is newer (1/31/2026 12:28:53 PM > 1/1/0001 12:00:00 AM). Reloading...
+[DEBUG] [Config] Sync: Loaded from disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\config\giveaway_config.json
+[DEBUG] [Config] Deserialized OK. Profiles Found: Main, Weekly
+[DEBUG] [GiveawayManager] Primary configuration loaded. Profiles found: Main, Weekly
+[DEBUG] [GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Main
+[DEBUG] [Persistence] LoadState for Main (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json (253 chars)
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Weekly
+[DEBUG] [Persistence] LoadState for Weekly (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Weekly.json (253 chars)
+[DEBUG] [GiveawayManager] Syncing variables...
+[DEBUG] [Sync] Starting full variable synchronization and pruning...
+[DEBUG] [Prune] Auditing global variables for orphans...
+[DEBUG] [Prune] No orphans found. All 0 managed variables are currently active.
+[INFO] [GiveawayManager] Initialization complete. All states rehydrated.
+[DEBUG] [GiveawayManager] System Check - Storage Base: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\
+[DEBUG] [GiveawayManager] Incremental dump timer started (5s interval)
+[INFO] [Config] RunMode updated to 'FileSystem' via Global Variable.
+[INFO] [Config] LogLevel updated to 'TRACE' via Global Variable.
+[INFO] [Config] FallbackPlatform updated to 'YouTube' via Global Variable.
+[INFO] [Sync] Configuration changes detected from Global Variables. Saving to disk...
+[DEBUG] [Config] WriteConfigTextAsync called. Mode: FileSystem, Json Length: 12844
+[DEBUG] [Config] Configuration successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\config\giveaway_config.json
+PASS
+[TEST] Variable Sync: [DEBUG] [GiveawayManager] Starting Initialize...
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: Never
+[DEBUG] [Config] Mirror/FS: Disk file is newer (1/31/2026 12:28:53 PM > 1/1/0001 12:00:00 AM). Reloading...
+[DEBUG] [Config] Sync: Loaded from disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\config\giveaway_config.json
+[DEBUG] [Config] Deserialized OK. Profiles Found: Main, Weekly
+[DEBUG] [GiveawayManager] Primary configuration loaded. Profiles found: Main, Weekly
+[DEBUG] [GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Main
+[DEBUG] [Persistence] LoadState for Main (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json (253 chars)
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Weekly
+[DEBUG] [Persistence] LoadState for Weekly (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Weekly.json (253 chars)
+[DEBUG] [GiveawayManager] Syncing variables...
+[DEBUG] [Sync] Starting full variable synchronization and pruning...
+[DEBUG] [Prune] Auditing global variables for orphans...
+[DEBUG] [Prune] No orphans found. All 0 managed variables are currently active.
+[INFO] [GiveawayManager] Initialization complete. All states rehydrated.
+[DEBUG] [GiveawayManager] System Check - Storage Base: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\
+[DEBUG] [GiveawayManager] Incremental dump timer started (5s interval)
+[DEBUG] [ProcessTrigger] >>> Method entered.
+[DEBUG] [Trigger] Context (0): 
+[DEBUG] [Sync] Config check complete. No changes detected across 2 profiles.
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Trigger] Platform detected: Twitch (Raw: )
+[DEBUG] [Trigger] Inspecting: cmd=!enter, msg=, sd=, tid=, name=, raw=, in0=
+[DEBUG] Checking Profile=Main: Trigger=command:!enter (Type=command, Val=!enter) vs Input(cmd=!enter, sd=, tid=, name=)
+[DEBUG] [Trigger] Match found (Command Arg): Main -> Enter (!enter)
+[DEBUG] [ProcessTrigger] IdentifyTrigger Result: Profile=Main, Action=Enter, Platform=Twitch
+[DEBUG] [HandleEntry] >>> Starting entry for profile Main
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Main] Account age validation skipped: 'createdAt' argument not available from Streamer.bot (User: ValidUserOne)
+[DEBUG] [Main] Ticket Calculation for ValidUserOne (Sub=False): Base=1 * Multiplier=1.0 = 1
+[INFO] [Main] Accepted: ValidUserOne (Tickets: 1)
+[DEBUG] [Messenger] Sending @mention reply to ValidUserOne on Twitch
+[DEBUG] [Messenger] Routing message to Twitch (with anti-loop token)
+[CHAT] @ValidUserOne Entry accepted! Total tickets: 1 (2.0)​​
+[DEBUG] [Metrics] Metrics successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\data\metrics.json
+[DEBUG] [ProcessTrigger] >>> Method entered.
+[DEBUG] [Trigger] Context (0): 
+[DEBUG] [Sync] Config check complete. No changes detected across 2 profiles.
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Trigger] Platform detected: Twitch (Raw: )
+[DEBUG] [Trigger] Inspecting: cmd=!enter, msg=, sd=, tid=, name=, raw=, in0=
+[DEBUG] Checking Profile=Main: Trigger=command:!enter (Type=command, Val=!enter) vs Input(cmd=!enter, sd=, tid=, name=)
+[DEBUG] [Trigger] Match found (Command Arg): Main -> Enter (!enter)
+[DEBUG] [ProcessTrigger] IdentifyTrigger Result: Profile=Main, Action=Enter, Platform=Twitch
+[DEBUG] [HandleEntry] >>> Starting entry for profile Main
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Main] Account age validation skipped: 'createdAt' argument not available from Streamer.bot (User: ValidUserTwo)
+[DEBUG] [Main] Ticket Calculation for ValidUserTwo (Sub=False): Base=1 * Multiplier=1.0 = 1
+[INFO] [Main] Accepted: ValidUserTwo (Tickets: 1)
+[DEBUG] [Messenger] Sending @mention reply to ValidUserTwo on Twitch
+[DEBUG] [Messenger] Routing message to Twitch (with anti-loop token)
+[CHAT] @ValidUserTwo Entry accepted! Total tickets: 1 (2.0)​​
+[DEBUG] [Metrics] Metrics successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\data\metrics.json
+[DEBUG] [ProcessTrigger] >>> Method entered.
+[DEBUG] [Trigger] Context (0): 
+[DEBUG] [Sync] Config check complete. No changes detected across 2 profiles.
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Trigger] Platform detected: Twitch (Raw: )
+[DEBUG] [Trigger] Inspecting: cmd=!draw, msg=, sd=, tid=, name=, raw=, in0=
+[DEBUG] Checking Profile=Main: Trigger=command:!enter (Type=command, Val=!enter) vs Input(cmd=!draw, sd=, tid=, name=)
+[DEBUG] Checking Profile=Main: Trigger=command:!draw (Type=command, Val=!draw) vs Input(cmd=!draw, sd=, tid=, name=)
+[DEBUG] [Trigger] Match found (Command Arg): Main -> Winner (!draw)
+[DEBUG] [ProcessTrigger] IdentifyTrigger Result: Profile=Main, Action=Winner, Platform=Twitch
+[INFO] [HandleDraw] >>> Drawing winner for Main (Platform: Twitch)...
+[DEBUG] [Main] Generating ticket pool from 2 entrants...
+[DEBUG] [Main] Pool Add: ValidUserOne (1 tickets)
+[DEBUG] [Main] Pool Add: ValidUserTwo (1 tickets)
+[INFO] [Main] Drawing winner. Unique Entrants: 2, Total Tickets in Pool: 2
+[DEBUG] [Main] Method: Local RNG
+[DEBUG] [Main] RNG Debug: Selected Index 1 / 2
+[DEBUG] [Main] Winner: ValidUserTwo (ValidUserTwo) - WinsTotal incremented.
+[TOAST] Giveaway Winner: Winner: ValidUserTwo!
+[DEBUG] [Messenger] SendBroadcast: Winner is ValidUserTwo! (Source: Twitch, Multi: False)
+[DEBUG] [Messenger] Live Platforms:  (Multi: False, Source: Twitch)
+[DEBUG] [Messenger] Direct Reply targeted for Twitch
+[DEBUG] [Messenger] Routing message to Twitch (with anti-loop token)
+[CHAT] Winner is ValidUserTwo!​​
+[DEBUG] [Persistence] Critical state saved to file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json
+[DEBUG] [Persistence] Critical state saved to GlobalVar for Main
+[DEBUG] [Metrics] Metrics successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\data\metrics.json
+PASS
+[TEST] ExposeVariables Global Override: [DEBUG] [GiveawayManager] Starting Initialize...
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: Never
+[DEBUG] [Config] Mirror/FS: Disk file is newer (1/31/2026 12:28:53 PM > 1/1/0001 12:00:00 AM). Reloading...
+[DEBUG] [Config] Sync: Loaded from disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\config\giveaway_config.json
+[DEBUG] [Config] Deserialized OK. Profiles Found: Main, Weekly
+[DEBUG] [GiveawayManager] Primary configuration loaded. Profiles found: Main, Weekly
+[DEBUG] [GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Main
+[DEBUG] [Persistence] LoadState for Main (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Main.json (561 chars)
+[DEBUG] [GiveawayManager] Rehydrating state for profile: Weekly
+[DEBUG] [Persistence] LoadState for Weekly (Mode: Both)
+[DEBUG] [Persistence] State loaded from file: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\state\Weekly.json (253 chars)
+[DEBUG] [GiveawayManager] Syncing variables...
+[DEBUG] [Sync] Starting full variable synchronization and pruning...
+[DEBUG] [Prune] Auditing global variables for orphans...
+[DEBUG] [Prune] No orphans found. All 0 managed variables are currently active.
+[INFO] [GiveawayManager] Initialization complete. All states rehydrated.
+[DEBUG] [GiveawayManager] System Check - Storage Base: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\
+[DEBUG] [GiveawayManager] Incremental dump timer started (5s interval)
+[DEBUG] [ProcessTrigger] >>> Method entered.
+[DEBUG] [Trigger] Context (0): 
+[DEBUG] [Sync] Config check complete. No changes detected across 2 profiles.
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Trigger] Platform detected: Twitch (Raw: )
+[DEBUG] [Trigger] Inspecting: cmd=!enter, msg=, sd=, tid=, name=, raw=, in0=
+[DEBUG] Checking Profile=Main: Trigger=command:!enter (Type=command, Val=!enter) vs Input(cmd=!enter, sd=, tid=, name=)
+[DEBUG] [Trigger] Match found (Command Arg): Main -> Enter (!enter)
+[DEBUG] [ProcessTrigger] IdentifyTrigger Result: Profile=Main, Action=Enter, Platform=Twitch
+[DEBUG] [HandleEntry] >>> Starting entry for profile Main
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Main] Entry rejected: Low entropy/suspicious name (User: GO1)
+[TOAST] Giveaway Bot: Entry Rejected: GO1 (Username Pattern)
+[DEBUG] [Metrics] Metrics successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\data\metrics.json
+[DEBUG] [ProcessTrigger] >>> Method entered.
+[DEBUG] [Trigger] Context (0): 
+[DEBUG] [Sync] Config check complete. No changes detected across 2 profiles.
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Trigger] Platform detected: Twitch (Raw: )
+[DEBUG] [Trigger] Inspecting: cmd=!enter, msg=, sd=, tid=, name=, raw=, in0=
+[DEBUG] Checking Profile=Main: Trigger=command:!enter (Type=command, Val=!enter) vs Input(cmd=!enter, sd=, tid=, name=)
+[DEBUG] [Trigger] Match found (Command Arg): Main -> Enter (!enter)
+[DEBUG] [ProcessTrigger] IdentifyTrigger Result: Profile=Main, Action=Enter, Platform=Twitch
+[DEBUG] [HandleEntry] >>> Starting entry for profile Main
+[DEBUG] [Config] GetConfig check. Mode: FileSystem, LastLoad: 1/31/2026 12:28:53 PM
+[DEBUG] [Main] Entry rejected: Low entropy/suspicious name (User: GO2)
+[TOAST] Giveaway Bot: Entry Rejected: GO2 (Username Pattern)
+[DEBUG] [Metrics] Metrics successfully saved to disk: C:\Users\ashto\Giveaway Bot\bin\Debug\net481\win-x64\Giveaway Bot\data\metrics.json
+
+[FATAL ERROR] Global override (true) failed! Count: 
+   at StreamerBot.Tests.ConfigSyncTests.<Test_ExposeVariables_GlobalOverride>d__3.MoveNext() in C:\Users\ashto\Giveaway Bot\_tests\ConfigSyncTests.cs:line 213
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.GetResult()
+   at StreamerBot.Tests.ConfigSyncTests.<Run>d__0.MoveNext() in C:\Users\ashto\Giveaway Bot\_tests\ConfigSyncTests.cs:line 19
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.GetResult()
+   at StreamerBot.Tests.TestRunner.<RunTestsAsync>d__1.MoveNext() in C:\Users\ashto\Giveaway Bot\_tests\TestRunner.cs:line 54
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw()
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.GetResult()
+   at StreamerBot.Tests.TestRunner.Main() in C:\Users\ashto\Giveaway Bot\_tests\TestRunner.cs:line 32
+
+[DONE] Finished.

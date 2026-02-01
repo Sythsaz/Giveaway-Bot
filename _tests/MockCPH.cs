@@ -97,6 +97,12 @@ namespace StreamerBot.Tests
         public void ObsSetBrowserSource(string s, string o, string u) { Console.WriteLine($"[OBS] {s}/{o} -> {u}"); }
         public object GetEventType() => EventType;
 
+        public bool RunAction(string actionName, bool runImmediately = true)
+        {
+            Console.WriteLine($"[ACTION] Running: {actionName} (Immediate: {runImmediately})");
+            return true;
+        }
+
         public List<string> GetGlobalVarNames(bool persisted = true) => Globals.Keys.ToList();
         public void UnsetGlobalVar(string varName, bool persisted = true)
         {

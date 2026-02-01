@@ -35,7 +35,7 @@ namespace StreamerBot.Tests
             var adapter = new CPHAdapter(cph);
             adapter.Logger = m.Logger;
 
-            string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestLogs", "General");
+            string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "TestLogs", "General");
             string logFile = Path.Combine(logDir, $"{DateTime.Now:yyyy-MM-dd}.log");
 
             try
@@ -147,7 +147,7 @@ namespace StreamerBot.Tests
                         {
                             // Expected format: [YYYY-MM-DD HH:mm:ss] [WARN ] [Security] Unauthorized...
                             // Note: Matches [WARN ] [Category] [Security]...
-                            var regex = new System.Text.RegularExpressions.Regex(@"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] \[WARN\s*\] .*\[Security\]");
+                            var regex = new System.Text.RegularExpressions.Regex(@"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\s+[AP]M)?\] \[WARN\s*\] .*\[Security\]");
                             formatValid = regex.IsMatch(line);
                             break;
                         }

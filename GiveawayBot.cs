@@ -140,6 +140,7 @@ namespace StreamerBot
         bool IsKickLive();
         void ObsSetBrowserSource(string scene, string source, string url);
         void ShowToastNotification(string title, string message);
+        bool RunAction(string actionName, bool runImmediately = true);
         object GetEventType();
         FileLogger Logger { get; set; }
     }
@@ -337,7 +338,7 @@ public static class Loc
         
         private ConfigLoader _configLoader;
         public ConfigLoader Loader => _configLoader;
-        private UpdateService _updateService;
+
 
         // The current active configuration, reloaded periodically
         private static GiveawayBotConfig _globalConfig;
@@ -603,8 +604,7 @@ public static class Loc
         
     adapter.LogTrace("[GiveawayManager] Starting Initialize...");
     
-    // Instantiate update service early
-    _updateService = new UpdateService();
+
 
             _configLoader = new ConfigLoader();
             _configLoader.GenerateDefaultConfig(adapter); // Ensure config file exists for user to edit
@@ -697,47 +697,11 @@ public static class Loc
 
         private async Task CheckForUpdatesStartup(CPHAdapter adapter)
         {
-            if (_updateService == null) return;
-            var (available, version) = await _updateService.CheckForUpdatesAsync(adapter, Version);
-            if (available)
-            {
-                string msg = $"📢 Helper Update v{version} available! Type '!giveaway update' to download.";
-                adapter.LogInfo($"[UpdateService] {msg}");
-                
-                // Broadcast update availability
-                Messenger?.SendBroadcast(adapter, msg, "Twitch");
-            }
+            // Fire and forget update check on startup
+            await UpdateService.CheckForUpdatesAsync(adapter, Version, notifyIfUpToDate: false);
         }
 
-        private async Task<bool> HandleUpdateCommand(CPHAdapter adapter, string platform)
-        {
-             if (_updateService == null) return true;
-             
-             adapter.LogInfo("[UpdateService] Checking for updates manually...");
-             // Send immediate feedback
-             Messenger?.SendBroadcast(adapter, "Checking for updates...", platform);
-             
-             var (available, version) = await _updateService.CheckForUpdatesAsync(adapter, Version);
-             
-             if (available)
-             {
-                 string path = await _updateService.DownloadUpdateAsync(adapter, version);
-                 if (!string.IsNullOrEmpty(path))
-                 {
-                     adapter.ShowToastNotification("Giveaway Bot Update", $"Downloaded v{version} to: {path}");
-                     Messenger?.SendBroadcast(adapter, $"✅ Update v{version} downloaded! Check your toast notifications for the file path.", platform);
-                 }
-                 else
-                 {
-                     Messenger?.SendBroadcast(adapter, "⚠ Download failed. Check logs.", platform);
-                 }
-             }
-             else
-             {
-                 Messenger?.SendBroadcast(adapter, "✅ You are running the latest version.", platform);
-             }
-             return true;
-        }
+
 
         private void MigrateSecurity(CPHAdapter adapter)
         {
@@ -1931,6 +1895,42 @@ public static class Loc
                         break;
                     }
 
+                case "update":
+                    if (!IsBroadcaster(adapter))
+                    {
+                        Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
+                        return true;
+                    }
+                    Messenger?.SendBroadcast(adapter, "🔄 Checking GitHub for updates...", platform);
+                    // Use internal UpdateService
+                    await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
+                    return true;
+
+                case "reset":
+                    {
+                        string[] parts = args.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length < 2 || !parts[1].Equals("confirm", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string profileName = parts.Length > 0 ? parts[0] : "<name>";
+                            Messenger?.SendBroadcast(adapter, $"⚠ To reset '{profileName}', add 'confirm': !giveaway profile reset {profileName} confirm", platform);
+                            return true;
+                        }
+
+                        var (reset, resetError) = await _configLoader.ResetProfileAsync(adapter, parts[0]);
+                        if (reset)
+                        {
+                            GlobalConfig = _configLoader.GetConfig(adapter);
+                            if (GlobalConfig?.Globals != null) GlobalConfig.Globals.RunMode = ConfigLoader.GetRunMode(adapter);
+                            SyncAllVariables(adapter);
+                            Messenger?.SendBroadcast(adapter, $"✅ Profile '{parts[0]}' reset to default settings.", platform);
+                        }
+                        else
+                        {
+                            Messenger?.SendBroadcast(adapter, $"⚠ Reset failed: {resetError}", platform);
+                        }
+                        break;
+                    }
+
                 case "delete":
                     {
                         string[] parts = args.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -2205,6 +2205,7 @@ public static class Loc
         private async Task CheckForConfigUpdates(CPHAdapter adapter, bool fullSync = true)
         {
             if (GlobalConfig?.Profiles == null) return;
+    bool dirty = false;
 
             // Dynamic Global Settings Check (API Key Status)
             if (fullSync && GlobalConfig.Globals != null)
@@ -2255,9 +2256,55 @@ public static class Loc
                  {
                      adapter.SetGlobalVar("GiveawayBot_Globals_WheelApiKeyStatus", expectedStatus, true);
                  }
+
+                 // --- Phase 0: Global Settings Sync ---
+                 
+                 // 1. RunMode
+                 string runModeVal = adapter.GetGlobalVar<string>("GiveawayBot_RunMode", true);
+                 if (!string.IsNullOrEmpty(runModeVal) && runModeVal != GlobalConfig.Globals.RunMode)
+                 {
+                     GlobalConfig.Globals.RunMode = runModeVal;
+                     dirty = true;
+                     adapter.LogInfo($"[Config] RunMode updated to '{runModeVal}' via Global Variable.");
+                 }
+
+                 // 2. LogLevel (Exposed as 'GiveawayBot_LogLevel')
+                 string logLevelVal = adapter.GetGlobalVar<string>("GiveawayBot_LogLevel", true);
+                 if (!string.IsNullOrEmpty(logLevelVal))
+                 {
+                     string normalized = logLevelVal.ToUpperInvariant();
+                     if (normalized != GlobalConfig.Globals.LogLevel)
+                     {
+                         GlobalConfig.Globals.LogLevel = normalized;
+                         dirty = true;
+                         adapter.LogInfo($"[Config] LogLevel updated to '{normalized}' via Global Variable.");
+                     }
+                 }
+
+                 // 3. FallbackPlatform
+                 string fallbackVal = adapter.GetGlobalVar<string>("GiveawayBot_Globals_FallbackPlatform", true);
+                 if (!string.IsNullOrEmpty(fallbackVal) && fallbackVal != GlobalConfig.Globals.FallbackPlatform)
+                 {
+                     GlobalConfig.Globals.FallbackPlatform = fallbackVal;
+                     dirty = true;
+                     adapter.LogInfo($"[Config] FallbackPlatform updated to '{fallbackVal}' via Global Variable.");
+                 }
+                 
+                 // 4. EnableSecurityToasts
+                 string secToastVal = adapter.GetGlobalVar<string>("GiveawayBot_Globals_EnableSecurityToasts", true);
+                 if (!string.IsNullOrEmpty(secToastVal))
+                 {
+                     bool? secToastBool = ParseBoolVariant(secToastVal);
+                     if (secToastBool.HasValue && secToastBool.Value != GlobalConfig.Globals.EnableSecurityToasts)
+                     {
+                         GlobalConfig.Globals.EnableSecurityToasts = secToastBool.Value;
+                         dirty = true;
+                         adapter.LogInfo($"[Config] EnableSecurityToasts updated to '{secToastBool.Value}' via Global Variable.");
+                     }
+                 }
             }
 
-            bool dirty = false;
+
             foreach (var kvp in GlobalConfig.Profiles)
             {
                 var name = kvp.Key;
@@ -2689,6 +2736,10 @@ public static class Loc
                             {
                                 adapter.TryGetArg<string>("user", out var user);
                                 adapter.LogWarn($"[Security] Unauthorized profile management attempt by {user}: {rawInput}");
+                                if (GlobalConfig.Globals.EnableSecurityToasts)
+                                {
+                                    adapter.ShowToastNotification("Giveaway Bot - Security", $"⛔ Unauthorized profile access: {user}");
+                                }
                                 return true;
                             }
 
@@ -2709,17 +2760,9 @@ public static class Loc
                                 adapter.TryGetArg<string>("user", out var user);
                                 adapter.LogWarn($"[Security] Unauthorized management attempt by {user}: {rawInput}");
                                 
-                                // Silent denial for security - prevents information disclosure
-                                // Optional toast notification if enabled in ANY profile
-                                foreach (var profile in GlobalConfig.Profiles.Values)
+                                if (GlobalConfig.Globals.EnableSecurityToasts)
                                 {
-                                    if (profile.ToastNotifications != null && 
-                                        profile.ToastNotifications.TryGetValue("UnauthorizedAccess", out var notify) && notify)
-                                    {
-                                        adapter.ShowToastNotification("Giveaway Bot - Security", 
-                                            $"Unauthorized command attempt by {user}");
-                                        break; // Only show once
-                                    }
+                                    adapter.ShowToastNotification("Giveaway Bot - Security", $"⛔ Unauthorized admin attempt: {user}");
                                 }
                                 return true;
                             }
@@ -2799,16 +2842,23 @@ public static class Loc
                             }
                             else
                             {
-                                Messenger?.SendBroadcast(adapter, $"⚠ Delete failed: {deleteError}", platform ?? "Twitch");
+                                Messenger?.SendBroadcast(adapter, $"⚠ Delete failed: {deleteError}", platform);
                             }
                         }
                         if (CheckCmd(rawInput, "stats") || CheckCmd(sourceDetails, "stats"))
                         {
-                            return await HandleStatsCommand(adapter, rawInput, platform ?? "Twitch");
+                            return await HandleStatsCommand(adapter, rawInput, platform);
                         }
                         if (CheckCmd(rawInput, "update") || CheckCmd(sourceDetails, "update"))
                         {
-                            return await HandleUpdateCommand(adapter, platform ?? "Twitch");
+                            if (!IsBroadcaster(adapter))
+                            {
+                                Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
+                                return true;
+                            }
+                            Messenger?.SendBroadcast(adapter, "🔄 Checking GitHub for updates...", platform);
+                            await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
+                            return true;
                         }
                     }
                     return true;
@@ -2921,6 +2971,12 @@ public static class Loc
             {
                 adapter.LogTrace($"[HandleEntry] RATE LIMIT: {userName} rejected for {profileName} (Limit: {config.MaxEntriesPerMinute}/min).");
                 IncGlobalMetric(adapter, "Entries_RateLimited");
+                
+                if (GlobalConfig.Globals.EnableSecurityToasts)
+                {
+                    // Throttled toast to prevent spamming the streamer's screen
+                    adapter.ShowToastNotification("Giveaway Bot - Security", $"⚠ SPAM DETECTED: {userName} (Rate Limit)");
+                }
                 return true;
             }
 
@@ -4012,8 +4068,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 #else
              try
              {
-                 // Use dynamic dispatch to handle optional parameters (e.g. icon path) which vary by SB version
-                 ((dynamic)_cph).ShowToastNotification(title, message);
+                 // Use InvokeMember with OptionalParamBinding to handle optional parameters (e.g. icon path)
+                 // This avoids using 'dynamic' which requires Microsoft.CSharp.dll reference (CS0656)
+                 _t.InvokeMember("ShowToastNotification",
+                     System.Reflection.BindingFlags.InvokeMethod | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.OptionalParamBinding,
+                     null, _cph, new object[] { title, message });
              }
              catch (Exception ex)
              {
@@ -4363,6 +4422,24 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         }
 
         public object GetEventType() { return InvokeSafe("GetEventType", new object[0], 0); }
+
+        /// <summary>
+        /// Runs a specified Streamer.bot action.
+        /// </summary>
+        public bool RunAction(string actionName, bool runImmediately = true)
+        {
+            object res = null;
+            if (GetMethod("RunAction", 2) != null) 
+            {
+                 res = InvokeSafe("RunAction", new object[] { actionName, runImmediately }, 2);
+            }
+            else
+            {
+                 // Fallback to 1-param if strict version differs (unlikely but safe)
+                 res = InvokeSafe("RunAction", new object[] { actionName }, 1);
+            }
+            return res != null && (bool)res;
+        }
 
 #pragma warning restore IDE0090 // 'new' expression can be simplified
 #pragma warning restore IDE0300 // Use collection expression
@@ -4831,6 +4908,37 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 }
             }
             return _cached;
+        }
+
+        /// <summary>
+        /// Resets a specific profile to its default settings.
+        /// </summary>
+        public async Task<(bool Success, string Error)> ResetProfileAsync(CPHAdapter adapter, string profileName)
+        {
+            try
+            {
+                var config = GetConfig(adapter);
+                if (config == null || config.Profiles == null) return (false, "Configuration not loaded.");
+
+                if (!config.Profiles.ContainsKey(profileName)) return (false, $"Profile '{profileName}' not found.");
+
+                // Create default profile config
+                var defaultProfile = new GiveawayProfileConfig();
+                config.Profiles[profileName] = defaultProfile; // Replace with default
+
+                // Save
+                _cached = config;
+                string json = JsonConvert.SerializeObject(config, Formatting.Indented);
+                await WriteConfigTextAsync(adapter, json);
+                
+                adapter.LogInfo($"[Config] Profile '{profileName}' has been reset to defaults.");
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                adapter.LogError($"[Config] Failed to reset profile '{profileName}': {ex.Message}");
+                return (false, ex.Message);
+            }
         }
 
         /// <summary>
@@ -6079,6 +6187,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
     public class GlobalSettings
     {
         [JsonProperty("_warning")] public string Warning { get; set; } = "DO NOT share your API Keys with others!";
+        
+        [JsonProperty("_security_toasts_help")] public string SecurityToastsHelp { get; set; } = "Enable toast notifications for security events (Unauthorized Access, Spam, invalid keys). default: true.";
+        public bool EnableSecurityToasts { get; set; } = true;
+
         public bool LogToStreamerBot { get; set; } = true;
         
         [JsonProperty("_expose_vars_help")] public string ExposeVarsHelp { get; set; } = "Expose all profile variables to Streamer.bot global variables (GiveawayBot_{Profile}_{Var}). Default: Defer to Profile.";
@@ -6650,6 +6762,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     
                     adapter.LogWarn($"[WheelAPI] API key validation failed: {errorMsg}");
                     if (Metrics != null) Metrics.WheelApiInvalidKeys++;
+                    
+                    if (GiveawayManager.GlobalConfig?.Globals?.EnableSecurityToasts == true)
+                    {
+                        adapter.ShowToastNotification("Giveaway Bot - Security", $"❌ Invalid/Revoked Wheel API Key! Check logs.");
+                    }
                     return false;
                 }
                 else
@@ -7181,69 +7298,143 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
     /// <summary>
     /// Service to check for updates from the official repository.
+    /// Downloads updates to 'Giveaway Bot/updates/' as text files.
     /// </summary>
-    public class UpdateService
+    public static class UpdateService
     {
-        // Point to the raw file of the main branch
-        private const string ScriptUrl = "https://raw.githubusercontent.com/Sythsaz/Giveaway-Bot/main/GiveawayBot.cs";
+        private const string RepoOwner = "Sythsaz";
+        private const string RepoName = "Giveaway-Bot";
 
         /// <summary>
-        /// Checks GitHub for a newer version of the script.
+        /// Checks for updates and downloads them if available.
         /// </summary>
-        public async Task<(bool available, string version)> CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion)
+        public static async Task CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion, bool notifyIfUpToDate = false)
+        {
+            try
+            {
+                // 1. Get Latest Release Info
+                var release = await GetLatestReleaseInfoAsync(adapter);
+                if (release == null)
+                {
+                    if (notifyIfUpToDate) adapter.ShowToastNotification("Update Check", "❌ Failed to fetch release info.");
+                    return;
+                }
+
+                string remoteTag = release.TagName;
+                string remoteVersion = remoteTag.TrimStart('v');
+
+                // 2. Compare Versions
+                if (IsNewer(remoteVersion, currentVersion))
+                {
+                    adapter.LogInfo($"[UpdateService] Update Available: {currentVersion} -> {remoteVersion}");
+                    adapter.ShowToastNotification("Giveaway Bot Update", $"⬇ Update Available: {remoteTag}\nDownloading...");
+
+                    // 3. Download
+                    string savedPath = await DownloadUpdateAsync(adapter, remoteTag);
+                    if (!string.IsNullOrEmpty(savedPath))
+                    {
+                        string fileName = Path.GetFileName(savedPath);
+                        adapter.ShowToastNotification("Update Downloaded", $"✅ Saved to: updates/{fileName}\nImport into Streamer.bot to apply.");
+                        adapter.LogInfo($"[UpdateService] Update saved to: {savedPath}");
+                        
+                        // Copy to clipboard instructions? No, just log.
+                        adapter.LogInfo($"[UpdateService] INSTRUCTIONS: Open 'Giveaway Bot - Main', select 'Import', and pick '{savedPath}'.");
+                    }
+                    else
+                    {
+                        adapter.ShowToastNotification("Update Failed", "❌ Failed to download file.");
+                    }
+                }
+                else if (notifyIfUpToDate)
+                {
+                    adapter.LogInfo("[UpdateService] Bot is up to date.");
+                    adapter.ShowToastNotification("Update Check", $"✅ You are on the latest version ({currentVersion}).");
+                }
+            }
+            catch (Exception ex)
+            {
+                adapter.LogError($"[UpdateService] Update Check Failed: {ex.Message}");
+                if (notifyIfUpToDate) adapter.ShowToastNotification("Update Error", "❌ Unexpected error.");
+            }
+        }
+
+        private static async Task<ReleaseInfo> GetLatestReleaseInfoAsync(CPHAdapter adapter)
         {
             try
             {
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(10);
-                    // Add User-Agent to comply with GitHub API policies (even for raw content it's good practice)
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("StreamerBot-GiveawayHelper");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("StreamerBot-GiveawayBot");
+                    string url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
 
-                    var content = await client.GetStringAsync(ScriptUrl);
-
-                    // Regex to find: public const string Version = "1.3.2";
-                    // Matches standard C# constant declaration
-                    var match = Regex.Match(content, @"public\s+const\s+string\s+Version\s*=\s*""([\d\.]+)""");
-                    if (match.Success)
+                    var response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode)
                     {
-                        string remoteVersion = match.Groups[1].Value;
-                        if (IsNewer(currentVersion, remoteVersion))
-                        {
-                            return (true, remoteVersion);
-                        }
+                        adapter.LogWarn($"[UpdateService] API Error: {response.StatusCode}");
+                        return null;
                     }
+
+                    string json = await response.Content.ReadAsStringAsync();
+                    // Basic JSON parsing using Newtonsoft
+                    // Use JObject or strong type instead of dynamic to avoid CS0656 (missing Microsoft.CSharp ref)
+                    var obj = JsonConvert.DeserializeObject<GitHubRelease>(json);
+                    
+                    if (obj == null) return null;
+
+                    return new ReleaseInfo
+                    {
+                        TagName = obj.TagName,
+                        Name = obj.Name,
+                        Body = obj.Body
+                    };
                 }
             }
             catch (Exception ex)
             {
-                adapter.LogWarn($"[UpdateService] Failed to check for updates: {ex.Message}");
+                adapter.LogError($"[UpdateService] API Exception: {ex.Message}");
+                return null;
             }
-            return (false, "");
+        }
+        
+        // Helper class for JSON deserialization
+        private class GitHubRelease
+        {
+            [JsonProperty("tag_name")] public string TagName { get; set; }
+            [JsonProperty("name")] public string Name { get; set; }
+            [JsonProperty("body")] public string Body { get; set; }
         }
 
-        /// <summary>
-        /// Downloads the latest script to a local updates folder.
-        /// </summary>
-        public async Task<string> DownloadUpdateAsync(CPHAdapter adapter, string version)
+        private static async Task<string> DownloadUpdateAsync(CPHAdapter adapter, string tag)
         {
             try
             {
                 using (var client = new HttpClient())
                 {
-                    client.Timeout = TimeSpan.FromSeconds(30);
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("StreamerBot-GiveawayHelper");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("StreamerBot-GiveawayBot");
+                    // Raw content URL
+                    string url = $"https://raw.githubusercontent.com/{RepoOwner}/{RepoName}/{tag}/GiveawayBot.cs";
+                    
+                    var response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode) return null;
+                    
+                    string content = await response.Content.ReadAsStringAsync();
 
-                    var content = await client.GetStringAsync(ScriptUrl);
+                    // Validation
+                    if (!content.Contains("class GiveawayBot"))
+                    {
+                        adapter.LogError("[UpdateService] Downloaded content validation failed.");
+                        return null;
+                    }
 
+                    // Save to 'updates' folder
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                    // Ensure we don't double up path separators or fail on different setups
-                    string folder = Path.Combine(baseDir, "Giveaway Bot", "updates");
+                    // Try to duplicate the folder structure if we can, or just putting it in Giveaway Bot/updates
+                    string updateFolder = Path.Combine(baseDir, "Giveaway Bot", "updates");
+                    if (!Directory.Exists(updateFolder)) Directory.CreateDirectory(updateFolder);
 
-                    if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-
-                    string fileName = $"GiveawayBot_v{version}.cs.txt";
-                    string fullPath = Path.Combine(folder, fileName);
+                    string filename = $"GiveawayBot_{tag}.cs.txt"; // .txt to prevent accidental compilation or confusion
+                    string fullPath = Path.Combine(updateFolder, filename);
 
                     File.WriteAllText(fullPath, content);
                     return fullPath;
@@ -7251,19 +7442,25 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             }
             catch (Exception ex)
             {
-                adapter.LogError($"[UpdateService] Failed to download update: {ex.Message}");
+                adapter.LogError($"[UpdateService] Download Exception: {ex.Message}");
                 return null;
             }
         }
 
-        private bool IsNewer(string current, string remote)
+        private static bool IsNewer(string remote, string local)
         {
-            if (System.Version.TryParse(current, out var vCur) && System.Version.TryParse(remote, out var vRem))
+            if (Version.TryParse(remote, out Version vRemote) && Version.TryParse(local, out Version vLocal))
             {
-                return vRem > vCur;
+                return vRemote > vLocal;
             }
-            // Fallback string compare if parse fails (unlikely given regex)
-            return string.Compare(remote, current, StringComparison.OrdinalIgnoreCase) > 0;
+            return string.Compare(remote, local, StringComparison.OrdinalIgnoreCase) > 0;
+        }
+
+        private class ReleaseInfo
+        {
+            public string TagName { get; set; }
+            public string Name { get; set; }
+            public string Body { get; set; }
         }
     }
 
