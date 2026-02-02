@@ -409,7 +409,7 @@ public static class Loc
              // Fallback: Check for logic-based comma splitting (only if it looks like a list)
              // We want to be careful not to split normal sentences with commas.
              // Current logic: If it contains pipes, we handled it. If not, we check for multiple valid segments.
-             // Actually, for consistency with WheelOfNamesClient logic which supported commas:
+             // For consistency with WheelOfNamesClient logic which supported commas:
              // We will maintain the comma fallback but only if no pipes.
              var commaOptions = rawMsg.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
              if (commaOptions.Length > 1)
