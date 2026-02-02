@@ -291,7 +291,7 @@ public static class Loc
     {
         string template = null;
 
-        // 1. Try Profile Overrides
+        // Try Profile Overrides
         if (!string.IsNullOrEmpty(profileName) && GiveawayManager.GlobalConfig != null)
         {
             if (GiveawayManager.GlobalConfig.Profiles.TryGetValue(profileName, out var profile) && profile.Messages != null)
@@ -303,7 +303,7 @@ public static class Loc
             }
         }
 
-        // 2. Try Global Custom Strings
+        // Try Global Custom Strings
         if (template == null && GiveawayManager.GlobalConfig?.Globals?.CustomStrings != null)
         {
             if (GiveawayManager.GlobalConfig.Globals.CustomStrings.TryGetValue(key, out var overrideStr))
@@ -321,7 +321,7 @@ public static class Loc
         // 4. Fallback
         if (template == null) return $"[{key}]";
 
-        // 5. Format
+        // Format
         if (args != null && args.Length > 0)
         {
             try { return string.Format(template, args); }
