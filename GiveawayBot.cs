@@ -499,7 +499,7 @@ public static class Loc
         /// </summary>
         public void Dispose()
         {
-            //_msgIdCleanupTimer?.Dispose(); // Removed in refactor
+            _isDisposed = true;
             _dumpTimer?.Dispose();
             _lifecycleTimer?.Dispose();
             _lock?.Dispose();
