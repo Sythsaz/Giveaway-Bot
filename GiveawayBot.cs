@@ -341,6 +341,7 @@ public static class Loc
         
         // ==================== Instance Fields ====================
         
+        private bool _isDisposed = false;
         private ConfigLoader _configLoader;
         public ConfigLoader Loader => _configLoader;
 
