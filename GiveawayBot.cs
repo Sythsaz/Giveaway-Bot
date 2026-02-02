@@ -606,6 +606,13 @@ public static class Loc
 
         /// <summary>
         /// Sets up the manager dependencies and loads initial state.
+        /// Performs the following checks:
+        /// 1. Ensures Logger is attached.
+        /// 2. Initializes Configuration Loader.
+        /// 3. Migrates legacy security tokens (API Keys).
+        /// 4. Loads global settings and profiles.
+        /// 5. Initializes subsystems (Messenger, OBS, Metrics).
+        /// 6. Starts lifecycle timers.
         /// </summary>
         public void Initialize(CPHAdapter adapter)
         {
