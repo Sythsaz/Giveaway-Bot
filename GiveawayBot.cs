@@ -1013,41 +1013,41 @@ public static class Loc
 
             void SetMetric<T>(string suffix, T value)
             {
-                SetGlobalVarIfChanged(adapter, "GiveawayBot_Metrics_" + suffix, value);
+                SetGlobalVarIfChanged(adapter, "Giveaway Global Metrics " + suffix, value);
             }
             
-            SetMetric("CacheSize", _cachedMetrics.MessageIdCacheSize);
-            SetMetric("CleanupCount", _cachedMetrics.MessageIdCleanupCount);
-            SetMetric("LoopDetected", _cachedMetrics.LoopDetectedCount);
-            SetMetric("LoopByMsgId", _cachedMetrics.LoopDetectedByMsgId);
-            SetMetric("LoopByToken", _cachedMetrics.LoopDetectedByToken);
-            SetMetric("LoopByBotFlag", _cachedMetrics.LoopDetectedByBotFlag);
-            SetMetric("ConfigReloads", _cachedMetrics.ConfigReloadCount);
-            SetMetric("FileIOErrors", _cachedMetrics.FileIOErrors);
+            SetMetric("Cache Size", _cachedMetrics.MessageIdCacheSize);
+            SetMetric("Cleanup Count", _cachedMetrics.MessageIdCleanupCount);
+            SetMetric("Loop Detected", _cachedMetrics.LoopDetectedCount);
+            SetMetric("Loop By MsgId", _cachedMetrics.LoopDetectedByMsgId);
+            SetMetric("Loop By Token", _cachedMetrics.LoopDetectedByToken);
+            SetMetric("Loop By BotFlag", _cachedMetrics.LoopDetectedByBotFlag);
+            SetMetric("Config Reloads", _cachedMetrics.ConfigReloadCount);
+            SetMetric("File IO Errors", _cachedMetrics.FileIOErrors);
             
-            SetMetric("EntriesProcessed", _cachedMetrics.EntriesProcessedCount);
-            SetMetric("EntryProcessingTotalMs", _cachedMetrics.TotalEntryProcessingMs);
+            SetMetric("Entries Processed", _cachedMetrics.EntriesProcessedCount);
+            SetMetric("Entry Processing Total Ms", _cachedMetrics.TotalEntryProcessingMs);
             // Computed average (avoid division by zero)
             long avgEntryMs = _cachedMetrics.EntriesProcessedCount > 0 
                 ? _cachedMetrics.TotalEntryProcessingMs / _cachedMetrics.EntriesProcessedCount 
                 : 0;
-            SetMetric("EntryProcessingAvgMs", avgEntryMs);
+            SetMetric("Entry Processing Avg Ms", avgEntryMs);
             
-            SetMetric("WinnerDrawAttempts", _cachedMetrics.WinnerDrawAttempts);
-            SetMetric("WinnerDrawSuccesses", _cachedMetrics.WinnerDrawSuccesses);
+            SetMetric("Winner Draw Attempts", _cachedMetrics.WinnerDrawAttempts);
+            SetMetric("Winner Draw Successes", _cachedMetrics.WinnerDrawSuccesses);
             
-            SetMetric("WheelApiCalls", _cachedMetrics.WheelApiCalls);
-            SetMetric("WheelApiTotalMs", _cachedMetrics.WheelApiTotalMs);
+            SetMetric("Wheel Api Calls", _cachedMetrics.WheelApiCalls);
+            SetMetric("Wheel Api Total Ms", _cachedMetrics.WheelApiTotalMs);
             long avgWheelMs = _cachedMetrics.WheelApiCalls > 0 
                 ? _cachedMetrics.WheelApiTotalMs / _cachedMetrics.WheelApiCalls 
                 : 0;
-            SetMetric("WheelApiAvgMs", avgWheelMs);
+            SetMetric("Wheel Api Avg Ms", avgWheelMs);
 
-            SetMetric("ApiErrors", _cachedMetrics.ApiErrors);
-            SetMetric("WheelApiErrors", _cachedMetrics.WheelApiErrors);
-            SetMetric("WheelApiInvalidKeys", _cachedMetrics.WheelApiInvalidKeys);
-            SetMetric("WheelApiTimeouts", _cachedMetrics.WheelApiTimeouts);
-            SetMetric("WheelApiNetworkErrors", _cachedMetrics.WheelApiNetworkErrors);
+            SetMetric("Api Errors", _cachedMetrics.ApiErrors);
+            SetMetric("Wheel Api Errors", _cachedMetrics.WheelApiErrors);
+            SetMetric("Wheel Api Invalid Keys", _cachedMetrics.WheelApiInvalidKeys);
+            SetMetric("Wheel Api Timeouts", _cachedMetrics.WheelApiTimeouts);
+            SetMetric("Wheel Api Network Errors", _cachedMetrics.WheelApiNetworkErrors);
         }
 
         private void IncGlobalMetric(CPHAdapter adapter, string n, long d = 1)
