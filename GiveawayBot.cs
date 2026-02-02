@@ -913,6 +913,10 @@ public static class Loc
             return TryDecrypt(secret, Environment.MachineName + "GiveawayBot_v2" + Environment.UserName);
         }
 
+        /// <summary>
+        /// Attempts to decrypt the provided secret using the given seed.
+        /// Returns null if decryption fails.
+        /// </summary>
         private static string TryDecrypt(string secret, string seed)
         {
             try
