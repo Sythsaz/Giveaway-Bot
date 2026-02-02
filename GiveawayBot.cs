@@ -653,9 +653,13 @@ public static class Loc
             _cachedMetrics = Metrics.LoadMetrics(adapter);
 
             // Start lifecycle timer (1s interval)
+#if !GIVEAWAY_TESTS
 #pragma warning disable CS8622
             _lifecycleTimer = new System.Threading.Timer(LifecycleTick, adapter, 1000, 1000);
 #pragma warning restore CS8622
+#else
+            adapter.LogInfo("[GiveawayManager] Test Environment detected: Lifecycle Timer disabled.");
+#endif
 
             adapter.LogVerbose("[GiveawayManager] Internal services instantiated (Loader, Messenger, WheelClient, Metrics).");
 
