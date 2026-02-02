@@ -2,6 +2,7 @@
 
 > **Giveaway System for Streamer.bot**
 >
+> **Active Development! There may be breaking changes until things get ironed out a bit better**
 > [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 > [![Streamer.bot](https://img.shields.io/badge/Streamer.bot-v0.2.3%2B-blueviolet)](https://streamer.bot)
 > [![GitHub release](https://img.shields.io/github/v/release/Sythsaz/Giveaway-Bot.svg)](https://github.com/Sythsaz/Giveaway-Bot/releases)
