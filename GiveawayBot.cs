@@ -902,14 +902,14 @@ public static class Loc
             if (secret.StartsWith("ENC:")) return null; // Legacy DPAPI
             if (!secret.StartsWith("AES:")) return secret; // Not encrypted
             
-            // 1. Try Configured Salt (Portable)
+            // Try Configured Salt (Portable)
             if (!string.IsNullOrEmpty(GlobalConfig?.Globals?.EncryptionSalt))
             {
                 string result = TryDecrypt(secret, GlobalConfig.Globals.EncryptionSalt);
                 if (result != null) return result;
             }
             
-            // 2. Try Legacy Machine Key (Fallback)
+            // Try Legacy Machine Key (Fallback)
             return TryDecrypt(secret, Environment.MachineName + "GiveawayBot_v2" + Environment.UserName);
         }
 
