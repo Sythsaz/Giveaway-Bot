@@ -259,6 +259,8 @@ public static class Loc
             { "EntryRejected_TooNew", "Your account is too new to join this giveaway." },
             { "EntryRejected_LowEntropy", "Entry rejected by anti-bot protection." },
             { "EntryRejected_Blacklisted", "You are not allowed to join this giveaway." },
+            { "EntryRejected_NotFollower", "Sorry, you must be a follower to join this giveaway!" },
+            { "EntryRejected_NotSubscriber", "Sorry, you must be a subscriber to join this giveaway!" },
             { "EntryRejected_GiveawayClosed", "The giveaway is currently closed." },
 
             // Draw
