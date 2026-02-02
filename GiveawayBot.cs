@@ -423,6 +423,12 @@ public static class Loc
         // Timer for lifecycle events (timed giveaways)
         private System.Threading.Timer _lifecycleTimer;
 
+        /// <summary>
+        /// Parses a duration string (e.g., "10m", "1h", "30s") into total seconds.
+        /// Defaults to minutes if no unit is specified (e.g., "5" -> 300s).
+        /// Returns null if parsing fails.
+        /// </summary>
+        /// <param name="durationStr">The duration string to parse.</param>
         public static int? ParseDuration(string durationStr)
         {
             if (string.IsNullOrWhiteSpace(durationStr)) return null;
