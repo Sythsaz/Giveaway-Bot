@@ -516,6 +516,9 @@ public static class Loc
         // Tracks individual profile sync times for throttling
         private readonly ConcurrentDictionary<string, DateTime> _lastSyncTimes = new ConcurrentDictionary<string, DateTime>();
 
+        // Tracks failed API keys to prevent infinite validation loops/toasts
+        private readonly ConcurrentDictionary<string, bool> _failedEncryptionKeys = new ConcurrentDictionary<string, bool>();
+
         // Semaphore to prevent race conditions during entry operations
         // Used in HandleEntry and HandleDraw to ensure atomic state updates
         private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
