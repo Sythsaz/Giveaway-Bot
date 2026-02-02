@@ -138,6 +138,9 @@ namespace StreamerBot
         bool IsTwitchLive();
         bool IsYouTubeLive();
         bool IsKickLive();
+        
+        bool TwitchIsUserFollower(string userId);
+        bool TwitchIsUserSubscriber(string userId);
         void ObsSetBrowserSource(string scene, string source, string url);
         void ShowToastNotification(string title, string message);
         bool RunAction(string actionName, bool runImmediately = true);
