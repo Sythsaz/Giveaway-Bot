@@ -51,7 +51,15 @@ namespace StreamerBot.Tests
             return default(T);
         }
 
-        public void SetGlobalVar(string n, object v, bool p = true) => Globals[n] = v;
+        public void SetGlobalVar(string n, object v, bool p = true)
+        {
+            if (n == "Giveaway Global RunMode")
+            {
+                Console.WriteLine($"[MockCPH] SetGlobalVar RunMode = {v}");
+                Console.WriteLine(Environment.StackTrace);
+            }
+            Globals[n] = v;
+        }
 
         public T GetUserVar<T>(string u, string n, bool p = true)
         {
@@ -108,5 +116,17 @@ namespace StreamerBot.Tests
         {
             Globals.Remove(varName);
         }
+
+        // Feature: Follower/Subscriber Simulation
+        public HashSet<string> Followers { get; set; } = new HashSet<string>();
+        public HashSet<string> Subscribers { get; set; } = new HashSet<string>();
+
+        // Interface Implementation (1 arg)
+        public bool TwitchIsUserFollower(string userId) => Followers.Contains(userId);
+        public bool TwitchIsUserSubscriber(string userId) => Subscribers.Contains(userId);
+
+        // Reflection Overload (2 args) - Used by CPHAdapter
+        public bool TwitchIsUserFollower(string userId, bool useBot) => Followers.Contains(userId);
+        public bool TwitchIsUserSubscriber(string userId, bool useBot) => Subscribers.Contains(userId);
     }
 }

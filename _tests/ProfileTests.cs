@@ -242,12 +242,12 @@ namespace StreamerBot.Tests
                 // 6. Requirement: Streamer.bot variable cleanup
                 Console.Write("  - Global variable cleanup (pass):        ");
                 // Mock a variable that would be present for a profile named 'ToCleanup'
-                cph.SetGlobalVar("GiveawayBot_ToCleanup_IsActive", true, true);
+                cph.SetGlobalVar("Giveaway ToCleanup IsActive", true, true);
                 cph.Args["rawInput"] = "!giveaway profile create ToCleanup";
                 await m.ProcessTrigger(adapter);
                 cph.Args["rawInput"] = "!giveaway profile delete ToCleanup confirm";
                 await m.ProcessTrigger(adapter);
-                bool varUnset = !cph.Globals.ContainsKey("GiveawayBot_ToCleanup_IsActive");
+                bool varUnset = !cph.Globals.ContainsKey("Giveaway ToCleanup IsActive");
                 if (varUnset) Console.WriteLine("PASS");
                 else Console.WriteLine("FAIL (Variable remained)");
             }
