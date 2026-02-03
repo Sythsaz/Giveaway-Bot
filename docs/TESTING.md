@@ -67,7 +67,7 @@ Run these commands in your Twitch/YouTube chat to verify basic health.
 
 #### 1. Configuration Sync
 
-verify that changing Global Variables updates the bot.
+- Verify that changing Global Variables updates the bot.
 
 1. Go to Streamer.bot -> **Settings** -> **Global Variables**.
 2. Find `Giveaway Global TimerDuration`.
