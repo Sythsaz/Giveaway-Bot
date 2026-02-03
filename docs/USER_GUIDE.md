@@ -1,6 +1,6 @@
 # Streamer.bot Giveaway Assistant - Comprehensive User Guide
 
-> **Version**: 1.3.1
+> **Version**: 1.4.2
 > **Compatibility**: Streamer.bot v0.2.3+ (Targeting .NET Framework 4.8 / C# 7.3)
 > 📖 **Additional Documentation:**
 >
@@ -761,6 +761,10 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
 
 > [!NOTE]
 > Toasts use standard Windows notifications. Ensure "Streamer.bot" is allowed to send notifications in Windows Settings.
+>
+> **Global Security Alerts**:
+> You can toggle security-specific toasts (Spam, Unauthorized Access, API Errors) via the
+> `EnableSecurityToasts` Global Setting (Default: `true`).
 
 ---
 

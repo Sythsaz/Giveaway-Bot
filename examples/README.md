@@ -5,7 +5,7 @@ This directory contains pre-configured `giveaway_config.json` examples for vario
 ## How to Use
 
 1. **Choose an example** that fits your needs.
-2. **Copy the content** to `.../Streamer.bot/data/Giveaway Helper/config/giveaway_config.json`.
+2. **Copy the content** to `.../Streamer.bot/data/Giveaway Bot/config/giveaway_config.json`.
 3. **Modify** any specific values (like API keys, ObsScene names).
 4. **Resave** the file. The bot will automatically reload (if RunMode is not set to ReadOnlyVar).
 

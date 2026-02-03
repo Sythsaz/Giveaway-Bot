@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Florals Giveaway Bot will be documented in this file.
+All notable changes to the Giveaway Bot will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -24,8 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## TODO add how variables changed
+
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
+- **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods and properties.
+- **Code Quality**: Enhanced `ParseBoolVariant` to return `null` for invalid inputs, improving config parsing robustness.
 - **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 - **DEVELOPMENT.md**: Enhanced with three-layer C# 7.3 enforcement documentation (build-time, IDE, pre-commit)
 - **CONTRIBUTING.md**: Expanded C# 7.3 constraints section with pre-commit hook usage and common pitfalls
@@ -40,6 +44,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.4.2] - 2026-01-31
+
+### Fixed (v1.4.2)
+
+- **Global Settings Sync**: `CheckForConfigUpdates` now correctly synchronizes Global variables
+  (`RunMode`, `LogLevel`, `FallbackPlatform`, `EnableSecurityToasts`) when changed via Streamer.bot,
+  ensuring bi-directional config management.
+- **Test Suite**: Fixed `ProfileSecurityTests` to support the new AM/PM timestamp format in logs,
+  resolving false failures.
+
 ## [1.4.0] - 2026-01-31
 
 ### Added (v1.4.0)
@@ -48,6 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Update Service**: Automatically checks `RELEASE_NOTES.md` on startup and alerts via Toast/Chat if a new version is available.
 - **Privacy-Focused**: Downloads updates to a local `updates/` folder and notifies via Toast to avoid exposing file paths
   in streaming chat.
+- **Security Alerts**: Added `EnableSecurityToasts` (default: true) to trigger Windows notifications for
+  unauthorized command attempts, spam detection (rate limits), and API key failures.
 
 ### Fixed (v1.4.0)
 

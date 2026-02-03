@@ -36,7 +36,7 @@ namespace StreamerBot.Tests
                 if (!Directory.Exists(configDir)) Directory.CreateDirectory(configDir);
                 File.WriteAllText(configPath, "{\"Profiles\":{}}");
 
-                cph.SetGlobalVar("GiveawayBot_BackupCount", 3, true);
+                cph.SetGlobalVar("Giveaway Global BackupCount", 3, true);
                 cph.Args["isBroadcaster"] = true;
 
                 // Trigger 5 changes
@@ -168,7 +168,7 @@ namespace StreamerBot.Tests
 
             // Test 6: Backup zip rotation (keep only N)
             Console.Write("  - Backup zip rotation logic:            ");
-            cph.SetGlobalVar("GiveawayBot_BackupCount", 3, true);
+            cph.SetGlobalVar("Giveaway Global BackupCount", 3, true);
 
             string zipPath = Path.Combine(backupDir, "config_history.zip");
             if (File.Exists(zipPath)) File.Delete(zipPath);
@@ -206,14 +206,14 @@ namespace StreamerBot.Tests
             await m.ProcessTrigger(new CPHAdapter(cph));
 
             // Get variable value
-            string originalVar = cph.GetGlobalVar<string>("GiveawayBot_Profile_StateTest_Status", true);
+            string originalVar = cph.GetGlobalVar<string>("Giveaway StateTest IsActive", true);
 
             // Create new manager instance
             var m2 = new GiveawayManager();
             m2.Initialize(new CPHAdapter(cph));
 
             // Check if variable persisted
-            string persistedVar = cph.GetGlobalVar<string>("GiveawayBot_Profile_StateTest_Status", true);
+            string persistedVar = cph.GetGlobalVar<string>("Giveaway StateTest IsActive", true);
             if (persistedVar != originalVar)
                 throw new Exception("GlobalVar did not persist across manager instances!");
 
@@ -224,7 +224,7 @@ namespace StreamerBot.Tests
 
             // Test 8: Mirror mode JSON + variables sync
             Console.Write("  - Mirror mode bidirectional sync:       ");
-            cph.SetGlobalVar("GiveawayBot_RunMode", "Mirror", true);
+            cph.SetGlobalVar("Giveaway Global RunMode", "Mirror", true);
             var m3 = new GiveawayManager();
             m3.Initialize(new CPHAdapter(cph));
 
@@ -238,14 +238,14 @@ namespace StreamerBot.Tests
             cph.Args["rawInput"] = "!giveaway config check";
             await m3.ProcessTrigger(new CPHAdapter(cph));
 
-            string globalVarConfig = cph.GetGlobalVar<string>("GiveawayBot_Config", true);
+            string globalVarConfig = cph.GetGlobalVar<string>("Giveaway Global Config", true);
             var syncedConfig = JsonConvert.DeserializeObject<GiveawayBotConfig>(globalVarConfig);
             if (!syncedConfig.Profiles["Main"].ExposeVariables)
                 throw new Exception("Mirror mode did not sync JSON -> GlobalVar!");
             Console.WriteLine("PASS");
 
             // Reset
-            cph.SetGlobalVar("GiveawayBot_RunMode", "FileSystem", true);
+            cph.SetGlobalVar("Giveaway Global RunMode", "FileSystem", true);
 
             // Test 9: Profile deletion removes all variables
             Console.Write("  - Delete removes all profile variables: ");
@@ -260,7 +260,7 @@ namespace StreamerBot.Tests
             m.SyncAllVariables(new CPHAdapter(cph));
 
             // Verify variables exist
-            string varBefore = cph.GetGlobalVar<string>("GiveawayBot_VarCleanup_IsActive", true);
+            string varBefore = cph.GetGlobalVar<string>("Giveaway VarCleanup IsActive", true);
             if (string.IsNullOrEmpty(varBefore))
                 throw new Exception("Profile variables were not created!");
 
@@ -269,7 +269,7 @@ namespace StreamerBot.Tests
             await m.ProcessTrigger(new CPHAdapter(cph));
 
             // Verify variables removed
-            string varAfter = cph.GetGlobalVar<string>("GiveawayBot_VarCleanup_IsActive", true);
+            string varAfter = cph.GetGlobalVar<string>("Giveaway VarCleanup IsActive", true);
             if (!string.IsNullOrEmpty(varAfter))
                 throw new Exception("Profile deletion did not remove variables!");
             Console.WriteLine("PASS");
@@ -288,7 +288,7 @@ namespace StreamerBot.Tests
 
             // Verify clone has its own variables
             // Check IsActive instead of Status (which doesn't exist)
-            string cloneVar = cph.GetGlobalVar<string>("GiveawayBot_CloneVarTest_IsActive", true);
+            string cloneVar = cph.GetGlobalVar<string>("Giveaway CloneVarTest IsActive", true);
 
             if (string.IsNullOrEmpty(cloneVar))
                 throw new Exception("Cloned profile did not get variables!");

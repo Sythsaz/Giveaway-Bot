@@ -1,6 +1,6 @@
 # API Reference
 
-Complete technical reference for the Florals Giveaway Bot.
+Complete technical reference for the Giveaway Bot.
 
 ## Table of Contents
 
@@ -50,18 +50,18 @@ System-wide configuration options.
 
 **Properties**:
 
-| Property                   | Type                          | Default      | Description                                  |
-| -------------------------- | ----------------------------- | ------------ | -------------------------------------------- |
-| `RunMode`                  | `RunMode` (enum)              | `FileSystem` | Configuration persistence mode               |
-| `StatePersistenceMode`     | `StatePersistenceMode` (enum) | `File`       | State file persistence mode                  |
-| `StateSyncIntervalSeconds` | `int`                         | `30`         | Sync frequency between file and globals      |
-| `LogLevel`                 | `LogLevel` (enum)             | `INFO`       | Minimum log level to write                   |
-| `LogMaxSizeKB`             | `int`                         | `2048`       | Maximum log file size before rotation        |
-| `LogRetentionDays`         | `int`                         | `7`          | Days to keep old log files                   |
-| `ImportGlobals`            | `bool`                        | `false`      | Auto-import settings to Streamer.bot globals |
-| `CustomStrings`            | `Dictionary<string, string>`  | `{}`         | Override default bot response messages       |
-| `FallbackPlatform`         | `string`                      | `"twitch"`   | Platform to use when offline/unavailable     |
-| `WheelOfNamesApiKey`       | `string`                      | `null`       | API key for Wheel of Names integration       |
+| Property                   | Type                          | Default    | Description                                  |
+| -------------------------- | ----------------------------- | ---------- | -------------------------------------------- |
+| `RunMode`                  | `RunMode` (enum)              | `Mirror`   | Configuration persistence mode               |
+| `StatePersistenceMode`     | `StatePersistenceMode` (enum) | `File`     | State file persistence mode                  |
+| `StateSyncIntervalSeconds` | `int`                         | `30`       | Sync frequency between file and globals      |
+| `LogLevel`                 | `LogLevel` (enum)             | `INFO`     | Minimum log level to write                   |
+| `LogMaxSizeKB`             | `int`                         | `100` (MB) | Maximum log file size before rotation        |
+| `LogRetentionDays`         | `int`                         | `90`       | Days to keep old log files                   |
+| `ImportGlobals`            | `bool`                        | `false`    | Auto-import settings to Streamer.bot globals |
+| `CustomStrings`            | `Dictionary<string, string>`  | `{}`       | Override default bot response messages       |
+| `FallbackPlatform`         | `string`                      | `"twitch"` | Platform to use when offline/unavailable     |
+| `WheelOfNamesApiKey`       | `string`                      | `null`     | API key for Wheel of Names integration       |
 
 **Example**:
 
@@ -90,7 +90,7 @@ Configuration for an individual giveaway profile.
 | Property                            | Type                         | Default         | Description                                  |
 | ----------------------------------- | ---------------------------- | --------------- | -------------------------------------------- |
 | `Triggers`                          | `Dictionary<string, string>` | See below       | Maps trigger patterns to actions             |
-| `MaxEntriesPerMinute`               | `int`                        | `60`            | Rate limit for entries per minute            |
+| `MaxEntriesPerMinute`               | `int`                        | `45`            | Rate limit for entries per minute            |
 | `SubLuckMultiplier`                 | `int`                        | `2`             | Bonus tickets for subscribers                |
 | `EnableWheel`                       | `bool`                       | `false`         | Enable Wheel of Names integration            |
 | `EnableObs`                         | `bool`                       | `false`         | Enable OBS source control                    |
@@ -103,8 +103,8 @@ Configuration for an individual giveaway profile.
 | `DumpEntriesOnEntryThrottleSeconds` | `int`                        | `10`            | Batch frequency for real-time dumps          |
 | `DumpWinnersOnDraw`                 | `bool`                       | `true`          | Dump winner info after selection             |
 | `UsernamePattern`                   | `string`                     | `null`          | Regex validation for usernames               |
-| `MinAccountAgeDays`                 | `int`                        | `0`             | Minimum account age requirement (0=disabled) |
-| `EnableEntropyCheck`                | `bool`                       | `false`         | Detect keyboard-smash usernames              |
+| `MinAccountAgeDays`                 | `int`                        | `180`           | Minimum account age requirement (0=disabled) |
+| `EnableEntropyCheck`                | `bool`                       | `true`          | Detect keyboard-smash usernames              |
 | `AllowedExternalBots`               | `List<string>`               | `[]`            | Bot usernames allowed to trigger actions     |
 | `ExternalListeners`                 | `List<BotListenerRule>`      | `[]`            | Regex rules for external bot parsing         |
 | `ToastNotifications`                | `Dictionary<string, bool>`   | See below       | Toast notification toggles                   |
@@ -226,7 +226,7 @@ Runtime state for a giveaway profile. **Auto-managed** - do not edit manually.
 
 ```text
 =========================================
-FLORALS GIVEAWAY BOT - SYSTEM TEST
+GIVEAWAY BOT - SYSTEM TEST
 Version: 1.0.0
 =========================================
 ✓ Config loaded successfully

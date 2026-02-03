@@ -1,9 +1,9 @@
 // Streamer.bot uses .NET Framework 4.8 / C# 7.3
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using StreamerBot;
 
@@ -44,13 +44,13 @@ namespace StreamerBot.Tests
             var cph = new MockCPH();
             var m = new GiveawayManager();
             m.Initialize(new CPHAdapter(cph));
-            
+
             // Setup Main state and config
             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
             if (!GiveawayManager.GlobalConfig.Profiles.ContainsKey("Main")) GiveawayManager.GlobalConfig.Profiles["Main"] = new GiveawayProfileConfig();
-            
+
             m.States["Main"] = new GiveawayState { IsActive = true };
-            
+
             if (m.States.TryGetValue("Main", out var s))
             {
                 s.IsActive = true;
@@ -69,15 +69,15 @@ namespace StreamerBot.Tests
             var cph = new MockCPH();
             var m = new GiveawayManager();
             m.Initialize(new CPHAdapter(cph));
-            
-            // Setup Main and Weekly
-             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
-             GiveawayManager.GlobalConfig.Profiles["Main"] = new GiveawayProfileConfig();
-             GiveawayManager.GlobalConfig.Profiles["Weekly"] = new GiveawayProfileConfig();
-             GiveawayManager.GlobalConfig.Profiles["Weekly"].Triggers["command:!weekly"] = "Entry";
 
-             m.States["Main"] = new GiveawayState { IsActive = true };
-             m.States["Weekly"] = new GiveawayState { IsActive = true };
+            // Setup Main and Weekly
+            if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
+            GiveawayManager.GlobalConfig.Profiles["Main"] = new GiveawayProfileConfig();
+            GiveawayManager.GlobalConfig.Profiles["Weekly"] = new GiveawayProfileConfig();
+            GiveawayManager.GlobalConfig.Profiles["Weekly"].Triggers["command:!weekly"] = "Entry";
+
+            m.States["Main"] = new GiveawayState { IsActive = true };
+            m.States["Weekly"] = new GiveawayState { IsActive = true };
 
             if (m.States.TryGetValue("Main", out var s1) && m.States.TryGetValue("Weekly", out var s2))
             {
@@ -106,6 +106,10 @@ namespace StreamerBot.Tests
             // Setup keys
             if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("ConcurrencyProfile"))
                 await m.Loader.CreateProfileAsync(adapter, "ConcurrencyProfile");
+
+            // Ensure State exists
+            if (!m.States.ContainsKey("ConcurrencyProfile"))
+                m.States["ConcurrencyProfile"] = new GiveawayState();
 
             // Reset State
             m.States["ConcurrencyProfile"].IsActive = true;

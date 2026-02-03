@@ -1,11 +1,11 @@
 // Streamer.bot uses .NET Framework 4.8 / C# 7.3
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 using System;
-using System.IO;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using StreamerBot;
 
@@ -56,7 +56,7 @@ namespace StreamerBot.Tests
             var messenger = new MultiPlatformMessenger(config);
 
             // 1. All live, Multi-Platform = true (Twitch, YouTube)
-            c.SetGlobalVar("GiveawayBot_EnableMultiPlatform", true, true);
+            c.SetGlobalVar("Giveaway Global EnableMultiPlatform", true, true);
             c.IsTwitchLiveValue = true;
             c.IsYouTubeLiveValue = true;
             c.IsKickLiveValue = true;
@@ -73,7 +73,7 @@ namespace StreamerBot.Tests
             if (c.ChatHistory.Count != 1 || !c.ChatHistory.Any(x => x.Contains("Going to fallback"))) throw new Exception("Fallback failed.");
 
             // 3. Multi-Platform = false (Only source -> YouTube)
-            c.SetGlobalVar("GiveawayBot_EnableMultiPlatform", false, true);
+            c.SetGlobalVar("Giveaway Global EnableMultiPlatform", false, true);
             c.IsTwitchLiveValue = true;
             c.IsYouTubeLiveValue = true;
             c.ChatHistory.Clear();
@@ -140,10 +140,10 @@ namespace StreamerBot.Tests
             var (m, c) = SetupWithCph();
 
             // Set up bot list in Streamer.bot variable
-            c.SetGlobalVar("GiveawayBot_AllowedBots", "Moobot\nNightbot\nStreamlabs", true);
+            c.SetGlobalVar("Giveaway Global AllowedBots", "Moobot\nNightbot\nStreamlabs", true);
 
             // Configure to read from variable
-            GiveawayManager.GlobalConfig.Profiles["Main"].AllowedExternalBots = new List<string> { "GiveawayBot_AllowedBots" };
+            GiveawayManager.GlobalConfig.Profiles["Main"].AllowedExternalBots = new List<string> { "Giveaway Global AllowedBots" };
             GiveawayManager.GlobalConfig.Profiles["Main"].ExternalListeners = new List<BotListenerRule>
             {
                 new BotListenerRule { Pattern = "OPEN", Action = "Open" }
@@ -274,7 +274,7 @@ namespace StreamerBot.Tests
             var m = new GiveawayManager();
 
             // 1. Setup: Plain text key
-            cph.SetGlobalVar("GiveawayBot_RunMode", "GlobalVar", true);
+            cph.SetGlobalVar("Giveaway Global RunMode", "GlobalVar", true);
             cph.SetGlobalVar("WheelOfNamesApiKey", "PLAIN_SECRET", true);
 
             // 2. Initialize (should trigger auto-encrypt)
@@ -323,7 +323,7 @@ namespace StreamerBot.Tests
             cph.Args["user"] = "Tester";
             await m.ProcessTrigger(new CPHAdapter(cph));
 
-            string dumpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "dumps", "ExportTest");
+            string dumpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "dumps", "ExportTest");
             string csvFile = Directory.GetFiles(dumpDir, "*_Entries.csv").OrderByDescending(f => f).FirstOrDefault();
 
             bool csvPass = false;
@@ -377,7 +377,7 @@ namespace StreamerBot.Tests
             await m.ProcessTrigger(new CPHAdapter(cph));
 
             // Check file
-            var exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "exports");
+            var exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "exports");
             var exportFile = Directory.GetFiles(exportDir, "ExportMe_Export_*.json").OrderByDescending(f => f).FirstOrDefault();
 
             if (exportFile == null) { Console.WriteLine("FAIL (Export file not found)"); return; }
@@ -395,7 +395,7 @@ namespace StreamerBot.Tests
             if (newConfig.Profiles["ImportedProfile"].SubLuckMultiplier != 42) { Console.WriteLine("FAIL (Imported property mismatch)"); return; }
 
             // 4. Import (Raw JSON - Relative Path Logic)
-            string importDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "import");
+            string importDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "import");
             if (!Directory.Exists(importDir)) Directory.CreateDirectory(importDir);
             File.WriteAllText(Path.Combine(importDir, "Relative.json"), exportedJson);
 

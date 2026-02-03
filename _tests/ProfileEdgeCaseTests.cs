@@ -40,8 +40,8 @@ namespace StreamerBot.Tests
 
             try
             {
-                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "giveaway_config.json");
-                string backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Helper", "config", "backups");
+                string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config", "giveaway_config.json");
+                string backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config", "backups");
 
                 // Test 1: Delete profile with 1000+ entries (Stress Test)
                 Console.Write("  - Stress test (1000 entries deletion):   ");
@@ -131,7 +131,7 @@ namespace StreamerBot.Tests
 
                 // Test 7: Delete in RunMode=ReadOnlyVar
                 Console.Write("  - Delete blocked in ReadOnlyVar mode:    ");
-                cph.SetGlobalVar("GiveawayBot_RunMode", "ReadOnlyVar", true);
+                cph.SetGlobalVar("Giveaway Global RunMode", "ReadOnlyVar", true);
                 // Re-init to pick up mode
                 var m7 = new GiveawayManager();
                 m7.Initialize(new CPHAdapter(cph));
@@ -145,7 +145,7 @@ namespace StreamerBot.Tests
                     Console.WriteLine("FAIL (Profile was deleted in ReadOnlyVar)");
 
                 // Reset mode
-                cph.SetGlobalVar("GiveawayBot_RunMode", "FileSystem", true);
+                cph.SetGlobalVar("Giveaway Global RunMode", "FileSystem", true);
 
                 // Test 8: Backup contains state.json check
                 Console.Write("  - Backup zip integrity check:            ");
@@ -233,7 +233,7 @@ namespace StreamerBot.Tests
 
                 // Test 6: ReadOnlyVar mode blocking
                 Console.Write("  - Update blocked in ReadOnlyVar mode:    ");
-                cph.SetGlobalVar("GiveawayBot_RunMode", "ReadOnlyVar", true);
+                cph.SetGlobalVar("Giveaway Global RunMode", "ReadOnlyVar", true);
                 var m6 = new GiveawayManager();
                 m6.Initialize(new CPHAdapter(cph)); // re-init to pick up mode
                 // Wait, UpdateProfileConfigAsync doesn't check runmode itself, but correct usage via command does.
@@ -249,7 +249,7 @@ namespace StreamerBot.Tests
                 if (val == true) Console.WriteLine("PASS"); // Blocked successfully
                 else Console.WriteLine("FAIL (Value changed)");
 
-                cph.SetGlobalVar("GiveawayBot_RunMode", "FileSystem", true);
+                cph.SetGlobalVar("Giveaway Global RunMode", "FileSystem", true);
 
                 // Test 7: Concurrent config updates
                 Console.Write("  - Concurrent updates:                    ");
