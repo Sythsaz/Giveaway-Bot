@@ -29,7 +29,7 @@ namespace StreamerBot.Tests
             // Reset static state for isolation
             GiveawayManager.GlobalConfig = null;
             m.States.Clear();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             return (m, cph);
@@ -44,13 +44,13 @@ namespace StreamerBot.Tests
 
             // 1. Create Batch1, Batch2
             cph.Args["rawInput"] = "!giveaway profile create Batch1";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             cph.Args["rawInput"] = "!giveaway profile create Batch2";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // 2. Batch Config
             cph.Args["rawInput"] = "!giveaway profile config * SubLuckMultiplier=99";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             var config = GiveawayManager.GlobalConfig;
             if (config.Profiles["Batch1"].SubLuckMultiplier != 99 || config.Profiles["Batch2"].SubLuckMultiplier != 99)
@@ -60,7 +60,7 @@ namespace StreamerBot.Tests
 
             // 3. Batch Start
             cph.Args["rawInput"] = "!giveaway profile start *";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             if (!m.States["Batch1"].IsActive || !m.States["Batch2"].IsActive)
             {
@@ -69,7 +69,7 @@ namespace StreamerBot.Tests
 
             // 4. Batch End
             cph.Args["rawInput"] = "!giveaway profile end all"; // Test 'all' alias
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             if (m.States["Batch1"].IsActive || m.States["Batch2"].IsActive)
             {
@@ -83,7 +83,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("\n[TEST] Config Reflection (Phase 9+):");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -125,7 +125,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("UpdateProfileConfig Comprehensive");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -181,7 +181,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("Trigger Management Comprehensive");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -223,7 +223,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("Command Routing & Parsing Comprehensive");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -327,7 +327,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("\n[TEST] Command Aliases:");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // 1. !ga alias (Create)
             Console.Write("  - '!ga' alias (Create):                  ");

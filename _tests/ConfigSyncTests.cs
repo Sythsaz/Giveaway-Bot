@@ -38,7 +38,7 @@ namespace StreamerBot.Tests
             // Reset static state for isolation (crucial for config tests)
             GiveawayManager.GlobalConfig = null;
             m.States.Clear(); // Although m is new, States is per instance, but GlobalConfig is static
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
 
             // Force RunMode via GlobalVar override BEFORE Initialize to prevent "Mirror" default exposure
@@ -112,7 +112,7 @@ namespace StreamerBot.Tests
                 c.Args["userId"] = "ValidUserOne";
                 c.Args["user"] = "ValidUserOne";
                 c.Args["command"] = "!enter";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 if (c.Globals.ContainsKey("Giveaway Main EntryCount")) throw new Exception("Variables exposed while disabled!");
 
@@ -129,7 +129,7 @@ namespace StreamerBot.Tests
 
                 c.Args["userId"] = "ValidUserTwo";
                 c.Args["user"] = "ValidUserTwo";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 if (!c.Globals.TryGetValue("Giveaway Main EntryCount", out var count) || (int)count != 2)
                     throw new Exception($"Entry count mismatch: expected 2, got {count} (UserOneAccepted: {c.Globals.ContainsKey("Giveaway Main EntryCount")})");
@@ -150,7 +150,7 @@ namespace StreamerBot.Tests
                 c.Args.Clear();
                 c.Args["isBroadcaster"] = true;
                 c.Args["command"] = "!draw";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 if (!c.Globals.TryGetValue("Giveaway Main WinnerName", out var name) || string.IsNullOrEmpty(name?.ToString()))
                     throw new Exception("WinnerName not synced");
@@ -205,7 +205,7 @@ namespace StreamerBot.Tests
                 GiveawayManager.GlobalConfig.Globals.LogLevel = "TRACE";
                 GiveawayManager.GlobalConfig.Globals.RunMode = "FileSystem"; // Fix: Default is Mirror, which forces sync
                 // Persist this change so reloads don't revert to Mirror
-                new ConfigLoader().WriteConfigText(new CPHAdapter(c), Newtonsoft.Json.JsonConvert.SerializeObject(GiveawayManager.GlobalConfig, Newtonsoft.Json.Formatting.Indented));
+                new ConfigLoader().WriteConfigText(new CPHAdapter(c, c.Args), Newtonsoft.Json.JsonConvert.SerializeObject(GiveawayManager.GlobalConfig, Newtonsoft.Json.Formatting.Indented));
 
                 m.States["Main"].IsActive = true; // Activate giveaway so entries can be processed
 
@@ -214,7 +214,7 @@ namespace StreamerBot.Tests
                 c.Args["userId"] = "GlobalOverrideOne";
                 c.Args["user"] = "GlobalOverrideOne";
                 c.Args["command"] = "!enter";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 Console.WriteLine($"[TEST DEBUG] Globals Count BEFORE CHECK: {c.Globals.Count}");
                 if (c.Globals.Count > 0)
@@ -228,7 +228,7 @@ namespace StreamerBot.Tests
 
                 c.Args["userId"] = "GlobalOverrideTwo";
                 c.Args["user"] = "GlobalOverrideTwo";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 if (!c.Globals.TryGetValue("Giveaway Main EntryCount", out var count) || (int)count != 2)
                     throw new Exception(String.Format("Global override (true) failed! Count: {0}", count));
@@ -295,7 +295,7 @@ namespace StreamerBot.Tests
                 }
                 if (!success && File.Exists(configPath)) Console.WriteLine("[WARN] Failed to overwrite config file!");
 
-                m.Initialize(new CPHAdapter(c));
+                m.Initialize(new CPHAdapter(c, c.Args));
 
                 // Wait for background startup sync (CheckForUpdatesStartup) to finish
                 // This prevents race conditions where initial sync creates variables mid-test
@@ -316,7 +316,7 @@ namespace StreamerBot.Tests
                 // Trigger an update (Create Profile)
                 c.Args["isBroadcaster"] = true;
                 c.Args["rawInput"] = "!giveaway create NewGlobal";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 var updatedJson = c.GetGlobalVar<string>("Giveaway Global Config", true);
                 if (!updatedJson.Contains("NewGlobal")) throw new Exception("Failed to save config back to GlobalVar!");
@@ -343,10 +343,10 @@ namespace StreamerBot.Tests
             var m = new GiveawayManager();
             try
             {
-                m.Initialize(new CPHAdapter(c));
+                m.Initialize(new CPHAdapter(c, c.Args));
                 await Task.Delay(1000); // Allow CheckForConfigUpdatesStartup to finish bootstrapping
                 // Warmup: Ensure _previousConfig is populated so subsequent error-fallback doesn't look like a "Change"
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 // Delete file created by bootstrap to force GlobalVar read during validation (since InvalidateCache resets _lastLoad)
                 if (File.Exists(configPath)) File.Delete(configPath);
@@ -365,7 +365,7 @@ namespace StreamerBot.Tests
                 // Trigger validation check
                 c.Args["isBroadcaster"] = true;
                 c.Args["rawInput"] = "!giveaway config check";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 var errors = c.GetGlobalVar<string>("Giveaway Global LastConfigErrors", true);
                 if (string.IsNullOrEmpty(errors))
@@ -379,10 +379,10 @@ namespace StreamerBot.Tests
                 // Fix JSON
                 c.SetGlobalVar("Giveaway Global Config", "{\"Profiles\":{}}", true);
                 m.Loader.InvalidateCache();
-                await m.ProcessTrigger(new CPHAdapter(c)); // This re-runs validation during IdentifyTrigger/RefreshConfig flow
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args)); // This re-runs validation during IdentifyTrigger/RefreshConfig flow
 
                 c.Args["rawInput"] = "!giveaway config check";
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 errors = c.GetGlobalVar<string>("Giveaway Global LastConfigErrors", true);
                 if (!string.IsNullOrEmpty(errors)) throw new Exception($"Failed to clear config errors (variable still has: '{errors}')!");
@@ -421,7 +421,7 @@ namespace StreamerBot.Tests
                     c.Args["userId"] = "TestUser_True_" + (i++);
                     c.Args["user"] = "TestUser_True_" + i;
                     c.Args["command"] = "!enter";
-                    await m.ProcessTrigger(new CPHAdapter(c));
+                    await m.ProcessTrigger(new CPHAdapter(c, c.Args));
                     if (!c.Globals.ContainsKey("Giveaway Main EntryCount")) throw new Exception($"Failed to parse truthy variant: {t}");
                 }
 
@@ -436,7 +436,7 @@ namespace StreamerBot.Tests
 
                     c.Args["userId"] = "TestUser_False_" + (i++);
                     c.Args["user"] = "TestUser_False_" + i;
-                    await m.ProcessTrigger(new CPHAdapter(c));
+                    await m.ProcessTrigger(new CPHAdapter(c, c.Args));
                     // If skip, variable won't be set
                     if (c.Globals.ContainsKey("Giveaway Main EntryCount")) throw new Exception($"Failed to parse falsy variant: {f}");
                 }
@@ -461,12 +461,12 @@ namespace StreamerBot.Tests
             var m = new GiveawayManager();
             try
             {
-                m.Initialize(new CPHAdapter(c));
+                m.Initialize(new CPHAdapter(c, c.Args));
 
                 if (!c.Globals.ContainsKey("Giveaway Main EntryCount")) throw new Exception("Main variables missing after Initialize!");
                 if (!c.Globals.ContainsKey("Giveaway Weekly EntryCount")) throw new Exception("Weekly variables missing after Initialize!");
                 if (!c.Globals.TryGetValue("Giveaway Global RunMode", out var rm) || rm.ToString() != "GlobalVar") throw new Exception("RunMode missing or incorrect after Initialize!");
-                if (c.Globals["Giveaway Global LogLevel"]?.ToString() != "DEBUG") throw new Exception("LogLevel mismatch!");
+                if (c.Globals["Giveaway Global LogLevel"]?.ToString() != "DEBUG") throw new Exception($"LogLevel mismatch! Got: '{c.Globals["Giveaway Global LogLevel"]}'");
 
                 // Test config change sync (simulating adding a profile)
                 // 1. Enable GlobalVar Mode and wait for Migration (FileSystem -> GlobalVar)
@@ -492,7 +492,7 @@ namespace StreamerBot.Tests
                 Console.WriteLine($"[TEST] RunMode before trigger: {c.GetGlobalVar<string>("Giveaway Global RunMode")}");
                 c.Args["rawInput"] = "!giveaway config check";
                 c.Args["isBroadcaster"] = true;
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 if (!c.Globals.ContainsKey("Giveaway Bonus EntryCount")) throw new Exception($"New profile 'Bonus' missing! RunMode={c.GetGlobalVar<string>("Giveaway Global RunMode")}, ConfigLoaded={GiveawayManager.GlobalConfig.Profiles.Count}");
                 if (m.Messenger.Config.Profiles.Count != 3) throw new Exception("Messenger config not updated!");
@@ -519,7 +519,7 @@ namespace StreamerBot.Tests
                 GiveawayManager.GlobalConfig.Profiles["Main"].WheelSettings.Title = "TEST WHEEL";
 
                 // Sync
-                m.SyncAllVariables(new CPHAdapter(c));
+                m.SyncAllVariables(new CPHAdapter(c, c.Args));
 
                 // Verify Globals
                 if (!c.Globals.TryGetValue("Giveaway Global LogRetentionDays", out var ret) || (int)ret != 123)
@@ -529,7 +529,7 @@ namespace StreamerBot.Tests
                 if (!c.Globals.TryGetValue("Giveaway Main MaxEntriesPerMinute", out var max) || (int)max != 456)
                     throw new Exception($"Profile MaxEntries mismatch: {max}");
 
-                if (!c.Globals.TryGetValue("Giveaway Main WheelSettings Title", out var title) || title.ToString() != "TEST WHEEL")
+                if (!c.Globals.TryGetValue("Giveaway Main WheelSettingsTitle", out var title) || title.ToString() != "TEST WHEEL")
                     throw new Exception($"Profile Wheel Title mismatch: {title}");
 
                 Console.WriteLine("PASS");
@@ -564,7 +564,7 @@ namespace StreamerBot.Tests
                 File.WriteAllText(configPath, jsonA);
                 File.SetLastWriteTime(configPath, DateTime.Now.AddSeconds(-10));
 
-                m.Initialize(new CPHAdapter(c)); // Should load A, sync to Var
+                m.Initialize(new CPHAdapter(c, c.Args)); // Should load A, sync to Var
 
                 var varA = c.GetGlobalVar<string>("Giveaway Global Config", true);
                 if (string.IsNullOrEmpty(varA) || !varA.Contains("\"A\"")) throw new Exception("Init: Failed to sync File to GlobalVar (Profile A missing)!");
@@ -588,7 +588,7 @@ namespace StreamerBot.Tests
                 await Task.Delay(5500); // Wait for hot-reload throttle (5.5s)
                 c.Args["rawInput"] = "!giveaway config check"; // Trigger GetConfig via ProcessTrigger
                 c.Args["isBroadcaster"] = true;
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 string fileB = File.ReadAllText(configPath);
                 if (string.IsNullOrEmpty(fileB) || !fileB.Contains("\"B\"")) throw new Exception("Update: Failed to sync GlobalVar to File (Profile B missing)!");
@@ -600,7 +600,7 @@ namespace StreamerBot.Tests
                 File.SetLastWriteTime(configPath, DateTime.Now.AddDays(3));
 
                 await Task.Delay(5500);
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 var varC = c.GetGlobalVar<string>("Giveaway Global Config", true);
                 if (string.IsNullOrEmpty(varC) || !varC.Contains("\"C\"")) throw new Exception("Sync: Failed to sync File to GlobalVar (Profile C missing)!");
@@ -643,7 +643,7 @@ namespace StreamerBot.Tests
 
                 // Create ConfigLoader (will bootstrap RunMode from file)
                 var loader = new ConfigLoader();
-                loader.GetConfig(new CPHAdapter(c)); // Trigger bootstrap
+                loader.GetConfig(new CPHAdapter(c, c.Args)); // Trigger bootstrap
 
                 // Verify that Giveaway Global RunMode was set to "Mirror"
                 var runMode = c.GetGlobalVar<string>("Giveaway Global RunMode", true);
@@ -667,7 +667,7 @@ namespace StreamerBot.Tests
         {
             Console.Write("\n[TEST] RunMode Switching: ");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -693,7 +693,7 @@ namespace StreamerBot.Tests
             Console.WriteLine("\n[TEST] RunMode Mirror Config Conflict:");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // Setup
             cph.SetGlobalVar("Giveaway Global RunMode", "Mirror", true);
@@ -756,7 +756,7 @@ namespace StreamerBot.Tests
 
             // Setup
             var cph = new MockCPH();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             var m = new GiveawayManager();
 
             // Prepare Config with ImportGlobals
@@ -802,7 +802,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Dynamic Variable Sync (1.3.2): ");
             var (m, cph) = SetupWithCph();
 
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // Force Mirror Mode for this test to ensure SyncVar works
             cph.Globals["Giveaway Global RunMode"] = "Mirror";
@@ -855,7 +855,7 @@ namespace StreamerBot.Tests
         {
             Console.Write("[TEST] Full Mirror Mode Ingestion: ");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // 1. Create Profile
             await m.Loader.CreateProfileAsync(adapter, "MirrorTest");
@@ -871,7 +871,7 @@ namespace StreamerBot.Tests
             // 3. Set Global Variables (The "Mirror")
             cph.Globals["Giveaway MirrorTest EnableWheel"] = "false";
             cph.Globals["Giveaway MirrorTest UsernameRegex"] = "^[A-Z0-9]+$";
-            cph.Globals["Giveaway MirrorTest WheelSettings Title"] = "New Mirror Title";
+            cph.Globals["Giveaway MirrorTest WheelSettingsTitle"] = "New Mirror Title";
             cph.Globals["Giveaway MirrorTest RedemptionCooldownMinutes"] = "5m"; // Test parsing string
             cph.Globals["Giveaway MirrorTest DumpEntriesOnEnd"] = "true";
             cph.Globals["Giveaway MirrorTest GameFilter"] = "GW2";
@@ -911,7 +911,7 @@ namespace StreamerBot.Tests
         {
             Console.Write("[TEST] Global Settings Sync: ");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {

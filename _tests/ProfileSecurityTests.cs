@@ -22,7 +22,7 @@ namespace StreamerBot.Tests
             // Reset static state for isolation
             GiveawayManager.GlobalConfig = null;
             m.States.Clear();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             return (m, cph);
@@ -32,7 +32,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("Profile Security & Authorization Comprehensive (8 tests)");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = m.Logger;
 
             string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "TestLogs", "General");

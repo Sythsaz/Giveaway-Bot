@@ -30,7 +30,7 @@ namespace StreamerBot.Tests
             // Reset static state
             GiveawayManager.GlobalConfig = null;
             m.States.Clear();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
 
             // Ensure fresh metrics
@@ -38,6 +38,8 @@ namespace StreamerBot.Tests
             try
             {
                 if (File.Exists(metricsFile)) File.Delete(metricsFile);
+                var stateDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "state");
+                if (Directory.Exists(stateDir)) Directory.Delete(stateDir, true);
             }
             catch { }
 
@@ -52,8 +54,8 @@ namespace StreamerBot.Tests
             // 1. Test Default (INFO) - Debug should NOT be logged
             cph.SetGlobalVar("Giveaway Global LogLevel", "INFO", true);
             var logger = new FileLogger();
-            logger.LogDebug(new CPHAdapter(cph), "TestCat", "HiddenMessage");
-            logger.LogInfo(new CPHAdapter(cph), "TestCat", "VisibleMessage");
+            logger.LogDebug(new CPHAdapter(cph, cph.Args), "TestCat", "HiddenMessage");
+            logger.LogInfo(new CPHAdapter(cph, cph.Args), "TestCat", "VisibleMessage");
 
             string logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "logs", "General");
             string logFile = Path.Combine(logDir, $"{DateTime.Now:yyyy-MM-dd}.log");
@@ -61,14 +63,14 @@ namespace StreamerBot.Tests
             if (File.Exists(logFile))
             {
                 try { File.Delete(logFile); } catch { } // Cleanup previous runs
-                logger.LogInfo(new CPHAdapter(cph), "TestCat", "VisibleMessage"); // Write again to ensure fresh file
+                logger.LogInfo(new CPHAdapter(cph, cph.Args), "TestCat", "VisibleMessage"); // Write again to ensure fresh file
 
                 string content = File.ReadAllText(logFile);
                 if (!content.Contains("HiddenMessage") && content.Contains("VisibleMessage") && content.Contains("[INFO ] [TestCat]"))
                 {
                     // 2. Test Level Change (TRACE) - Trace should now be logged
                     cph.SetGlobalVar("Giveaway Global LogLevel", "TRACE", true);
-                    logger.LogTrace(new CPHAdapter(cph), "TestCat", "TraceMessage");
+                    logger.LogTrace(new CPHAdapter(cph, cph.Args), "TestCat", "TraceMessage");
                     content = File.ReadAllText(logFile);
                     if (content.Contains("TraceMessage")) Console.WriteLine("PASS");
                     else Console.WriteLine($"FAIL (Trace missing. Content={content})");
@@ -78,7 +80,7 @@ namespace StreamerBot.Tests
             else
             {
                 // First write might have failed or file system lag? Write again.
-                logger.LogInfo(new CPHAdapter(cph), "TestCat", "FinalRetry");
+                logger.LogInfo(new CPHAdapter(cph, cph.Args), "TestCat", "FinalRetry");
                 if (File.Exists(logFile)) Console.WriteLine("PASS"); else Console.WriteLine("FAIL (File not created)");
             }
             return Task.CompletedTask;
@@ -105,7 +107,7 @@ namespace StreamerBot.Tests
             File.SetLastWriteTime(oldFile, DateTime.Now.AddDays(-100));
 
             c.SetGlobalVar("Giveaway Global LogRetentionDays", 90);
-            pruneMethod.Invoke(logger, new object[] { new CPHAdapter(c) });
+            pruneMethod.Invoke(logger, new object[] { new CPHAdapter(c, c.Args) });
 
             if (File.Exists(oldFile)) throw new Exception("Old log was not pruned by retention policy.");
 
@@ -115,7 +117,7 @@ namespace StreamerBot.Tests
             File.WriteAllBytes(bigFile, biggerData);
 
             c.SetGlobalVar("Giveaway Global LogSizeCapMB", 1); // 1MB cap
-            pruneMethod.Invoke(logger, new object[] { new CPHAdapter(c) });
+            pruneMethod.Invoke(logger, new object[] { new CPHAdapter(c, c.Args) });
 
             if (File.Exists(bigFile)) throw new Exception("Big log was not pruned by size cap.");
 
@@ -127,11 +129,11 @@ namespace StreamerBot.Tests
             Console.WriteLine("[TEST] System Health Check:");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Map the command manually to trigger the check
             cph.Args["rawInput"] = "!giveaway system test";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // We check logs/messages for expected output. 
             // In MockCPH, SendMessage usually prints to console. 
@@ -143,12 +145,14 @@ namespace StreamerBot.Tests
         {
             Console.Write("[TEST] Metrics Tracking: ");
             var (m, c) = SetupWithCph();
+            // Ensure Main profile is active for metrics test
+            if (m.States.TryGetValue("Main", out var mainState)) mainState.IsActive = true;
 
             // 1. Enter as User 1
             c.Args["userId"] = "U1";
             c.Args["user"] = "UserOne";
             c.Args["command"] = "!enter";
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             // 2. Enter as User 2 (Sub)
             c.Args.Clear();
@@ -156,10 +160,10 @@ namespace StreamerBot.Tests
             c.Args["user"] = "UserTwo";
             c.Args["isSubscribed"] = true;
             c.Args["command"] = "!enter";
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             // 3. Verify Global Metrics
-            var total = c.GetGlobalVar<long>("Giveaway Global Metrics Entries Total");
+            var total = c.GetGlobalVar<long>("Giveaway Global Metrics EntriesTotal");
             if (total != 2) Console.WriteLine($"[WARN] Global total mismatch: {total} (Expected 2)");
 
 
@@ -172,7 +176,7 @@ namespace StreamerBot.Tests
             c.Args.Clear();
             c.Args["command"] = "!draw";
             c.Args["isBroadcaster"] = true;
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             var u1Wins = c.GetUserVar<long>("U1", "Giveaway User Metrics WinsTotal");
             var u2Wins = c.GetUserVar<long>("U2", "Giveaway User Metrics WinsTotal");
@@ -186,7 +190,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Config Migration: ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
@@ -207,7 +211,7 @@ namespace StreamerBot.Tests
 
                 // 2. Run Migration
                 cph.Args["rawInput"] = "!giveaway config gen";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // 3. Verify
                 string updatedJson = File.ReadAllText(configPath);

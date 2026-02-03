@@ -24,7 +24,7 @@ namespace StreamerBot.Tests
             Console.Write("\n[TEST] Master Zip Rolling: ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string configDir = Path.Combine(baseDir, "Giveaway Bot", "config");
@@ -43,7 +43,7 @@ namespace StreamerBot.Tests
                 for (int i = 0; i < 5; i++)
                 {
                     cph.Args["rawInput"] = $"!giveaway create Test{i}";
-                    await m.ProcessTrigger(new CPHAdapter(cph));
+                    await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                     // In a tight loop, we need to ensure unique filenames if we used timestamps only
                     // but the code uses yyyyMMdd_HHmmss. We might need a small delay.
                     await Task.Delay(1100);
@@ -75,7 +75,7 @@ namespace StreamerBot.Tests
             Console.WriteLine("\nProfile Persistence & State Management");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
             cph.Args["isBroadcaster"] = true;
 
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -94,7 +94,7 @@ namespace StreamerBot.Tests
             // Test 1: CreateProfile persists to JSON
             Console.Write("  - CreateProfile persists to JSON:        ");
             cph.Args["rawInput"] = "!giveaway profile create PersistTest1";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             string configJson = File.ReadAllText(configPath);
             if (!configJson.Contains("PersistTest1"))
@@ -104,7 +104,7 @@ namespace StreamerBot.Tests
             // Test 2: DeleteProfile persists to JSON
             Console.Write("  - DeleteProfile persists to JSON:        ");
             cph.Args["rawInput"] = "!giveaway profile delete PersistTest1 confirm";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             configJson = File.ReadAllText(configPath);
             if (configJson.Contains("PersistTest1"))
@@ -114,7 +114,7 @@ namespace StreamerBot.Tests
             // Test 3: UpdateProfileConfig persists to JSON
             Console.Write("  - UpdateProfileConfig persists to JSON:  ");
             cph.Args["rawInput"] = "!giveaway profile config Main ExposeVariables=true";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             configJson = File.ReadAllText(configPath);
             var configAfter3 = JsonConvert.DeserializeObject<GiveawayBotConfig>(configJson);
@@ -124,7 +124,7 @@ namespace StreamerBot.Tests
 
             // Reset to default
             cph.Args["rawInput"] = "!giveaway profile config Main ExposeVariables=false";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Test 4: Config reload after modification
             Console.Write("  - Config reload after modification:     ");
@@ -136,7 +136,7 @@ namespace StreamerBot.Tests
 
             // Force cache invalidation and reload
             m.Loader.InvalidateCache();
-            var reloadedConfig = m.Loader.GetConfig(new CPHAdapter(cph));
+            var reloadedConfig = m.Loader.GetConfig(new CPHAdapter(cph, cph.Args));
 
             // Verify in-memory config was reloaded with the new value
             if (!reloadedConfig.Profiles["Main"].ExposeVariables)
@@ -146,15 +146,15 @@ namespace StreamerBot.Tests
             // Reset to false
             tempConfig.Profiles["Main"].ExposeVariables = false;
             File.WriteAllText(configPath, JsonConvert.SerializeObject(tempConfig, Formatting.Indented));
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Test 5: Backup file integrity (profile deletion backup)
             Console.Write("  - Profile deletion backup integrity:    ");
             cph.Args["rawInput"] = "!giveaway profile create BackupTest";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             cph.Args["rawInput"] = "!giveaway profile delete BackupTest confirm";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Check if backup directory was created
             var deletedBackups = Directory.GetDirectories(backupDir, "deleted_BackupTest_*");
@@ -177,10 +177,10 @@ namespace StreamerBot.Tests
             for (int i = 0; i < 5; i++)
             {
                 cph.Args["rawInput"] = string.Format("!giveaway profile create Zip{0}", i);
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 System.Threading.Thread.Sleep(1100); // Ensure unique timestamps
                 cph.Args["rawInput"] = string.Format("!giveaway profile delete Zip{0} confirm", i);
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             }
 
             // Check zip file
@@ -203,14 +203,14 @@ namespace StreamerBot.Tests
             // Test 7: GlobalVar persistence across manager instances
             Console.Write("  - GlobalVar state persistence:          ");
             cph.Args["rawInput"] = "!giveaway profile create StateTest";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Get variable value
             string originalVar = cph.GetGlobalVar<string>("Giveaway StateTest IsActive", true);
 
             // Create new manager instance
             var m2 = new GiveawayManager();
-            m2.Initialize(new CPHAdapter(cph));
+            m2.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Check if variable persisted
             string persistedVar = cph.GetGlobalVar<string>("Giveaway StateTest IsActive", true);
@@ -219,14 +219,14 @@ namespace StreamerBot.Tests
 
             // Cleanup
             cph.Args["rawInput"] = "!giveaway profile delete StateTest confirm";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             Console.WriteLine("PASS");
 
             // Test 8: Mirror mode JSON + variables sync
             Console.Write("  - Mirror mode bidirectional sync:       ");
             cph.SetGlobalVar("Giveaway Global RunMode", "Mirror", true);
             var m3 = new GiveawayManager();
-            m3.Initialize(new CPHAdapter(cph));
+            m3.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Modify JSON file directly to set ExposeVariables
             configJson = File.ReadAllText(configPath);
@@ -236,7 +236,7 @@ namespace StreamerBot.Tests
 
             // Trigger should detect change and sync to GlobalVar
             cph.Args["rawInput"] = "!giveaway config check";
-            await m3.ProcessTrigger(new CPHAdapter(cph));
+            await m3.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             string globalVarConfig = cph.GetGlobalVar<string>("Giveaway Global Config", true);
             var syncedConfig = JsonConvert.DeserializeObject<GiveawayBotConfig>(globalVarConfig);
@@ -250,14 +250,14 @@ namespace StreamerBot.Tests
             // Test 9: Profile deletion removes all variables
             Console.Write("  - Delete removes all profile variables: ");
             cph.Args["rawInput"] = "!giveaway profile create VarCleanup";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Enable variable exposure for this profile
             cph.Args["rawInput"] = "!giveaway profile config VarCleanup ExposeVariables=true";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Force variable sync
-            m.SyncAllVariables(new CPHAdapter(cph));
+            m.SyncAllVariables(new CPHAdapter(cph, cph.Args));
 
             // Verify variables exist
             string varBefore = cph.GetGlobalVar<string>("Giveaway VarCleanup IsActive", true);
@@ -266,7 +266,7 @@ namespace StreamerBot.Tests
 
             // Delete profile
             cph.Args["rawInput"] = "!giveaway profile delete VarCleanup confirm";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Verify variables removed
             string varAfter = cph.GetGlobalVar<string>("Giveaway VarCleanup IsActive", true);
@@ -277,14 +277,14 @@ namespace StreamerBot.Tests
             // Test 10: Cloned profile gets new variables
             Console.Write("  - Clone creates independent variables:   ");
             cph.Args["rawInput"] = "!giveaway profile clone Main CloneVarTest";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Enable expost for clone
             cph.Args["rawInput"] = "!giveaway profile config CloneVarTest ExposeVariables=true";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Force sync
-            m.SyncAllVariables(new CPHAdapter(cph));
+            m.SyncAllVariables(new CPHAdapter(cph, cph.Args));
 
             // Verify clone has its own variables
             // Check IsActive instead of Status (which doesn't exist)
@@ -297,7 +297,7 @@ namespace StreamerBot.Tests
 
             // Cleanup
             cph.Args["rawInput"] = "!giveaway profile delete CloneVarTest confirm";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             Console.WriteLine("PASS");
         }
 
@@ -336,7 +336,7 @@ namespace StreamerBot.Tests
                 // Should handle gracefully and not crash
                 try
                 {
-                    m.Initialize(new CPHAdapter(cph));
+                    m.Initialize(new CPHAdapter(cph, cph.Args));
                     Console.WriteLine("PASS (Handled gracefully)");
                 }
                 catch (Exception ex)
@@ -361,12 +361,12 @@ namespace StreamerBot.Tests
             Console.Write("  - Missing profile graceful degradation:  ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
             cph.Args["isBroadcaster"] = true;
 
             // Try to interact with non-existent profile
             cph.Args["rawInput"] = "!giveaway profile start NonExistent";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Should not crash, just log warning
             Console.WriteLine("PASS");
@@ -393,7 +393,7 @@ namespace StreamerBot.Tests
                 var m = new GiveawayManager();
                 try
                 {
-                    m.Initialize(new CPHAdapter(cph));
+                    m.Initialize(new CPHAdapter(cph, cph.Args));
                     Console.WriteLine("PASS (Handled type mismatch)");
                 }
                 catch (Exception ex)
@@ -416,15 +416,15 @@ namespace StreamerBot.Tests
             Console.Write("  - Out-of-bounds value clamping:          ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
             cph.Args["isBroadcaster"] = true;
 
             // Try to set negative value
             cph.Args["rawInput"] = "!giveaway profile config Main SubLuckMultiplier=-5";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // System should either reject or clamp
-            var config = m.Loader.GetConfig(new CPHAdapter(cph));
+            var config = m.Loader.GetConfig(new CPHAdapter(cph, cph.Args));
             if (config.Profiles["Main"].SubLuckMultiplier >= 0)
                 Console.WriteLine("PASS");
             else
@@ -437,20 +437,20 @@ namespace StreamerBot.Tests
             Console.Write("  - Concurrent modification handling:      ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
             cph.Args["isBroadcaster"] = true;
 
             // Simulate concurrent config updates
             var task1 = Task.Run(async () =>
             {
                 cph.Args["rawInput"] = "!giveaway profile config Main SubLuckMultiplier=5";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             });
 
             var task2 = Task.Run(async () =>
             {
                 cph.Args["rawInput"] = "!giveaway profile config Main MaxEntriesPerMinute=100";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             });
 
             await Task.WhenAll(task1, task2);
@@ -477,7 +477,7 @@ namespace StreamerBot.Tests
                 File.WriteAllText(statePath, "{\"Entries\":{\"corrupt\":}}");
 
                 var m = new GiveawayManager();
-                m.Initialize(new CPHAdapter(cph));
+                m.Initialize(new CPHAdapter(cph, cph.Args));
 
                 // Should create new state or use defaults
                 Console.WriteLine("PASS");
@@ -498,12 +498,12 @@ namespace StreamerBot.Tests
             Console.Write("  - Missing state file recovery:           ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // State files don't exist - should create defaults
             cph.Args["rawInput"] = "!giveaway profile start Main";
             cph.Args["isBroadcaster"] = true;
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             Console.WriteLine("PASS");
         }
@@ -519,15 +519,15 @@ namespace StreamerBot.Tests
             try
             {
                 var m = new GiveawayManager();
-                m.Initialize(new CPHAdapter(cph));
+                m.Initialize(new CPHAdapter(cph, cph.Args));
                 cph.Args["isBroadcaster"] = true;
 
                 // Create and delete a profile to generate backup
                 cph.Args["rawInput"] = "!giveaway profile create RestoreTest";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 cph.Args["rawInput"] = "!giveaway profile delete RestoreTest confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Verify backup exists
                 var deletedBackups = Directory.Exists(backupDir) ?

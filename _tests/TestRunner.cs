@@ -64,7 +64,7 @@ namespace StreamerBot.Tests
 
             var cph10 = new MockCPH();
             var m10 = new GiveawayManager();
-            m10.Initialize(new CPHAdapter(cph10));
+            m10.Initialize(new CPHAdapter(cph10, cph10.Args));
 
         }
     }

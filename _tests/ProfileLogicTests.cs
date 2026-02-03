@@ -26,13 +26,13 @@ namespace StreamerBot.Tests
             var cph = new MockCPH();
             var m = new GiveawayManager();
             cph.Args["rawInput"] = "!giveaway config gen";
-            m.Initialize(new CPHAdapter(cph));
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             if (m.States.TryGetValue("Main", out var s))
             {
                 s.IsActive = true;
                 cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 if (s.Entries.TryGetValue("u1", out var e1) && e1.TicketCount == 2) Console.WriteLine("PASS"); else Console.WriteLine("FAIL (No entry or incorrect tickets, default is 2)");
             }
             else Console.WriteLine("FAIL (No state)");
@@ -43,7 +43,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Global Rate Limit: ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Setup Main state and config
             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
@@ -55,9 +55,9 @@ namespace StreamerBot.Tests
             {
                 s.IsActive = true;
                 GiveawayManager.GlobalConfig.Profiles["Main"].MaxEntriesPerMinute = 2;
-                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1"; await m.ProcessTrigger(new CPHAdapter(cph));
-                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u2"; cph.Args["user"] = "U2"; await m.ProcessTrigger(new CPHAdapter(cph));
-                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u3"; cph.Args["user"] = "U3"; await m.ProcessTrigger(new CPHAdapter(cph)); // Should be blocked
+                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1"; await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
+                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u2"; cph.Args["user"] = "U2"; await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
+                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u3"; cph.Args["user"] = "U3"; await m.ProcessTrigger(new CPHAdapter(cph, cph.Args)); // Should be blocked
                 if (s.Entries.Count == 2) Console.WriteLine("PASS"); else Console.WriteLine($"FAIL (Count={s.Entries.Count})");
             }
             else Console.WriteLine("FAIL (No state)");
@@ -68,7 +68,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Concurrency: ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Setup Main and Weekly
             if (GiveawayManager.GlobalConfig == null) GiveawayManager.GlobalConfig = new GiveawayBotConfig();
@@ -82,8 +82,8 @@ namespace StreamerBot.Tests
             if (m.States.TryGetValue("Main", out var s1) && m.States.TryGetValue("Weekly", out var s2))
             {
                 s1.IsActive = true; s2.IsActive = true;
-                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1"; await m.ProcessTrigger(new CPHAdapter(cph));
-                cph.Args.Clear(); cph.Args["command"] = "!weekly"; cph.Args["userId"] = "u2"; cph.Args["user"] = "U2"; await m.ProcessTrigger(new CPHAdapter(cph));
+                cph.Args.Clear(); cph.Args["command"] = "!enter"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1"; await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
+                cph.Args.Clear(); cph.Args["command"] = "!weekly"; cph.Args["userId"] = "u2"; cph.Args["user"] = "U2"; await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 bool u1In1 = s1.Entries.ContainsKey("u1");
                 bool u2In2 = s2.Entries.ContainsKey("u2");
                 bool leak = s1.Entries.ContainsKey("u2");
@@ -99,9 +99,9 @@ namespace StreamerBot.Tests
             Console.Write("  - Parallel Execution:                    ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // Setup keys
             if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("ConcurrencyProfile"))
@@ -129,7 +129,7 @@ namespace StreamerBot.Tests
                     localCph.Args["userId"] = $"user_{i}";
                     localCph.Args["user"] = $"User_{i}";
                     // We must share the SAME manager instance 'm'
-                    await m.ProcessTrigger(new CPHAdapter(localCph));
+                    await m.ProcessTrigger(new CPHAdapter(localCph, localCph.Args));
                 }
             }));
 
@@ -141,7 +141,7 @@ namespace StreamerBot.Tests
                 localCph.Args["command"] = "!draw";
                 localCph.Args["isBroadcaster"] = true;
                 localCph.Args["rawInput"] = "!draw";
-                await m.ProcessTrigger(new CPHAdapter(localCph));
+                await m.ProcessTrigger(new CPHAdapter(localCph, localCph.Args));
             }));
 
             try
