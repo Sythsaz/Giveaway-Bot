@@ -26,7 +26,7 @@ namespace StreamerBot.Tests
             // Reset static state for isolation
             GiveawayManager.GlobalConfig = null;
             m.States.Clear();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             return (m, cph);
@@ -36,7 +36,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("DeleteProfile Edge Cases (10 tests)");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -46,7 +46,7 @@ namespace StreamerBot.Tests
                 // Test 1: Delete profile with 1000+ entries (Stress Test)
                 Console.Write("  - Stress test (1000 entries deletion):   ");
                 cph.Args["rawInput"] = "!giveaway profile create StressProfile";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Ensure profile created and state loaded
                 if (!m.States.ContainsKey("StressProfile"))
@@ -71,7 +71,7 @@ namespace StreamerBot.Tests
 
                 // Delete
                 cph.Args["rawInput"] = "!giveaway profile delete StressProfile confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 if (m.Loader.GetConfig(adapter).Profiles.ContainsKey("StressProfile"))
                     Console.WriteLine("FAIL (Profile mismatch)");
@@ -86,12 +86,12 @@ namespace StreamerBot.Tests
                 // Test 3: Delete with concurrent access
                 Console.Write("  - Concurrent delete request:             ");
                 cph.Args["rawInput"] = "!giveaway profile create ConcurrentP";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Simulate two threads deleting same profile
                 cph.Args["rawInput"] = "!giveaway profile delete ConcurrentP confirm";
-                var t1 = Task.Run(async () => await m.ProcessTrigger(new CPHAdapter(cph)));
-                var t2 = Task.Run(async () => await m.ProcessTrigger(new CPHAdapter(cph)));
+                var t1 = Task.Run(async () => await m.ProcessTrigger(new CPHAdapter(cph, cph.Args)));
+                var t2 = Task.Run(async () => await m.ProcessTrigger(new CPHAdapter(cph, cph.Args)));
 
                 await Task.WhenAll(t1, t2);
                 if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("ConcurrentP"))
@@ -102,11 +102,11 @@ namespace StreamerBot.Tests
                 // Test 4: Delete then immediately recreate
                 Console.Write("  - Delete then immediately recreate:      ");
                 cph.Args["rawInput"] = "!giveaway profile create RecreateTest";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 cph.Args["rawInput"] = "!giveaway profile delete RecreateTest confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 cph.Args["rawInput"] = "!giveaway profile create RecreateTest";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 if (m.Loader.GetConfig(adapter).Profiles.ContainsKey("RecreateTest"))
                     Console.WriteLine("PASS");
@@ -120,9 +120,9 @@ namespace StreamerBot.Tests
                 // Test 6: Confirm parameter case-insensitive
                 Console.Write("  - Confirm parameter case-insensitive:    ");
                 cph.Args["rawInput"] = "!giveaway profile create CaseConfirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 cph.Args["rawInput"] = "!giveaway profile delete CaseConfirm CONFIRM";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("CaseConfirm"))
                     Console.WriteLine("PASS");
@@ -134,10 +134,10 @@ namespace StreamerBot.Tests
                 cph.SetGlobalVar("Giveaway Global RunMode", "ReadOnlyVar", true);
                 // Re-init to pick up mode
                 var m7 = new GiveawayManager();
-                m7.Initialize(new CPHAdapter(cph));
+                m7.Initialize(new CPHAdapter(cph, cph.Args));
 
                 cph.Args["rawInput"] = "!giveaway profile delete Main confirm";
-                await m7.ProcessTrigger(new CPHAdapter(cph));
+                await m7.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 if (m7.Loader.GetConfig(adapter).Profiles.ContainsKey("Main"))
                     Console.WriteLine("PASS");
@@ -158,7 +158,7 @@ namespace StreamerBot.Tests
                 // Test 10: Delete 'Main' profile specifically
                 Console.Write("  - Delete 'Main' profile allowed:         ");
                 cph.Args["rawInput"] = "!giveaway profile delete Main confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 if (!m.Loader.GetConfig(adapter).Profiles.ContainsKey("Main"))
                     Console.WriteLine("PASS");
@@ -175,7 +175,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("UpdateProfileConfig Edge Cases (8 tests)");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -183,7 +183,7 @@ namespace StreamerBot.Tests
                 cph.Args["user"] = "Broadcaster";
                 cph.Args["isBroadcaster"] = true;
                 cph.Args["rawInput"] = "!giveaway profile create ConfigEdgeTest";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Test 1: WheelSettings.ShareMode validation (Valid)
                 Console.Write("  - ShareMode validation (Valid):          ");
@@ -235,11 +235,11 @@ namespace StreamerBot.Tests
                 Console.Write("  - Update blocked in ReadOnlyVar mode:    ");
                 cph.SetGlobalVar("Giveaway Global RunMode", "ReadOnlyVar", true);
                 var m6 = new GiveawayManager();
-                m6.Initialize(new CPHAdapter(cph)); // re-init to pick up mode
+                m6.Initialize(new CPHAdapter(cph, cph.Args)); // re-init to pick up mode
                 // Wait, UpdateProfileConfigAsync doesn't check runmode itself, but correct usage via command does.
                 // We should test via ProcessTrigger command to verify blocking.
                 cph.Args["rawInput"] = "!giveaway profile config ConfigEdgeTest ExposeVariables=false";
-                await m6.ProcessTrigger(new CPHAdapter(cph));
+                await m6.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Check if changed (should remain true from Test 3)
                 // Need to reload config to verify
@@ -262,13 +262,13 @@ namespace StreamerBot.Tests
                 // Test 8: Malformed command usage (via trigger)
                 Console.Write("  - Malformed command usage:               ");
                 cph.Args["rawInput"] = "!giveaway profile config ConfigEdgeTest ExposeVariables"; // Missing value
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 // Should fail or warn, verify via logs? Or just ensure no crash.
                 Console.WriteLine("PASS");
 
                 // Cleanup
                 cph.Args["rawInput"] = "!giveaway profile delete ConfigEdgeTest confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             }
             catch (Exception ex)
             {
@@ -280,7 +280,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("Trigger Management Edge Cases (9 tests)");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {
@@ -288,12 +288,12 @@ namespace StreamerBot.Tests
                 cph.Args["user"] = "Broadcaster";
                 cph.Args["isBroadcaster"] = true;
                 cph.Args["rawInput"] = "!giveaway profile create TrigEdgeTest";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 // Test 1: Add Stream Deck trigger (Valid)
                 Console.Write("  - Add Stream Deck trigger (Valid):       ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add sd:test-key Open";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 var config = m.Loader.GetConfig(adapter);
                 if (config.Profiles["TrigEdgeTest"].Triggers.ContainsKey("sd:test-key"))
@@ -305,7 +305,7 @@ namespace StreamerBot.Tests
                 Console.Write("  - Add without separator (Malformed):     ");
                 // Code inspection says it accepts any string as key. So this should PASS as adding a weird key.
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add malformed_trigger Open";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 config = m.Loader.GetConfig(adapter);
                 if (config.Profiles["TrigEdgeTest"].Triggers.ContainsKey("malformed_trigger"))
                     Console.WriteLine("PASS (Allowed as key)");
@@ -315,7 +315,7 @@ namespace StreamerBot.Tests
                 // Test 3: Add trigger with invalid action
                 Console.Write("  - Add invalid action:                    ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add cmd:bad ActionXYZ";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 config = m.Loader.GetConfig(adapter);
                 // Should NOT exist
                 if (!config.Profiles["TrigEdgeTest"].Triggers.ContainsKey("cmd:bad"))
@@ -326,7 +326,7 @@ namespace StreamerBot.Tests
                 // Test 4: Add trigger with 'Enter' (Check Mismatch)
                 Console.Write("  - Add 'Enter' action (Valid?):           ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add cmd:enter Enter";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 config = m.Loader.GetConfig(adapter);
                 // Based on code: ValidActions array has 'Entry'.
                 if (!config.Profiles["TrigEdgeTest"].Triggers.ContainsKey("cmd:enter"))
@@ -338,15 +338,15 @@ namespace StreamerBot.Tests
                 Console.Write("  - Add to non-existent profile:           ");
                 cph.Args["rawInput"] = "!giveaway profile trigger NonExist add cmd:test Open";
                 // Capture logs to verify warning? Or just ensure no crash.
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 Console.WriteLine("PASS");
 
                 // Test 6: Add duplicate trigger (Overwrite check)
                 Console.Write("  - Add duplicate trigger (Overwrite):     ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add cmd:dup Open";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest add cmd:dup Close"; // Change action
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 config = m.Loader.GetConfig(adapter);
                 if (config.Profiles["TrigEdgeTest"].Triggers["cmd:dup"] == "Close")
@@ -357,7 +357,7 @@ namespace StreamerBot.Tests
                 // Test 7: Remove valid trigger
                 Console.Write("  - Remove valid trigger:                  ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest remove sd:test-key";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 config = m.Loader.GetConfig(adapter);
                 if (!config.Profiles["TrigEdgeTest"].Triggers.ContainsKey("sd:test-key"))
                     Console.WriteLine("PASS");
@@ -367,7 +367,7 @@ namespace StreamerBot.Tests
                 // Test 8: Remove non-existent trigger
                 Console.Write("  - Remove non-existent trigger:           ");
                 cph.Args["rawInput"] = "!giveaway profile trigger TrigEdgeTest remove cmd:missing";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 Console.WriteLine("PASS");
 
                 // Test 9: Cache verification
@@ -379,7 +379,7 @@ namespace StreamerBot.Tests
 
                 // Cleanup
                 cph.Args["rawInput"] = "!giveaway profile delete TrigEdgeTest confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             }
             catch (Exception ex)
             {
@@ -391,7 +391,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("CloneProfile Edge Cases");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             try
             {

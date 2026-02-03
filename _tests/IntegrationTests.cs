@@ -40,7 +40,7 @@ namespace StreamerBot.Tests
             // Reset static state
             GiveawayManager.GlobalConfig = null;
             m.States.Clear();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             adapter.Logger = cph.Logger;
             m.Initialize(adapter);
             return (m, cph);
@@ -61,7 +61,7 @@ namespace StreamerBot.Tests
             c.IsYouTubeLiveValue = true;
             c.IsKickLiveValue = true;
             c.ChatHistory.Clear();
-            messenger.SendBroadcast(new CPHAdapter(c), "Hello All");
+            messenger.SendBroadcast(new CPHAdapter(c, c.Args), "Hello All");
             if (c.ChatHistory.Count != 2 || !c.ChatHistory.Any(x => x.Contains("Hello All"))) throw new Exception("Broadcast failed to reach all live platforms.");
 
             // 2. Fallback (Nothing live -> Kick)
@@ -69,7 +69,7 @@ namespace StreamerBot.Tests
             c.IsYouTubeLiveValue = false;
             c.IsKickLiveValue = false;
             c.ChatHistory.Clear();
-            messenger.SendBroadcast(new CPHAdapter(c), "Going to fallback");
+            messenger.SendBroadcast(new CPHAdapter(c, c.Args), "Going to fallback");
             if (c.ChatHistory.Count != 1 || !c.ChatHistory.Any(x => x.Contains("Going to fallback"))) throw new Exception("Fallback failed.");
 
             // 3. Multi-Platform = false (Only source -> YouTube)
@@ -77,7 +77,7 @@ namespace StreamerBot.Tests
             c.IsTwitchLiveValue = true;
             c.IsYouTubeLiveValue = true;
             c.ChatHistory.Clear();
-            messenger.SendBroadcast(new CPHAdapter(c), "Direct Message", "YouTube");
+            messenger.SendBroadcast(new CPHAdapter(c, c.Args), "Direct Message", "YouTube");
             if (c.ChatHistory.Count != 1 || !c.ChatHistory.Any(x => x.Contains("Direct Message"))) throw new Exception("Direct messaging (Multi=false) failed.");
 
             Console.WriteLine("PASS");
@@ -102,7 +102,7 @@ namespace StreamerBot.Tests
             c.Args["message"] = "The giveaway is now closed for new entries!";
             c.Args["isBot"] = true;
 
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             if (!m.States["Main"].IsActive) Console.WriteLine("PASS");
             else Console.WriteLine("FAIL (Giveaway still active)");
@@ -127,7 +127,7 @@ namespace StreamerBot.Tests
             c.Args["message"] = "CLOSE";
             c.Args["isBot"] = true;
 
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             // Should still be active because "moobot" != "Moobot"
             if (m.States["Main"].IsActive) Console.WriteLine("PASS");
@@ -156,7 +156,7 @@ namespace StreamerBot.Tests
             c.Args["message"] = "OPEN THE GIVEAWAY";
             c.Args["isBot"] = true;
 
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             if (m.States["Main"].IsActive) Console.WriteLine("PASS");
             else Console.WriteLine("FAIL (Giveaway not opened)");
@@ -189,7 +189,7 @@ namespace StreamerBot.Tests
                 c.Args["message"] = "WINNER IS @User1";
                 c.Args["isBot"] = true;
 
-                await m.ProcessTrigger(new CPHAdapter(c));
+                await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
                 // Check if winner was drawn (state should have LastWinnerName set)
                 if (m.States["Main"].LastWinnerName != null) Console.WriteLine("PASS");
@@ -220,7 +220,7 @@ namespace StreamerBot.Tests
             c.Args["message"] = "CLOSE THE GIVEAWAY";
             c.Args["isBot"] = true;
 
-            await m.ProcessTrigger(new CPHAdapter(c));
+            await m.ProcessTrigger(new CPHAdapter(c, c.Args));
 
             // Should still be active because bot was filtered
             if (m.States["Main"].IsActive) Console.WriteLine("PASS");
@@ -231,7 +231,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("\nShort Command Aliases Checking");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             cph.Args["isBroadcaster"] = true;
 
             try
@@ -278,7 +278,7 @@ namespace StreamerBot.Tests
             cph.SetGlobalVar("WheelOfNamesApiKey", "PLAIN_SECRET", true);
 
             // 2. Initialize (should trigger auto-encrypt)
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // 3. Verify
             string storedKey = cph.GetGlobalVar<string>("WheelOfNamesApiKey");
@@ -305,7 +305,7 @@ namespace StreamerBot.Tests
             cph.Args["rawInput"] = "!giveaway profile create ExportTest";
             cph.Args["isBroadcaster"] = true; // Required for profile management
             cph.Args["user"] = "Tester";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Add Entry
             m.States["ExportTest"].Entries["u1"] = new Entry { UserId = "u1", UserName = "Tester, One", TicketCount = 1, IsSub = false, EntryTime = DateTime.Now };
@@ -321,7 +321,7 @@ namespace StreamerBot.Tests
             cph.Args["rawInput"] = "!giveaway profile end ExportTest";
             cph.Args["isBroadcaster"] = true;
             cph.Args["user"] = "Tester";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             string dumpDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "dumps", "ExportTest");
             string csvFile = Directory.GetFiles(dumpDir, "*_Entries.csv").OrderByDescending(f => f).FirstOrDefault();
@@ -341,7 +341,7 @@ namespace StreamerBot.Tests
 
             // Trigger End again
             m.States["ExportTest"].IsActive = true;
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             string jsonFile = Directory.GetFiles(dumpDir, "*_Entries.json").OrderByDescending(f => f).FirstOrDefault();
             bool jsonPass = false;
@@ -364,17 +364,17 @@ namespace StreamerBot.Tests
             cph.Args["rawInput"] = "!giveaway profile create ExportMe";
             cph.Args["isBroadcaster"] = true;
             cph.Args["user"] = "Tester";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Modify it slightly
             var config = GiveawayManager.GlobalConfig;
             config.Profiles["ExportMe"].SubLuckMultiplier = 42;
-            m.Loader.WriteConfigText(new CPHAdapter(cph), JsonConvert.SerializeObject(config));
+            m.Loader.WriteConfigText(new CPHAdapter(cph, cph.Args), JsonConvert.SerializeObject(config));
             m.Loader.InvalidateCache(); // Force reload if needed.
 
             // 2. Export
             cph.Args["rawInput"] = "!giveaway profile export ExportMe";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Check file
             var exportDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "exports");
@@ -387,12 +387,12 @@ namespace StreamerBot.Tests
 
             // 3. Import (from File)
             cph.Args["rawInput"] = $"!giveaway profile import \"{exportFile}\" ImportedProfile";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             // Verify
-            var newConfig = m.Loader.GetConfig(new CPHAdapter(cph));
-            if (!newConfig.Profiles.ContainsKey("ImportedProfile")) { Console.WriteLine("FAIL (ImportedProfile not in config)"); return; }
-            if (newConfig.Profiles["ImportedProfile"].SubLuckMultiplier != 42) { Console.WriteLine("FAIL (Imported property mismatch)"); return; }
+            var newConfig = m.Loader.GetConfig(new CPHAdapter(cph, cph.Args));
+            if (!newConfig.Profiles.TryGetValue("ImportedProfile", out var importedProfile)) { Console.WriteLine("FAIL (ImportedProfile not in config)"); return; }
+            if (importedProfile.SubLuckMultiplier != 42) { Console.WriteLine("FAIL (Imported property mismatch)"); return; }
 
             // 4. Import (Raw JSON - Relative Path Logic)
             string importDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "import");
@@ -400,10 +400,10 @@ namespace StreamerBot.Tests
             File.WriteAllText(Path.Combine(importDir, "Relative.json"), exportedJson);
 
             cph.Args["rawInput"] = "!giveaway profile import Relative RelativeProf";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
-            newConfig = m.Loader.GetConfig(new CPHAdapter(cph));
-            if (newConfig.Profiles.ContainsKey("RelativeProf") && newConfig.Profiles["RelativeProf"].SubLuckMultiplier == 42)
+            newConfig = m.Loader.GetConfig(new CPHAdapter(cph, cph.Args));
+            if (newConfig.Profiles.TryGetValue("RelativeProf", out var relativeProf) && relativeProf.SubLuckMultiplier == 42)
                 Console.WriteLine("PASS");
             else
                 Console.WriteLine("FAIL (Relative import failed)");
@@ -416,7 +416,7 @@ namespace StreamerBot.Tests
 
             cph.Args["rawInput"] = "!giveaway profile create Main";
             cph.Args["isBroadcaster"] = true;
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
             if (m.States.TryGetValue("Main", out var s))
             {
@@ -424,7 +424,7 @@ namespace StreamerBot.Tests
                 s.Entries["t"] = new Entry { UserName = "T", UserId = "t", TicketCount = 1 };
                 GiveawayManager.GlobalConfig.Profiles["Main"].EnableWheel = false;
                 cph.Args.Clear(); cph.Args["command"] = "!draw"; cph.Args["isBroadcaster"] = true;
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                 string d = Path.Combine(baseDir, "Giveaway Helper", "dumps", "Main");
                 if (Directory.Exists(d) && Directory.GetFiles(d).Length > 0) Console.WriteLine("PASS");
@@ -438,7 +438,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Generic Triggers (ID/Name): ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             // Inject Custom Config for Testing
             var customProf = new GiveawayProfileConfig();
@@ -453,18 +453,18 @@ namespace StreamerBot.Tests
 
             // 1. Test Name Trigger
             cph.Args.Clear(); cph.Args["triggerName"] = "My Timer"; cph.Args["userId"] = "u1"; cph.Args["user"] = "U1";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             if (!m.States["Custom"].Entries.ContainsKey("u1")) { Console.Write("FAIL(Name) "); passed = false; }
 
             // 2. Test ID Trigger (Case Insensitive)
             cph.Args.Clear(); cph.Args["triggerId"] = "UUID-1234"; cph.Args["isBroadcaster"] = true;
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             // Draw logic requires entries, so if we get here without crash and it matched 'Draw', it's good. 
             // We check logs for "No entries!" from HandleDraw
 
             // 3. Test StreamDeck Trigger
             cph.Args.Clear(); cph.Args["sdButtonId"] = "sd-button-1";
-            await m.ProcessTrigger(new CPHAdapter(cph));
+            await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
             if (!m.States["Custom"].IsActive) { Console.Write("FAIL(SD) "); passed = false; }
 
             if (passed) Console.WriteLine("PASS");
@@ -492,7 +492,7 @@ namespace StreamerBot.Tests
             });
 
             var client = new WheelOfNamesClient(fakeHandler);
-            var url = await client.CreateWheel(new CPHAdapter(cph), new List<string> { "u1", "u2" }, "WheelOfNamesApiKey", new WheelConfig());
+            var url = await client.CreateWheel(new CPHAdapter(cph, cph.Args), new List<string> { "u1", "u2" }, "WheelOfNamesApiKey", new WheelConfig());
 
             if (url == "https://wheelofnames.com/abc-123") Console.WriteLine("PASS");
             else Console.WriteLine($"FAIL (Got: {url})");
@@ -502,7 +502,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("\n[TEST] External Bot Integration:");
             var (m, cph) = SetupWithCph();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // Setup: Allow "MockBot" in Main profile
             var config = m.Loader.GetConfig(adapter);
@@ -566,7 +566,7 @@ namespace StreamerBot.Tests
 
             var client = new WheelOfNamesClient(fakeHandler);
             // Should not crash, returns null/empty
-            string url = await client.CreateWheel(new CPHAdapter(cph), new List<string> { "u1" }, "key", new WheelConfig());
+            string url = await client.CreateWheel(new CPHAdapter(cph, cph.Args), new List<string> { "u1" }, "key", new WheelConfig());
 
             if (string.IsNullOrEmpty(url))
                 Console.WriteLine("PASS");

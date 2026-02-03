@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using StreamerBot;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace StreamerBot.Tests
 {
     public static class ProfileStrictnessTests
@@ -20,18 +21,19 @@ namespace StreamerBot.Tests
         {
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
 
             // Initializing will create default config
             m.Initialize(adapter);
 
             // Ensure Main profile exists and is active
-            if (!m.States.ContainsKey("Main"))
+            if (!m.States.TryGetValue("Main", out var state))
             {
-                m.States["Main"] = new GiveawayState();
+                state = new GiveawayState();
+                m.States["Main"] = state;
             }
-            m.States["Main"].Entries.Clear();
-            m.States["Main"].IsActive = true;
+            state.Entries.Clear();
+            state.IsActive = true;
 
             // Setup default user args
             cph.Args["userId"] = "strictUser";
@@ -59,8 +61,8 @@ namespace StreamerBot.Tests
                 throw new Exception("Entry count mismatch: Expected 0 (Rejected), Got " + m.States["Main"].Entries.Count);
 
             // Check Metric
-            if (!cph.Globals.TryGetValue("GiveawayBot_Metrics_Entries_Rejected", out var rejected) || Convert.ToInt32(rejected) != 1)
-                throw new Exception("Metric mismatch: Entries_Rejected expected 1");
+            if (!cph.Globals.TryGetValue("Giveaway Global Metrics EntriesRejected", out var rejected) || Convert.ToInt32(rejected) != 1)
+                throw new Exception("Metric mismatch: EntriesRejected expected 1");
 
             Console.WriteLine("PASS");
         }
@@ -101,8 +103,8 @@ namespace StreamerBot.Tests
                 throw new Exception("Entry count mismatch: Expected 0 (Rejected), Got " + m.States["Main"].Entries.Count);
 
             // Check Metric
-            if (!cph.Globals.TryGetValue("GiveawayBot_Metrics_Entries_Rejected", out var rejected) || Convert.ToInt32(rejected) != 1)
-                throw new Exception("Metric mismatch: Entries_Rejected expected 1");
+            if (!cph.Globals.TryGetValue("Giveaway Global Metrics EntriesRejected", out var rejected) || Convert.ToInt32(rejected) != 1)
+                throw new Exception("Metric mismatch: EntriesRejected expected 1");
 
             Console.WriteLine("PASS");
         }

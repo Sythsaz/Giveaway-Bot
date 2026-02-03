@@ -43,7 +43,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Profile Management (Basic): ");
             var cph = new MockCPH();
             var m = new GiveawayManager();
-            m.Initialize(new CPHAdapter(cph));
+            m.Initialize(new CPHAdapter(cph, cph.Args));
 
             string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "config", "giveaway_config.json");
 
@@ -53,14 +53,14 @@ namespace StreamerBot.Tests
 
                 // Create
                 cph.Args["rawInput"] = "!giveaway profile create NewProfile";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 var json = File.ReadAllText(configPath);
                 bool created = json.Contains("NewProfile");
 
                 // Delete
                 cph.Args["rawInput"] = "!giveaway profile delete NewProfile confirm";
-                await m.ProcessTrigger(new CPHAdapter(cph));
+                await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
 
                 json = File.ReadAllText(configPath);
                 bool deleted = !json.Contains("NewProfile");
@@ -78,7 +78,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("[TEST] CreateProfile Comprehensive:");
             var cph = new MockCPH();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             var m = new GiveawayManager();
             m.Initialize(adapter);
 
@@ -160,7 +160,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("[TEST] DeleteProfile Comprehensive:");
             var cph = new MockCPH();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             var m = new GiveawayManager();
             m.Initialize(adapter);
 
@@ -261,7 +261,7 @@ namespace StreamerBot.Tests
         {
             Console.WriteLine("[TEST] CloneProfile Comprehensive:");
             var cph = new MockCPH();
-            var adapter = new CPHAdapter(cph);
+            var adapter = new CPHAdapter(cph, cph.Args);
             var m = new GiveawayManager();
             m.Initialize(adapter);
 
