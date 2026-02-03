@@ -707,6 +707,7 @@ public static class Loc
             
             // Initialize incremental dump timer (checks every 5 seconds)
             _currentAdapter = adapter; // Store for timer callbacks
+#if !GIVEAWAY_TESTS
 #pragma warning disable CS8622 // Nullability warning (C# 7.3 doesn't have nullable reference types)
             _dumpTimer = new System.Threading.Timer(
                 ProcessPendingDumpsCallback,
@@ -716,10 +717,16 @@ public static class Loc
             );
 #pragma warning restore CS8622
             adapter.LogDebug("[GiveawayManager] Incremental dump timer started (5s interval)");
+#endif
 
-            // Fire and forget update check
-            _ = CheckForUpdatesStartup(adapter);
+#if !GIVEAWAY_TESTS
+            // Fire and forget update check on startup
+            _startupTask = CheckForUpdatesStartup(adapter);
+#endif
         }
+
+        private Task _startupTask;
+        public Task WaitForStartup() => _startupTask ?? Task.CompletedTask;
 
         private async Task CheckForUpdatesStartup(CPHAdapter adapter)
         {
@@ -1339,7 +1346,6 @@ public static class Loc
         /// <param name="profileName">Current profile name.</param>
         /// <param name="action">Action name ("Open", "Close", "Winner").</param>
         /// <param name="userName">User triggering the action.</param>
-        /// <param name="platform">Platform of the trigger.</param>
         /// <param name="userId">User ID triggering the action.</param>
         /// <param name="message">Original message content.</param>
         /// <param name="platform">Platform of the trigger.</param>
@@ -1697,7 +1703,8 @@ public static class Loc
         // Check for global override in variables
         bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("Giveaway Global Expose Variables", true));
         string currentRunMode = ConfigLoader.GetRunMode(adapter); // Use authoritative mode (includes overrides)
-        bool isMirror = string.Equals(currentRunMode, "Mirror", StringComparison.OrdinalIgnoreCase);
+        bool isMirror = globals.RunMode == "Mirror";
+        adapter.LogDebug($"[DEBUG] Sync Check: Mirror={isMirror}, Override={overrideVal}, ConfExpose={config.ExposeVariables}");
 
         if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
         {
@@ -1782,12 +1789,18 @@ public static class Loc
             if (!_lastSyncedValues.ContainsKey($"Giveaway {profileName} IsActive"))
             {
                 adapter.Logger?.LogTrace(adapter, profileName, $"Syncing {profileName} config variables...");
-                }
             }
-
-            adapter.Logger?.LogTrace(adapter, profileName, $"Sync Complete: {profileName} (Entries: {state.Entries.Count}, Active: {state.IsActive}, SubLuck: {config.SubLuckMultiplier})");
         }
 
+        adapter.Logger?.LogTrace(adapter, profileName, $"Sync Complete: {profileName} (Entries: {state.Entries.Count}, Active: {state.IsActive}, Sub Luck: {config.SubLuckMultiplier})");
+    }
+
+        /// <summary>
+        /// Robustly parses a boolean value from various string representations (true, on, 1, yes, etc.).
+        /// Returns null if the input cannot be parsed as a boolean.
+        /// </summary>
+        /// <param name="input">The string to parse.</param>
+        /// <returns>True, False, or null if parsing fails.</returns>
         private static bool? ParseBoolVariant(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return null;
@@ -2346,7 +2359,6 @@ public static class Loc
                      adapter.SetGlobalVar("Giveaway Wheel Api Key Status", expectedStatus, true);
                  }
 
-                 // --- Phase 0: Global Settings Sync ---
                  
                  // RunMode
                  string runModeVal = adapter.GetGlobalVar<string>("Giveaway Global RunMode", true);
@@ -2413,25 +2425,25 @@ public static class Loc
                                 continue;
                             }
 
-                        try
-                        {
-                            var incoming = JsonConvert.DeserializeObject<Dictionary<string, string>>(triggersJson);
-                            if (incoming != null)
+                            try
                             {
-                                // Cache the new JSON since it parsed successfully
-                                _triggersJsonCache[name] = triggersJson;
-
-                                // Compare with current
-                                var current = profile.Triggers ?? new Dictionary<string, string>();
-                                bool equal = incoming.Count == current.Count;
-                                if (equal)
+                                var incoming = JsonConvert.DeserializeObject<Dictionary<string, string>>(triggersJson);
+                                if (incoming != null)
                                 {
-                                    foreach (var triggerKvp in incoming)
+                                    // Cache the new JSON since it parsed successfully
+                                    _triggersJsonCache[name] = triggersJson;
+
+                                    // Compare with current
+                                    var current = profile.Triggers ?? new Dictionary<string, string>();
+                                    bool equal = incoming.Count == current.Count;
+                                    if (equal)
                                     {
-                                        if (!current.TryGetValue(triggerKvp.Key, out var existingVal) || existingVal != triggerKvp.Value)
+                                        foreach (var triggerKvp in incoming)
                                         {
-                                            equal = false;
-                                            break;
+                                            if (!current.TryGetValue(triggerKvp.Key, out var existingVal) || existingVal != triggerKvp.Value)
+                                            {
+                                                equal = false;
+                                                break;
                                         }
                                     }
                                 }
@@ -2508,7 +2520,7 @@ public static class Loc
                         string oldVal = profile.TimerDuration;
                         profile.TimerDuration = timerVal;
                         dirty = true;
-                        adapter.LogInfo($"[Config] TimerDuration for '{name}' updated from '{oldVal}' to '{timerVal}' via Global Variable.");
+                        adapter.LogInfo($"[Config] Timer Duration for '{name}' updated from '{oldVal}' to '{timerVal}' via Global Variable.");
 
                         // Dynamic Runtime Adjustment
                         if (States.TryGetValue(name, out var state) && state.IsActive && state.StartTime.HasValue)
@@ -2523,7 +2535,7 @@ public static class Loc
                                 var remaining = newEndTime - DateTime.Now;
                                 string timeStr = $"{(int)remaining.TotalMinutes}m {(int)remaining.Seconds}s";
 
-                                string msg = Loc.Get("TimerUpdated", name, timeStr);
+                                string msg = Loc.Get("Timer Updated", name, timeStr);
                                 // Broadcast update to chat
                                 Messenger?.SendBroadcast(adapter, msg, GlobalConfig.Globals.FallbackPlatform);
                                 adapter.LogInfo($"[Timer] Updated runtime auto-close to {newEndTime} (Ends in {timeStr})");
@@ -2653,6 +2665,7 @@ public static class Loc
                     syncInt("DumpEntriesOnEntryThrottleSeconds", v => { if(profile.DumpEntriesOnEntryThrottleSeconds != v) { profile.DumpEntriesOnEntryThrottleSeconds = v; dirty = true; } });
 
                     }
+                }
                 }
                 catch (Exception ex)
                 {
@@ -2894,6 +2907,7 @@ public static class Loc
                         if (CheckCmd(rawInput, "config check") || CheckCmd(sourceDetails, "config check"))
                         {
                             adapter.LogTrace("[Trigger] Matched: config check");
+                            _configLoader.InvalidateCache(); // Force fresh reload from disk/global
                             var report = _configLoader.ValidateConfig(adapter);
                             adapter.LogInfo($"[Config] Logic Check: {report}");
 
@@ -3090,6 +3104,37 @@ public static class Loc
                 }
                 // Update cooldown timestamp after passing the check
                 state.RedemptionCooldowns[userId] = DateTime.Now;
+            }
+
+            // Strictness Check: Follower
+            if (config.RequireFollower)
+            {
+                // TODO: Currently limited to Twitch as Streamer.bot CPH support for YT/Trovo checks is generic/complex.
+                if (!adapter.TwitchIsUserFollower(userId))
+                {
+                    adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a follower).");
+                    
+                    var msg = Loc.Get("EntryRejected_NotFollower");
+                    // Only whisper/reply if it's the first attempt to avoid spam? 
+                    // For now, standard reply logic handles spam via global cooldowns if we wanted, 
+                    // but rejection here counts as a "fail" without triggering bot output usually, unless we explicitly enable it.
+                    // Silent rejection to avoid chat spam, or explicit reply?
+                    
+                    IncGlobalMetric(adapter, "Entries_Rejected");
+                    // Optionally notify user via chat if bandwidth allows (omitted to prevent spam for now)
+                    return true;
+                }
+            }
+
+            // Strictness Check: Subscriber
+            if (config.RequireSubscriber)
+            {
+                if (!adapter.TwitchIsUserSubscriber(userId))
+                {
+                    adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a subscriber).");
+                    IncGlobalMetric(adapter, "Entries_Rejected");
+                    return true;
+                }
             }
 
             // Global rate limit check (prevents bot spam from overwhelming the system)
@@ -3473,6 +3518,11 @@ public static class Loc
 
             PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals);
             SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
+
+            if (config.DumpEntriesOnEnd)
+            {
+                await DumpEntriesAsync(adapter, profileName, state, config);
+            }
 
             string closeMsg = Loc.Get("GiveawayClosed", profileName);
             Messenger?.SendBroadcast(adapter, closeMsg, platform);
@@ -4586,6 +4636,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             return isLive;
         }
 
+        public bool TwitchIsUserFollower(string userId) => InvokeSafe("TwitchIsUserFollower", new object[] { userId, true }, 2) as bool? ?? false;
+        public bool TwitchIsUserSubscriber(string userId) => InvokeSafe("TwitchIsUserSubscriber", new object[] { userId, true }, 2) as bool? ?? false;
+
         /// <summary>
         /// Sets the URL of an OBS Browser Source.
         /// </summary>
@@ -5011,11 +5064,13 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                         if (mode == "Mirror" && !string.IsNullOrEmpty(json))
                         {
                             adapter.LogInfo("[Config] Mirror: Global Variable override detected. Updating local file to match.");
+                            adapter.LogInfo($"[Config] DEBUG WRITE JSON (GetConfig): {json}");
                             try 
                             { 
                                 File.WriteAllText(_path, json); 
                                 // Update last load to match file time so we don't reload immediately
                                 _lastLoad = DateTime.Now; 
+                                adapter.LogDebug($"[Config] DEBUG WRITE COMPLETE. Exists: {File.Exists(_path)}");
                             } 
                             catch (Exception ex) { adapter.LogError($"[Config] Mirror: Local file sync failed: {ex.Message}"); }
                         }
@@ -5568,10 +5623,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
 
 
-        /// <summary>
-        /// Updates a specific configuration key for a profile asynchronously.
-        /// Handles type conversion and validation for keys like MaxEntriesPerMinute, EnableWheel, etc.
-        /// </summary>
         /// <summary>
         /// Updates a specific configuration key for a profile asynchronously.
         /// Uses Reflection to support all properties of GiveawayProfileConfig dynamically.
@@ -6464,6 +6515,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         [JsonProperty("_expose_variables_help")]
         public string ExposeVariablesHelp { get; set; } = "Set to true to expose these variables to Streamer.bot global vars.";
 
+        [JsonProperty("_variable_exposure_help")] public string VariableExposureHelp { get; set; } = "RequireFollower/Subscriber check.";
+        public bool RequireFollower { get; set; } = false;
+        public bool RequireSubscriber { get; set; } = false;
+
         [JsonProperty("_entries_help")] public string EntriesHelp { get; set; } = "Max entries allowed per minute. Prevents bot spam.";
         public int MaxEntriesPerMinute { get; set; } = 45;
         public bool EnableWheel { get; set; } = false;
@@ -6528,7 +6583,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
         // Missing properties fixed
         public double WinChance { get; set; } = 1.0;
-        public bool RequireSubscriber { get; set; } = false;
 
         [JsonProperty("_messages_help")] public string MessagesHelp { get; set; } = "Override default messages. Key:Value pairs.";
         public Dictionary<string, string> Messages { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
