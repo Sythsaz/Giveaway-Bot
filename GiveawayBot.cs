@@ -1050,6 +1050,12 @@ public static class Loc
             SetMetric("Wheel Api Network Errors", _cachedMetrics.WheelApiNetworkErrors);
         }
 
+        /// <summary>
+        /// Increments a global metric counter.
+        /// </summary>
+        /// <param name="adapter">CPH adapter instance.</param>
+        /// <param name="n">Metric name suffix (e.g., "Giveaway_Started").</param>
+        /// <param name="d">Amount to increment (default: 1).</param>
         private void IncGlobalMetric(CPHAdapter adapter, string n, long d = 1)
         {
             var key = $"GiveawayBot_Metrics_{n}";
