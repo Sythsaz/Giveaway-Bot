@@ -312,13 +312,13 @@ public static class Loc
             }
         }
 
-        // 3. Try Default Dictionary
+        // Try Default Dictionary
         if (template == null && _defaults.TryGetValue(key, out var defStr))
         {
             template = defStr;
         }
 
-        // 4. Fallback
+        // Fallback
         if (template == null) return $"[{key}]";
 
         // Format
