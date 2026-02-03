@@ -12,7 +12,7 @@ to the latest supported version before reporting issues.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in the Florals Giveaway Bot, please **do not open a public issue**. Instead,
+If you discover a security vulnerability in the Giveaway Bot, please **do not open a public issue**. Instead,
 please report it via:
 
 - **Discord**: DM `Sythsaz`

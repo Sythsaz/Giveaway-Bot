@@ -1,6 +1,6 @@
-# Contributing to Florals Giveaway Bot
+# Contributing to Giveaway Bot
 
-Thank you for your interest in contributing to the Florals Giveaway Bot! This document provides guidelines and information
+Thank you for your interest in contributing to the Giveaway Bot! This document provides guidelines and information
 to help you get started.
 
 ## 📋 Table of Contents
@@ -331,4 +331,4 @@ See [SECURITY.md](SECURITY.md) for responsible disclosure guidelines.
 
 ---
 
-Thank you for contributing to Florals Giveaway Bot! 🎉
+Thank you for contributing to Giveaway Bot! 🎉

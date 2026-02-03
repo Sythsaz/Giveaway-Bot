@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Complete step-by-step guide to deploy the Florals Giveaway Bot from zero to your first giveaway.
+Complete step-by-step guide to deploy the Giveaway Bot from zero to your first giveaway.
 
 ## Table of Contents
 
@@ -97,7 +97,7 @@ Verify everything is working:
    ```text
    =========================================
    GIVEAWAY BOT - SYSTEM TEST
-   Version: 1.1.0
+   Version: 1.4.2
    =========================================
    ✓ Config loaded successfully
    ✓ 1 profile found: Main
@@ -409,7 +409,7 @@ Add visual wheel spins for winner selection.
 
 **Solution**:
 
-1. Check that "Florals Giveaway Bot" appears in Actions list
+1. Check that "Giveaway Bot" appears in Actions list
 2. If missing, re-import `GiveawayBot.cs`
 3. Verify triggers are linked to the correct action
 

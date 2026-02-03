@@ -18,8 +18,8 @@
       "DumpEntriesOnEnd": true,
       "DumpWinnersOnDraw": true,
       "SubLuckMultiplier": 0,
-      "MinAccountAgeDays": 0,
-      "EnableEntropyCheck": false
+      "MinAccountAgeDays": 180,
+      "EnableEntropyCheck": true
     }
   },
   "Globals": {

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Florals Giveaway Bot will be documented in this file.
+All notable changes to the Giveaway Bot will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -24,8 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## TODO add how variables changed
+
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
+- **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods and properties.
+- **Code Quality**: Enhanced `ParseBoolVariant` to return `null` for invalid inputs, improving config parsing robustness.
 - **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 - **DEVELOPMENT.md**: Enhanced with three-layer C# 7.3 enforcement documentation (build-time, IDE, pre-commit)
 - **CONTRIBUTING.md**: Expanded C# 7.3 constraints section with pre-commit hook usage and common pitfalls
