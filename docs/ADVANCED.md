@@ -1,6 +1,6 @@
 # Advanced Topics & Technical Guide
 
-> **Version**: 1.4.2
+> **Version**: 1.4.3
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
 
@@ -24,32 +24,28 @@
 
 The bot uses **AES-256-CBC** encryption for API keys with the following implementation:
 
-**Auto-Encryption (New in 1.3.2):**
-If you set the global variable `GiveawayBot_Globals_WheelApiKey` to a plain text key (e.g. `abc-123`), the bot will
-immediately detect it, validate it with the Wheel of Names API, and if valid, **encrypt it automatically**
-(replacing the value with `ENC:...`).
+**Auto-Encryption (Updated in 1.4.3):**
+The bot automatically upgrades legacy keys to **AES-256-CBC** using a portable salt.
+- Plain text (`abc-123`) → Encrypted (`AES:...`)
+- Legacy Base64 (`OBF:...`) → Encrypted (`AES:...`)
 
-**Key Derivation:**
+**Key Derivation (Portable):**
 
 ```text
-MachineID = Environment.MachineName
-UserID = Environment.UserName
-Salt = SHA256(MachineID + UserID)
-EncryptionKey = First 32 bytes of Salt
-IV = First 16 bytes of Salt
+Salt = GlobalConfig.Globals.EncryptionSalt (Random 32-byte hash)
+Key = PBKDF2(Salt, Salt, 1000 iter) -> 32 bytes
+IV  = First 16 bytes of Salt
 ```
 
-**Why machine-specific?**
+**Why Portable?**
+Unlike previous versions that tied keys to your Windows User ID (DPAPI), the **EncryptionSalt** is stored in your `giveaway_config.json`.
+- ✅ **Portable**: You can copy your entire `Giveaway Helper` folder to another PC, and it will still work.
+- ✅ **Secure**: The salt is unique to your installation.
+- ✅ **Resilient**: Survives Windows reinstallations.
 
-- Prevents key theft (encrypted blob won't work on attacker's PC)
-- No password storage needed
-- Automatic, transparent to user
-
-**Limitations:**
-
-- **Moving PCs**: Must re-enter API key in plain text
-- **User account changes**: Must re-enter if Windows username changes
-- **Reinstalling Windows**: May invalidate keys
+**Security Warning:**
+- Do **NOT** share your `giveaway_config.json` publicly, as it contains the salt used to decrypt your keys.
+- **Always** exclude `giveaway_config.json` from public git repositories (add to `.gitignore`).
 
 ### Data Retention Policy
 

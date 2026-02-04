@@ -1,6 +1,6 @@
 # Frequently Asked Questions (FAQ)
 
-> **Version**: 1.4.2
+> **Version**: 1.4.3
 >
 > **[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
 
@@ -223,9 +223,10 @@ visual spin.
 **A:** Yes:
 
 - Encrypted with **AES-256-CBC** on first use
-- Derives encryption key from `MachineName + Username` (no password needed)
+- Derives encryption key from a **randomized salt** stored in your config
+- **Portable**: Works if you move your entire bot folder to a new PC
+- **Secure**: Won't work if someone steals just the config file (they need the salt + your specific setup context)
 - Never logged (all outputs sanitized with `[REDACTED]`)
-- **Machine-specific**: Won't decrypt on different PC
 
 ### Q: What data does the bot store?
 
@@ -240,13 +241,14 @@ visual spin.
 
 **A:** The bot stores minimal data locally. For GDPR compliance:
 
-1. Set `LogRetentionDays` to comply with your region (default: 90 days)
-2. Users can request data deletion (manually delete from dumps folder)
-3. No data is sent to external services (except Wheel API if enabled)
+1. **Automated Deletion**: Run `!giveaway data delete <username>` to scrub a user's active entries, history, and metrics from memory and logs.
+2. **Retention Policy**: Set `LogRetentionDays` to comply with your region (default: 90 days).
+3. **Manual**: You can also manually delete files from the `dumps` folder as well as from the Streamer Bot Variables.
+4. No data is sent to external services (except Wheel API if enabled).
 
 ### Q: Can other mods see my API keys?
 
-**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you). Encrypted format
+**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you) until they are in an encrypted format then
 `AES:...` is unreadable.
 
 ---
