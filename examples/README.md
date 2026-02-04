@@ -43,8 +43,30 @@ Focuses on the visual experience:
 
 ### [05-timed-and-custom-messages.json](05-timed-and-custom-messages.json)
 
-Showcasing v1.3.0 features:
+Advanced timed giveaway and messaging features:
 
 - **Timed Giveaway**: A "Flash Giveaway" profile that closes automatically after 5 minutes (`TimerDuration`).
 - **Custom Messages**: Customized "HYPE" messages using the `Messages` dictionary.
 - **Toast Notifications**: Enabled for high-priority events.
+
+### [06-multi-platform-and-metrics.json](06-multi-platform-and-metrics.json)
+
+Demonstrates how to configure the bot for a multi-streaming setup:
+
+- **Platforms**: Enables Twitch, YouTube, and Kick support simultaneously.
+- **Fallback**: Sets a fallback platform for system messages if the bot is offline.
+- **Metrics**: Example of exposing internal stats to Streamer.bot global variables.
+
+### [07-logging-persistence.json](07-logging-persistence.json)
+
+For server-grade reliability and debugging:
+
+- **Persistence**: Configures `StatePersistenceMode` to "Both" (File + Variables).
+- **Logging**: detailed retention policies (30 days, 50MB cap) and rotation settings.
+- **Dump Options**: Configures automatic entry dumping to CSV format.
+
+### [08-full-reference.json](08-full-reference.json)
+
+**DO NOT USE DIRECTLY.**
+A comprehensive reference file containing **every available configuration option** with default values.
+Use this to look up specific settings or copy-paste snippets into your own config.
