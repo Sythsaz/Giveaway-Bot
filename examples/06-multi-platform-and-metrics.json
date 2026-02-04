@@ -1,0 +1,34 @@
+{
+  "_instructions": [
+    "MULTI-PLATFORM & METRICS CONFIGURATION",
+    "Enable support for Twitch, YouTube, and Kick simultaneously.",
+    "Expose statistics to Streamer.bot variables."
+  ],
+  "Profiles": {
+    "Universal": {
+      "Triggers": {
+        "command:!join": "Enter",
+        "command:!win": "Winner"
+      },
+      "//": "Allow entries from any platform",
+      "MaxEntriesPerMinute": 100,
+
+      "//": "Expose live stats like %GiveawayBot_Universal_EntryCount%",
+      "ExposeVariables": true
+    }
+  },
+  "Globals": {
+    "//": "Monitor all three platforms for commands",
+    "EnabledPlatforms": [
+      "Twitch",
+      "YouTube",
+      "Kick"
+    ],
+
+    "//": "If bot account is offline, use this platform for system messages",
+    "FallbackPlatform": "Twitch",
+
+    "//": "Sync variable state to Streamer.bot global variables",
+    "ExposeVariables": true
+  }
+}

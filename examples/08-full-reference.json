@@ -1,0 +1,117 @@
+{
+  "_instructions": [
+    "FULL REFERENCE CONFIGURATION",
+    "This file lists every available configuration option for reference.",
+    "Do not use this file directly; copy the parts you need to your main config."
+  ],
+  "Profiles": {
+    "ReferenceProfile": {
+      "//": "Triggers map an event to an action: Enter, Winner, Open, Close",
+      "Triggers": {
+        "command:!join": "Enter",
+        "command:!pick": "Winner",
+        "command:!start": "Open",
+        "command:!end": "Close",
+        "sd:Keypad-UID-123": "Open",
+        "id:StreamerBotActionID": "Close"
+      },
+
+      "//": "--- Eligibility & Limits ---",
+      "MaxEntriesPerMinute": 45,
+      "MinAccountAgeDays": 0,
+      "RequireFollower": false,
+      "RequireSubscriber": false,
+      "AllowedExternalBots": ["Nightbot", "StreamElements"],
+      "ExternalListeners": [],
+      "GameFilter": "Just Chatting",
+      "TitleFilter": "Giveaway",
+
+      "//": "--- Bot Protection ---",
+      "EnableEntropyCheck": false,
+      "UsernamePattern": "^[a-zA-Z0-9_]+$",
+
+      "//": "--- Luck & Probability ---",
+      "SubLuckMultiplier": 2.0,
+      "WinChance": 1.0,
+
+      "//": "--- Auto-Automation ---",
+      "TimerDuration": "10m",
+      "AutoCloseTime": null,
+
+      "//": "--- Wheel of Names Integration ---",
+      "EnableWheel": false,
+      "WheelSettings": {
+        "Title": "Giveaway Winner",
+        "Description": "Good luck!",
+        "SpinTime": 10,
+        "WinnerMessage": "We have a winner: {name}",
+        "ShareMode": "private"
+      },
+
+      "//": "--- OBS Control ---",
+      "EnableObs": false,
+      "ObsScene": "GiveawayScene",
+      "ObsSource": "BrowserSource",
+
+      "//": "--- Messaging ---",
+      "Messages": {
+        "EntryAccepted": "Entry accepted! Total: {0}",
+        "WinnerSelected": "Congratulations @{0}!",
+        "GiveawayOpened": "Giveaway is OPEN!",
+        "GiveawayClosed": "Giveaway is CLOSED!"
+      },
+      "ToastNotifications": {
+        "WinnerSelected": true,
+        "GiveawayOpened": true,
+        "GiveawayClosed": true
+      },
+
+      "//": "--- Data Export ---",
+      "DumpEntriesOnEnd": true,
+      "DumpWinnersOnDraw": true,
+      "DumpFormat": "TXT",
+      "DumpEntriesOnEntry": false,
+      "DumpEntriesOnEntryThrottleSeconds": 10,
+
+      "//": "--- State Exposure ---",
+      "ExposeVariables": false
+    }
+  },
+
+  "Globals": {
+    "//": "--- Core Execution Settings ---",
+    "RunMode": "Mirror",
+    "StatePersistenceMode": "Both",
+    "StateSyncIntervalSeconds": 30,
+    "Language": "en-US",
+
+    "//": "--- Platform Support ---",
+    "EnabledPlatforms": ["Twitch", "YouTube", "Kick"],
+    "FallbackPlatform": "Twitch",
+
+    "//": "--- Logging ---",
+    "LogLevel": "INFO",
+    "LogToStreamerBot": true,
+    "LogRetentionDays": 90,
+    "LogSizeCapMB": 100,
+    "LogMaxFileSizeMB": 10,
+    "LogPruneProbability": 100,
+
+    "//": "--- Security ---",
+    "EnableSecurityToasts": true,
+    "EncryptionSalt": "GENERATED_BY_BOT_DO_NOT_EDIT",
+    "WheelApiKeyVar": "Wheel Of Names Api Key",
+
+    "//": "--- Advanced Tuning ---",
+    "ConfigReloadIntervalSeconds": 5,
+    "MessageIdCleanupIntervalMs": 60000,
+    "MinUsernameEntropy": 2.5,
+    "ConfigBackupCount": 10,
+    "SpamWindowSeconds": 60,
+    "ExposeVariables": null,
+
+    "//": "--- Overrides ---",
+    "ImportGlobals": {},
+    "CustomStrings": {}
+  }
+}

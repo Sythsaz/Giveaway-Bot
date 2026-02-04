@@ -1,0 +1,36 @@
+{
+  "_instructions": [
+    "LOGGING AND PERSISTENCE CONTROL",
+    "Manage disk usage and state safety."
+  ],
+  "Profiles": {
+    "Main": {
+      "Triggers": {
+        "command:!join": "Enter",
+        "command:!pick": "Winner"
+      },
+      "//": "Dump entries to a file immediately when the giveaway ends",
+      "DumpEntriesOnEnd": true,
+
+      "//": "Format for entry dumps: TXT, CSV, or JSON",
+      "DumpFormat": "CSV"
+    }
+  },
+  "Globals": {
+    "//": "RunMode: 'Mirror' ensures config is saved to both Disk and Streamer.bot Variables",
+    "RunMode": "Mirror",
+
+    "//": "StatePersistence: 'Both' saves active giveaway state (entries) to Disk and Variables",
+    "StatePersistenceMode": "Both",
+
+    "//": "How often to save state to disk (seconds)",
+    "StateSyncIntervalSeconds": 15,
+
+    "//": "LOGGING RETENTION POLICIES",
+    "LogLevel": "DEBUG",
+    "LogRetentionDays": 30,
+    "LogSizeCapMB": 50,
+    "LogMaxFileSizeMB": 5,
+    "LogPruneProbability": 20
+  }
+}
