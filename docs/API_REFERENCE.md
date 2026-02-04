@@ -50,18 +50,23 @@ System-wide configuration options.
 
 **Properties**:
 
-| Property                   | Type                          | Default    | Description                                  |
-| -------------------------- | ----------------------------- | ---------- | -------------------------------------------- |
-| `RunMode`                  | `RunMode` (enum)              | `Mirror`   | Configuration persistence mode               |
-| `StatePersistenceMode`     | `StatePersistenceMode` (enum) | `File`     | State file persistence mode                  |
-| `StateSyncIntervalSeconds` | `int`                         | `30`       | Sync frequency between file and globals      |
-| `LogLevel`                 | `LogLevel` (enum)             | `INFO`     | Minimum log level to write                   |
-| `LogMaxSizeKB`             | `int`                         | `100` (MB) | Maximum log file size before rotation        |
-| `LogRetentionDays`         | `int`                         | `90`       | Days to keep old log files                   |
-| `ImportGlobals`            | `bool`                        | `false`    | Auto-import settings to Streamer.bot globals |
-| `CustomStrings`            | `Dictionary<string, string>`  | `{}`       | Override default bot response messages       |
-| `FallbackPlatform`         | `string`                      | `"twitch"` | Platform to use when offline/unavailable     |
-| `WheelOfNamesApiKey`       | `string`                      | `null`     | API key for Wheel of Names integration       |
+| Property                      | Type                          | Default    | Description                                  |
+| ----------------------------- | ----------------------------- | ---------- | -------------------------------------------- |
+| `RunMode`                     | `RunMode` (enum)              | `Mirror`   | Configuration persistence mode               |
+| `StatePersistenceMode`        | `StatePersistenceMode` (enum) | `File`     | State file persistence mode                  |
+| `StateSyncIntervalSeconds`    | `int`                         | `30`       | Sync frequency between file and globals      |
+| `LogLevel`                    | `LogLevel` (enum)             | `INFO`     | Minimum log level to write                   |
+| `LogMaxSizeKB`                | `int`                         | `100` (MB) | Maximum log file size before rotation        |
+| `LogRetentionDays`            | `int`                         | `90`       | Days to keep old log files                   |
+| `ImportGlobals`               | `bool`                        | `false`    | Auto-import settings to Streamer.bot globals |
+| `CustomStrings`               | `Dictionary<string, string>`  | `{}`       | Override default bot response messages       |
+| `FallbackPlatform`            | `string`                      | `"twitch"` | Platform to use when offline/unavailable     |
+| `WheelOfNamesApiKey`          | `string`                      | `null`     | API key for Wheel of Names integration       |
+| `ConfigReloadIntervalSeconds` | `int`                         | `5`        | Frequency to check for config updates        |
+| `MinUsernameEntropy`          | `double`                      | `2.5`      | Minimum entropy score for bot detection      |
+| `RegexTimeoutMs`              | `int`                         | `100`      | Max execution time for regex patterns        |
+| `SpamWindowSeconds`           | `int`                         | `60`       | Time window for rate limiting                |
+| `EncryptionSalt`              | `string`                      | `null`     | **Internal**: Salt for portable encryption   |
 
 **Example**:
 
@@ -112,6 +117,8 @@ Configuration for an individual giveaway profile.
 | `TimerDuration`                     | `string`                     | `null`          | Auto-close duration (e.g., "10m", "1h")      |
 | `WinChance`                         | `double`                     | `1.0`           | Win probability multiplier                   |
 | `RequireSubscriber`                 | `bool`                       | `false`         | Subscriber-only entries                      |
+| `RedemptionCooldownMinutes`         | `int`                        | `0`             | Cooldown between redemptions (0=disabled)    |
+| `GameFilter`                        | `string`                     | `null`          | Game-specific validation preset (e.g. 'GW2') |
 | `WheelSettings`                     | `WheelConfig`                | `{}`            | Wheel of Names configuration                 |
 
 **Default Triggers**:

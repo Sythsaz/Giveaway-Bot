@@ -60,7 +60,7 @@ Responsible for generic configuration management.
 
 - **JSON Parsing**: Loads `giveaway_config.json`.
 - **Validation**: Enforces rules (e.g., username patterns, min account age).
-- **Encryption**: Handles DPAPI encryption for sensitive fields like API keys.
+- **Encryption**: Handles AES-256 encryption with portable salt for sensitive fields like API keys.
 
 ### 3. CPHAdapter
 
