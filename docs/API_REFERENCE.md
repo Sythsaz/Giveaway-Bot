@@ -62,6 +62,11 @@ System-wide configuration options.
 | `CustomStrings`            | `Dictionary<string, string>`  | `{}`       | Override default bot response messages       |
 | `FallbackPlatform`         | `string`                      | `"twitch"` | Platform to use when offline/unavailable     |
 | `WheelOfNamesApiKey`       | `string`                      | `null`     | API key for Wheel of Names integration       |
+| `ConfigReloadIntervalSeconds`| `int`                       | `5`        | Frequency to check for config updates        |
+| `MinUsernameEntropy`       | `double`                      | `2.5`      | Minimum entropy score for bot detection      |
+| `RegexTimeoutMs`           | `int`                         | `100`      | Max execution time for regex patterns        |
+| `SpamWindowSeconds`        | `int`                         | `60`       | Time window for rate limiting                |
+| `EncryptionSalt`           | `string`                      | `null`     | **Internal**: Salt for portable encryption   |
 
 **Example**:
 
@@ -112,6 +117,8 @@ Configuration for an individual giveaway profile.
 | `TimerDuration`                     | `string`                     | `null`          | Auto-close duration (e.g., "10m", "1h")      |
 | `WinChance`                         | `double`                     | `1.0`           | Win probability multiplier                   |
 | `RequireSubscriber`                 | `bool`                       | `false`         | Subscriber-only entries                      |
+| `RedemptionCooldownMinutes`         | `int`                        | `0`             | Cooldown between redemptions (0=disabled)    |
+| `GameFilter`                        | `string`                     | `null`          | Game-specific validation preset (e.g. 'GW2') |
 | `WheelSettings`                     | `WheelConfig`                | `{}`            | Wheel of Names configuration                 |
 
 **Default Triggers**:

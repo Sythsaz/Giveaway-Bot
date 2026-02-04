@@ -11,21 +11,23 @@
       },
       "MaxEntriesPerMinute": 20,
       "MinAccountAgeDays": 90,
+      "RedemptionCooldownMinutes": 60,
+      "GameFilter": "GW2",
       "EnableEntropyCheck": true,
-      "UsernamePattern": "^[a-zA-Z0-9_]{4,25}$", 
+      "UsernamePattern": "^[a-zA-Z0-9_]{4,25}$",
       "AllowedExternalBots": ["Nightbot", "StreamElements"],
       "ExternalListeners": [
         {
           "BotName": "Nightbot",
           "MessagePattern": "^(\\w+) entered the giveaway!",
           "Action": "Enter",
-          "TargetGroup": 1 
+          "TargetGroup": 1
         }
       ]
     }
   },
   "Globals": {
-    "RunMode": "FileSystem", 
+    "RunMode": "FileSystem",
     "StatePersistenceMode": "File",
     "LogLevel": "DEBUG"
   }
