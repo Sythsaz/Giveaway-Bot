@@ -5,11 +5,13 @@ This release introduces **Portable Encryption**, **GDPR Compliance Tools**, and 
 ## [1.4.3] - 2026-02-03
 
 ### Added (v1.4.3)
+
 - **GDPR**: `!giveaway data delete <user>` command for comprehensive data scrubbing (logs, metrics, active entries).
 - **Performance**: Smart config synchronization with JSON caching to reduce CPU load.
 - **Reliability**: Consolidated timer logic for better stability.
 
 ### Changed (v1.4.3)
+
 - **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key.
 - **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs`.
 - **Code Quality**: Enhanced `ParseBoolVariant` to return `null` for invalid inputs.

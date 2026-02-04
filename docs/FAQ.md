@@ -241,15 +241,16 @@ visual spin.
 
 **A:** The bot stores minimal data locally. For GDPR compliance:
 
-1. **Automated Deletion**: Run `!giveaway data delete <username>` to scrub a user's active entries, history, and metrics from memory and logs.
+1. **Automated Deletion**: Run `!giveaway data delete <username>` to scrub a user's active entries, history,
+   and metrics from memory and logs.
 2. **Retention Policy**: Set `LogRetentionDays` to comply with your region (default: 90 days).
 3. **Manual**: You can also manually delete files from the `dumps` folder as well as from the Streamer Bot Variables.
 4. No data is sent to external services (except Wheel API if enabled).
 
 ### Q: Can other mods see my API keys?
 
-**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you) until they are in an encrypted format then
-`AES:...` is unreadable.
+**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you) until they are converted
+to the encrypted format. `AES:...` strings are unreadable.
 
 ---
 

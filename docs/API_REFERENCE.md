@@ -63,7 +63,7 @@ System-wide configuration options.
 | `FallbackPlatform`         | `string`                      | `"twitch"` | Platform to use when offline/unavailable     |
 | `WheelOfNamesApiKey`       | `string`                      | `null`     | API key for Wheel of Names integration       |
 | `ConfigReloadIntervalSeconds`| `int`                       | `5`        | Frequency to check for config updates        |
-| `MinUsernameEntropy`       | `double`                      | `2.5`      | Minimum entropy score for bot detection      |
+| `MinUsernameEntropy`         | `double`                    | `2.5`      | Minimum entropy score for bot detection      |
 | `RegexTimeoutMs`           | `int`                         | `100`      | Max execution time for regex patterns        |
 | `SpamWindowSeconds`        | `int`                         | `60`       | Time window for rate limiting                |
 | `EncryptionSalt`           | `string`                      | `null`     | **Internal**: Salt for portable encryption   |

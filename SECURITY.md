@@ -32,8 +32,10 @@ The bot uses **AES-256-CBC** with a portable, randomized salt to encrypt sensiti
   `WheelOfNamesApiKey`) are automatically encrypted.
 - **Portable Scope**: Keys are encrypted using a salt stored in your config file (`EncryptionSalt`). This means:
   - You **CAN** move your bot folder to a new PC (it will still work).
-  - An attacker **CANNOT** decrypt your keys with just the config file (they need the salt AND the context of the running application).
-- **Protection**: This prevents API keys from being stolen if the configuration file is accidentally shared without the salt or committed to version control.
+  - An attacker **CANNOT** decrypt your keys with just the config file (they need the salt AND the context of the
+    running application).
+- **Protection**: This prevents API keys from being stolen if the configuration file is accidentally shared without the
+  salt or committed to version control.
 
 ### 2. Anti-Loop Protection
 

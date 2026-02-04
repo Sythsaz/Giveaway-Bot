@@ -26,6 +26,7 @@ The bot uses **AES-256-CBC** encryption for API keys with the following implemen
 
 **Auto-Encryption (Updated in 1.4.3):**
 The bot automatically upgrades legacy keys to **AES-256-CBC** using a portable salt.
+
 - Plain text (`abc-123`) → Encrypted (`AES:...`)
 - Legacy Base64 (`OBF:...`) → Encrypted (`AES:...`)
 
@@ -39,11 +40,13 @@ IV  = First 16 bytes of Salt
 
 **Why Portable?**
 Unlike previous versions that tied keys to your Windows User ID (DPAPI), the **EncryptionSalt** is stored in your `giveaway_config.json`.
+
 - ✅ **Portable**: You can copy your entire `Giveaway Helper` folder to another PC, and it will still work.
 - ✅ **Secure**: The salt is unique to your installation.
 - ✅ **Resilient**: Survives Windows reinstallations.
 
 **Security Warning:**
+
 - Do **NOT** share your `giveaway_config.json` publicly, as it contains the salt used to decrypt your keys.
 - **Always** exclude `giveaway_config.json` from public git repositories (add to `.gitignore`).
 
