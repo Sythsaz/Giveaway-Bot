@@ -11,9 +11,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <NoWarn>CS0114</NoWarn>
 
-    <!-- 
+    <!--
       Set the following directory with your Streamer.bot install location.
-      For local development, create a 'StreamerBot.csproj.user' file (ignored by git) 
+      For local development, create a 'StreamerBot.csproj.user' file (ignored by git)
       and override this property there, or edit strictly locally.
     -->
     <StreamerBotPath Condition="'$(StreamerBotPath)' == ''">C:\Streamer.bot</StreamerBotPath>
@@ -24,6 +24,8 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <DefineConstants>EXTERNAL_EDITOR;GIVEAWAY_TESTS</DefineConstants>
   </PropertyGroup>
+
+  <Import Project="StreamerBot.csproj.user" Condition="Exists('StreamerBot.csproj.user')" />
 
   <ItemGroup>
     <!-- NOTE: <Using> elements generate global using directives (C# 10.0+) -->
