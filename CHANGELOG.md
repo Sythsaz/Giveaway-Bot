@@ -39,8 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Metrics Bug**: Removed duplicate `IncUserMetric` call in `HandleEntry` that was double-counting user entry statistics
-- **Config Compatibility**: Restored `GlobalRunMode` constant to `"Giveaway Global RunMode"` (removed space) to maintain backward compatibility with existing user configurations
-- **Variable Management**: Fixed `IsManagedVariable` pattern to only match profile-specific variables (`"Giveaway {Profile} ..."`) instead of all variables starting with `"Giveaway "`
+- **Config Compatibility**: Restored `GlobalRunMode` constant to `"Giveaway Global RunMode"` (removed space)
+  to maintain backward compatibility with existing user configurations
+- **Variable Management**: Fixed `IsManagedVariable` pattern to only match profile-specific variables
+  (`"Giveaway {Profile} ..."`) instead of all variables starting with `"Giveaway "`
 
 ### Infrastructure
 
@@ -166,7 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved configuration help text and examples
 - Enhanced README with clearer installation steps
 
-### Fixed
+### Fixed (v1.0.1)
 
 - Minor documentation inconsistencies
 
