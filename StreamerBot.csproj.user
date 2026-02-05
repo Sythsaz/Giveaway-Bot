@@ -1,8 +1,0 @@
-<!--
-  Change "StreamerBotPath" to your current Streamer Bot install location
--->
-<Project>
-  <PropertyGroup>
-    <StreamerBotPath>d:\Streamer Bot</StreamerBotPath>
-  </PropertyGroup>
-</Project>
