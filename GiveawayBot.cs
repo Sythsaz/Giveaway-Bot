@@ -3742,7 +3742,7 @@ public static class Loc
             results.Add($"• Sync Interval: {GlobalConfig?.Globals.StateSyncIntervalSeconds}s");
             try
             {
-                var testKey = "GiveawayBot_HealthTest";
+                var testKey = GiveawayConstants.GlobalHealthTest;
                 var testVal = Guid.NewGuid().ToString();
                 adapter.SetGlobalVar(testKey, testVal, true);
                 var readBack = adapter.GetGlobalVar<string>(testKey, true);
@@ -4044,7 +4044,7 @@ private async Task<bool> HandleDataDeletion(CPHAdapter adapter, string rawInput,
             foreach (var uid in userMetricKeys)
             {
                 _cachedMetrics.UserMetrics.Remove(uid);
-                adapter.UnsetGlobalVar($"GiveawayBot_User_{uid}");
+                adapter.UnsetGlobalVar($"{GiveawayConstants.UserVarPrefix}{uid}");
                 adapter.LogInfo($"[GDPR] Cleaned global metrics/vars for UserID: {uid}");
                 entriesRemoved++; // Count metric removal as a "record" removed
             }
@@ -4298,7 +4298,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
 
         // Explicit Args injection (Rule 3.2)
-        public CPHAdapter(dynamic cph, Dictionary<string, object> args)
+        public CPHAdapter(object cph, Dictionary<string, object> args)
         {
             _cph = cph;
             _t = _cph.GetType();
@@ -4360,8 +4360,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         /// </summary>
         public static bool IsManagedVariable(string name) 
         { 
-            return name != null && (name.StartsWith("Giveaway ", StringComparison.OrdinalIgnoreCase) || 
-                                    name.StartsWith("GiveawayBot_", StringComparison.OrdinalIgnoreCase)); 
+            return name != null && (name.StartsWith(GiveawayConstants.GlobalVarPrefix, StringComparison.OrdinalIgnoreCase) || 
+                                    name.StartsWith(GiveawayConstants.LegacyGlobalVarPrefix, StringComparison.OrdinalIgnoreCase)); 
         }
 
         /// <summary>
@@ -4751,7 +4751,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         /// </summary>
         public static string GetRunMode(CPHAdapter adapter)
         {
-            var mode = adapter.GetGlobalVar<string>("Giveaway Global RunMode", true);
+            var mode = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalRunMode, true);
             if (string.IsNullOrEmpty(mode)) return "FileSystem";
             // Normalization
             if (mode.Equals("FileSystem", StringComparison.OrdinalIgnoreCase)) return "FileSystem";
@@ -4774,9 +4774,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 string mode = GetRunMode(adapter);
                 if (mode == "GlobalVar" || mode == "ReadOnlyVar" || mode == "Mirror")
                 {
-                    var json = adapter.GetGlobalVar<string>("Giveaway Global Config", true);
+                    var json = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalConfig, true);
                     if (string.IsNullOrEmpty(json) && mode != "Mirror")
-                        adapter.LogWarn($"[Config] RunMode is {mode} but 'Giveaway Global Config' global variable is empty!");
+                        adapter.LogWarn($"[Config] RunMode is {mode} but '{GiveawayConstants.GlobalConfig}' global variable is empty!");
 
                     // In Mirror mode, if GlobalVar is empty, we MUST fall back to file
                     if (!string.IsNullOrEmpty(json)) return json;
@@ -4807,10 +4807,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     // Prevent "Giveaway GLobal Config" from cluttering the persistent variables list in ANY mode.
                     // This variable is still available in memory for GlobalVar mode, but won't be saved to DB.
                     bool persist = false; 
-                    adapter.SetGlobalVar("Giveaway Global Config", json, persist);
+                    adapter.SetGlobalVar(GiveawayConstants.GlobalConfig, json, persist);
                     
                     // Always persist the timestamp so we know when to reload
-                    adapter.SetGlobalVar("Giveaway Global Config LastWriteTime", DateTime.Now.ToString("o"), true);
+                    adapter.SetGlobalVar(GiveawayConstants.GlobalConfigLastWrite, DateTime.Now.ToString("o"), true);
                     
                     if (mode == "GlobalVar") return;
                 }
@@ -4850,10 +4850,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 
                 if (mode == "GlobalVar" || mode == "Mirror")
                 {
-                    adapter.LogDebug($"[Config] Saving configuration to 'Giveaway Global Config' global variable (Mode: {mode}).");
+                    adapter.LogDebug($"[Config] Saving configuration to '{GiveawayConstants.GlobalConfig}' global variable (Mode: {mode}).");
                     // Do not persist the JSON blob to DB to avoid hitting limits/clutter.
-                    adapter.SetGlobalVar("Giveaway Global Config", json, false);
-                    adapter.SetGlobalVar("Giveaway Global Config LastWriteTime", DateTime.Now.ToString("o"), true);
+                    adapter.SetGlobalVar(GiveawayConstants.GlobalConfig, json, false);
+                    adapter.SetGlobalVar(GiveawayConstants.GlobalConfigLastWrite, DateTime.Now.ToString("o"), true);
                     if (mode == "GlobalVar") return;
                 }
 
@@ -5016,7 +5016,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                         bool globalIsNewer = false;
                         if (mode == "Mirror")
                         {
-                            var globalTimeStr = adapter.GetGlobalVar<string>("Giveaway Global Config LastWriteTime", true);
+                            var globalTimeStr = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalConfigLastWrite, true);
                             if (DateTime.TryParse(globalTimeStr, out var globalTime))
                             {
                                 if (globalTime > lastWrite)
@@ -5039,7 +5039,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 if (mode == "Mirror" && !forceFileReload)
                 {
                     // Optimization: Check timestamp FIRST to avoid fetching huge JSON string if not needed
-                    var globalTimeStr = adapter.GetGlobalVar<string>("Giveaway Global Config LastWriteTime", true);
+                    var globalTimeStr = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalConfigLastWrite, true);
                     bool globalTimestampChanged = false;
                     
                     if (DateTime.TryParse(globalTimeStr, out var globalTime))
@@ -5062,7 +5062,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     // Trust the timestamp if present
                     if (globalTimestampChanged || string.IsNullOrEmpty(globalTimeStr))
                     {
-                         preloadedGlobalJson = adapter.GetGlobalVar<string>("Giveaway Global Config", true);
+                         preloadedGlobalJson = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalConfig, true);
                          if (!string.IsNullOrEmpty(preloadedGlobalJson) && preloadedGlobalJson != _lastLoadedJson)
                          {
                              adapter.LogTrace("[Config] Mirror: Global Variable content changed. Syncing.");
@@ -5097,11 +5097,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                         if (mode == "Mirror" && !string.IsNullOrEmpty(json) && json != _lastLoadedJson)
                         {
                             adapter.LogInfo("[Config] Mirror: Disk override detected. Updating Global Variable to match.");
-                            adapter.SetGlobalVar("Giveaway Global Config", json, true);
+                            adapter.SetGlobalVar(GiveawayConstants.GlobalConfig, json, true);
                             try
                             {
-                                adapter.SetGlobalVar("Giveaway Global Config LastWriteTime", File.GetLastWriteTime(_path).ToString("o"), true);
-                            } 
+                                adapter.SetGlobalVar(GiveawayConstants.GlobalConfigLastWrite, File.GetLastWriteTime(_path).ToString("o"), true);
+                            }  
                             catch {}
                         }
                     }
@@ -5142,11 +5142,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                                 // Bootstrap RunMode: Initialize Streamer.bot variable from file if variable is missing
                                 if (c.Globals != null && !string.IsNullOrEmpty(c.Globals.RunMode))
                                 {
-                                    var currentMode = adapter.GetGlobalVar<string>("Giveaway Global RunMode", true);
+                                    var currentMode = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalRunMode, true);
                                     if (string.IsNullOrEmpty(currentMode))
                                     {
                                         adapter.LogInfo($"[Config] Bootstrapping RunMode from file: '{c.Globals.RunMode}'");
-                                        adapter.SetGlobalVar("Giveaway Global RunMode", c.Globals.RunMode, true);
+                                        adapter.SetGlobalVar(GiveawayConstants.GlobalRunMode, c.Globals.RunMode, true);
                                     }
                                     else if (currentMode != c.Globals.RunMode)
                                     {
@@ -5170,7 +5170,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                                 adapter.LogDebug($"[Config] Deserialized OK. Profiles Found: {string.Join(", ", _cached.Profiles.Keys)}");
                                 SetStatus(adapter, "Valid ✅");
                                 _lastError = "";
-                                adapter.SetGlobalVar("Giveaway Global LastConfigErrors", null, true); // Clear any previous error state
+                                adapter.SetGlobalVar(GiveawayConstants.GlobalLastConfigErrors, null, true); // Clear any previous error state
                                 RunFuzzyCheck(adapter, _cached);
                             }
                         }
@@ -5180,7 +5180,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                         // Emergency Restore: If GlobalVar is empty but file exists, sync it back
                         adapter.LogWarn("[Config] Mirror: Global Variable is empty! Restoring from local file.");
                         json = File.ReadAllText(_path);
-                        adapter.SetGlobalVar("Giveaway Global Config", json, true);
+                        adapter.SetGlobalVar(GiveawayConstants.GlobalConfig, json, true);
                         _lastLoadedJson = json;
                     }
                     _lastLoad = DateTime.Now;
@@ -5193,7 +5193,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 {
                     _lastError = ex.Message;
                     adapter.LogError($"[Config] Sync Failed: {ex.Message}");
-                    adapter.SetGlobalVar("Giveaway Global LastConfigErrors", ex.Message, true);
+                    adapter.SetGlobalVar(GiveawayConstants.GlobalLastConfigErrors, ex.Message, true);
                 }
             }
             return _cached;
@@ -5934,7 +5934,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
                 string zipPath = Path.Combine(backupDir, "config_history.zip");
-                int maxBackups = adapter.GetGlobalVar<int>("Giveaway Global BackupCount", true);
+                int maxBackups = adapter.GetGlobalVar<int>(GiveawayConstants.GlobalBackupCount, true);
                 // Use default from global settings if not configured
                 if (maxBackups <= 0) maxBackups = 10; // Default fallback if config load fails
 
@@ -6090,13 +6090,13 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
             if (saveToVar)
             {
-                adapter.SetGlobalVar($"Giveaway State {p}", json, true);
+                adapter.SetGlobalVar($"{GiveawayConstants.GlobalStatePrefix}{p}", json, true);
                 if (critical) adapter.LogTrace($"[Persistence] Critical state saved to GlobalVar for {p}");
             }
             else if (!saveToVar && mode != "Both")
             {
                 // Clean up global var if we are in File mode and not migrating
-                adapter.SetGlobalVar($"Giveaway State {p}", (string)null, true);
+                adapter.SetGlobalVar($"{GiveawayConstants.GlobalStatePrefix}{p}", (string)null, true);
             }
         }
 
@@ -6126,7 +6126,21 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
             if (string.IsNullOrEmpty(json) && (mode == "GlobalVar" || mode == "Both" || json == null))
             {
-                json = adapter.GetGlobalVar<string>($"GiveawayBot_State_{p}", true);
+                // Try new standard key first
+                json = adapter.GetGlobalVar<string>($"{GiveawayConstants.GlobalStatePrefix}{p}", true);
+                
+                // Fallback to legacy key if empty
+                if (string.IsNullOrEmpty(json))
+                {
+                    json = adapter.GetGlobalVar<string>($"GiveawayBot_State_{p}", true);
+                    if (!string.IsNullOrEmpty(json))
+                    {
+                        adapter.LogInfo($"[Persistence] Migrated legacy state for '{p}' to new format.");
+                        // Optional: Write back to new location immediately? 
+                        // For now we just read it. SaveState will handle writing the new key next time.
+                    }
+                }
+
                 if (!string.IsNullOrEmpty(json)) adapter.LogTrace($"[Persistence] State loaded from GlobalVar for {p} ({json.Length} chars)");
             }
 
@@ -6190,12 +6204,12 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             try
             {
                 // Auto-Prune check: runs roughly once every LOG_PRUNE_CHECK_PROBABILITY log calls to minimize I/O overhead
-                int probability = adapter.GetGlobalVar<int>("Giveaway Global LogPruneProbability", true);
+                int probability = adapter.GetGlobalVar<int>(GiveawayConstants.GlobalLogPruneProbability, true);
                 if (probability <= 0) probability = 100;
                 if (new Random().Next(probability) == 0) PruneLogs(adapter);
 
                 // Check Global Log Level (Defaults to INFO if not set)
-                string currentLevelConfig = adapter.GetGlobalVar<string>("Giveaway Global LogLevel", true);
+                string currentLevelConfig = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalLogLevel, true);
                 if (string.IsNullOrEmpty(currentLevelConfig)) currentLevelConfig = "INFO";
 
                 if (!IsLogLevelEnabled(currentLevelConfig, level)) return;
@@ -6231,10 +6245,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             {
                 if (!Directory.Exists(_base)) return;
 
-                int retentionDays = adapter.GetGlobalVar<int>("Giveaway Global LogRetentionDays", true);
+                int retentionDays = adapter.GetGlobalVar<int>(GiveawayConstants.GlobalLogRetentionDays, true);
                 if (retentionDays <= 0) retentionDays = 90; // Default
 
-                long sizeCapMB = adapter.GetGlobalVar<long>("Giveaway Global LogSizeCapMB", true);
+                long sizeCapMB = adapter.GetGlobalVar<long>(GiveawayConstants.GlobalLogSizeCap, true);
                 if (sizeCapMB <= 0) sizeCapMB = 100; // Default
 
                 var cutoff = DateTime.Now.AddDays(-retentionDays);
@@ -6275,7 +6289,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             {
                 if (!File.Exists(path)) return;
 
-                int maxMb = adapter.GetGlobalVar<int>("GiveawayBot_LogMaxFileSizeMB", true);
+                int maxMb = adapter.GetGlobalVar<int>(GiveawayConstants.GlobalLogMaxFileSize, true);
                 if (maxMb <= 0) maxMb = 10; // Default 10MB
 
                 var fi = new FileInfo(path);
@@ -6407,6 +6421,27 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         TXT,
         CSV,
         JSON
+    }
+
+    public static class GiveawayConstants
+    {
+        public const string GlobalStatePrefix = "Giveaway State ";
+        public const string GlobalRunMode = "Giveaway Global Run Mode";
+        public const string GlobalConfig = "Giveaway Global Config";
+        public const string GlobalConfigLastWrite = "Giveaway Global Config Last Write Time";
+        public const string GlobalMultiPlatform = "Giveaway Global Enable Multi Platform";
+        public const string GlobalLogRetentionDays = "Giveaway Global Log Retention Days";
+        public const string GlobalLogSizeCap = "Giveaway Global Log Size Cap MB";
+        public const string GlobalLogMaxFileSize = "Giveaway Global Log Max File Size MB";
+        public const string GlobalBackupCount = "Giveaway Global Backup Count";
+        public const string GlobalLogPruneProbability = "Giveaway Global Log Prune Probability";
+        public const string GlobalLogLevel = "Giveaway Global Log Level";
+        public const string GlobalWheelApiKeyStatus = "Giveaway Global Wheel Api Key Status";
+        public const string GlobalLastConfigErrors = "Giveaway Global Last Config Errors";
+        public const string GlobalHealthTest = "Giveaway Health Test";
+        public const string UserVarPrefix = "Giveaway User Var";
+        public const string GlobalVarPrefix = "Giveaway Var";
+        public const string LegacyGlobalVarPrefix = "Giveaway Global Var";
     }
 
     /// <summary>
