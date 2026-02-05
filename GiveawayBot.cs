@@ -379,7 +379,7 @@ public static class Loc
         public ConcurrentDictionary<string, GiveawayState> States { get; private set; }
 
         // Timer for incremental entry dumping (batch processing)
-        private System.Threading.Timer _dumpTimer;
+        private System.Threading.Timer _dumpTimer = null;
         private int _tickCount = 0; // Optimization for polling frequency
         private CPHAdapter _currentAdapter; // Store for timer callback access
         
@@ -455,7 +455,7 @@ public static class Loc
         }
 
         // Timer for lifecycle events (timed giveaways)
-        private System.Threading.Timer _lifecycleTimer;
+        private System.Threading.Timer _lifecycleTimer = null;
 
         /// <summary>
         /// Parses a duration string (e.g., "10m", "1h", "30s") into total seconds.
@@ -761,7 +761,7 @@ public static class Loc
 #endif
         }
 
-        private Task _startupTask;
+        private Task _startupTask = null;
         public Task WaitForStartup() => _startupTask ?? Task.CompletedTask;
 
         private async Task CheckForUpdatesStartup(CPHAdapter adapter)

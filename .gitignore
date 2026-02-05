@@ -29,3 +29,6 @@ Giveaway Helper/state/
 
 # Mac (just in case)
 .DS_Store
+
+# Diagnostic/Debug files
+preprocessed.xml
