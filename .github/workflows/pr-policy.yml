@@ -13,7 +13,7 @@ jobs:
     name: Validate PR title (Conventional)
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: read
+      pull-requests: write
     steps:
       - name: Validate title
         uses: amannn/action-semantic-pull-request@v6
