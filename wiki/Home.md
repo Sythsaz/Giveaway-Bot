@@ -20,7 +20,7 @@
 
 - **[API Reference](API-Reference)**: Technical dictionary of all **30+ Global Variables**, **Message Keys**, and **Settings**.
 - **[Advanced Configuration](Advanced-Configuration)**: Performance tuning, security deep-dive, and migration guides.
-- **[FAQ](FAQ)**: Troubleshooting errors loop detection, and "how-to" scenarios.
+- **[FAQ](FAQ)**: Troubleshooting errors, loop-detection issues, and "how-to" scenarios.
 
 ### 🛠️ Development
 
