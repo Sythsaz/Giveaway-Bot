@@ -2,7 +2,7 @@
 
 > **Version**: 1.4.3
 >
-> **[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md)**
+> **[← Back to USER_GUIDE](User-Guide) | [FAQ →](FAQ)**
 
 ---
 
@@ -262,34 +262,60 @@ C:\Users\<You>\Streamer.bot\data\Giveaway Helper\
 | `GiveawayBot_<Profile>_RequireSubscriber`   | Boolean  | On config change           | `true`                |
 | `GiveawayBot_<Profile>_SubLuckMultiplier`   | Decimal  | On config change           | `1.5`                 |
 
-### Global Metrics
-
-(Always available)
-
-| Variable Name                                  | Type    | Description                                                  |
-| ---------------------------------------------- | ------- | ------------------------------------------------------------ |
-| `GiveawayBot_Metrics_Entries_Total`            | Integer | Lifetime entries accepted.                                   |
-| `GiveawayBot_Metrics_Entries_Rejected`         | Integer | Spam/bots/regex-mismatches blocked.                          |
-| `GiveawayBot_Metrics_Winners_Total`            | Integer | Total winners drawn.                                         |
-| `GiveawayBot_Metrics_ApiErrors`                | Integer | Wheel API failures.                                          |
-| `GiveawayBot_Metrics_SystemErrors`             | Integer | Internal exceptions rooted in bot logic.                     |
-| `GiveawayBot_Metrics_LoopDetected`             | Integer | Anti-loop protection triggers fired.                         |
-| `GiveawayBot_Metrics_WheelApiCalls`            | Integer | Total calls to Wheel of Names API.                           |
-| `GiveawayBot_Metrics_WheelApiTotalMs`          | Integer | Total time spent waiting for Wheel API (latency).            |
-| `GiveawayBot_Metrics_Validation_RegexTimeouts` | Integer | Count of Regex operations aborted (ReDoS protection).        |
-| `GiveawayBot_Globals_WheelApiKeyStatus`        | String  | "Configured (Direct)", "Configured (Indirect)", or "Missing" |
-
 ### Configuration Variables
 
-(Editable in Streamer.bot UI)
+| Variable Name                           | Default          | Description                                            |
+| :-------------------------------------- | :--------------- | :----------------------------------------------------- |
+| `GiveawayBot_RunMode`                   | `Mirror`         | Config sync mode                                       |
+| `GiveawayBot_LogLevel`                  | `INFO`           | Minimum log severity                                   |
+| `GiveawayBot_LogMaxFileSizeMB`          | `10`             | Max size of a single log file                          |
+| `GiveawayBot_LogSizeCapMB`              | `100`            | Total log directory size cap                           |
+| `GiveawayBot_LogPruneProbability`       | `100`            | 1-in-N chance to prune logs on startup                 |
+| `GiveawayBot_Globals_WheelApiKey`       | _(empty)_        | Wheel API key (Auto-Encrypts if entered as plain text) |
+| `GiveawayBot_Globals_WheelApiKeyStatus` | `Missing`        | Current status of the API Key                          |
+| `GiveawayBot_Globals_EnabledPlatforms`  | `Twitch,YouTube` | Comma-separated list of active platforms               |
+| `GiveawayBot_Globals_SecurityToasts`    | `True`           | Toggle for security-related notifications              |
 
-| Variable Name                     | Default   | Description                                            |
-| --------------------------------- | --------- | ------------------------------------------------------ |
-| `GiveawayBot_RunMode`             | `Mirror`  | Config sync mode                                       |
-| `GiveawayBot_LogLevel`            | `INFO`    | Minimum log severity                                   |
-| `GiveawayBot_LogMaxFileSizeMB`    | `10`      | Max size of a single log file                          |
-| `GiveawayBot_LogSizeCapMB`        | `100`     | Total log directory size cap                           |
-| `GiveawayBot_Globals_WheelApiKey` | _(empty)_ | Wheel API key (Auto-Encrypts if entered as plain text) |
+### Global Metrics
+
+(Always available, useful for observability and debugging)
+
+| Variable Name                                 | Type    | Description                                |
+| :-------------------------------------------- | :------ | :----------------------------------------- |
+| `GiveawayBot_Metrics_Entries_Total`           | Integer | Lifetime entries accepted                  |
+| `GiveawayBot_Metrics_Entries_Rejected`        | Integer | Spam/bots/regex-mismatches blocked         |
+| `GiveawayBot_Metrics_Winners_Total`           | Integer | Total winners drawn                        |
+| `GiveawayBot_Metrics_Entries_Processed`       | Integer | Total entry commands handled               |
+| `GiveawayBot_Metrics_Entry_Processing_Avg_Ms` | Integer | Avg time to process an entry (performance) |
+| `GiveawayBot_Metrics_File_IO_Errors`          | Integer | Disk write failures (check permissions)    |
+| `GiveawayBot_Metrics_Config_Reloads`          | Integer | Number of times config was reloaded        |
+| `GiveawayBot_Metrics_LoopDetected`            | Integer | Anti-loop protection triggers fired        |
+| `GiveawayBot_Metrics_ApiErrors`               | Integer | Total API failures (Wheel + General)       |
+| `GiveawayBot_Metrics_SystemErrors`            | Integer | Internal exceptions rooted in bot logic    |
+
+**Wheel of Names Metrics**:
+
+| Variable Name                             | Type    | Description                            |
+| :---------------------------------------- | :------ | :------------------------------------- |
+| `GiveawayBot_Metrics_WheelApiCalls`       | Integer | Total calls to Wheel of Names API      |
+| `GiveawayBot_Metrics_WheelApiTotalMs`     | Integer | Total time spent waiting for Wheel API |
+| `GiveawayBot_Metrics_WheelApiAvgMs`       | Integer | Avg latency for Wheel API calls        |
+| `GiveawayBot_Metrics_WheelApiErrors`      | Integer | API failures (5xx, Network)            |
+| `GiveawayBot_Metrics_WheelApiInvalidKeys` | Integer | Auth failures (403)                    |
+| `GiveawayBot_Metrics_WheelApiTimeouts`    | Integer | Requests that took too long            |
+
+### Internal State Variables
+
+(Read-Only, used for debugging and sync)
+
+| Variable Name                              | Description                            |
+| :----------------------------------------- | :------------------------------------- |
+| `GiveawayBot_Globals_Config`               | Full JSON content of current config    |
+| `GiveawayBot_Globals_Config_LastWriteTime` | Timestamp of last config file write    |
+| `GiveawayBot_Globals_LastConfigErrors`     | Error message if config failed to load |
+| `GiveawayBot_Globals_BackupCount`          | Number of config backups found         |
+| `GiveawayBot_Globals_Instructions`         | Header instructions from config file   |
+| `GiveawayBot_Globals_TriggerHelp`          | Trigger prefix help text               |
 
 **OBS Usage Example:**
 
@@ -502,4 +528,4 @@ Get-ChildItem "C:\Backups\GiveawayConfig_*.json" |
 
 ---
 
-**[← Back to USER_GUIDE](USER_GUIDE.md) | [FAQ →](FAQ.md) | [Quick Reference →](README.md)**
+**[← Back to USER_GUIDE](User-Guide) | [FAQ →](FAQ) | [Quick Reference →](Home)**

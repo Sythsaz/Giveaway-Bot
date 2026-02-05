@@ -514,30 +514,30 @@ After completing your first giveaway, explore these features:
 ### Customize Your Setup
 
 - **Configuration**: Edit `giveaway_config.json` to customize entry limits, sub luck, and messages
-  - See [USER_GUIDE.md](USER_GUIDE.md) for all available options
+  - See [USER_GUIDE.md](User-Guide) for all available options
 - **Multiple Profiles**: Create separate giveaways for different purposes (Daily, Weekly, Sub-Only)
-  - Learn more in [ADVANCED.md](ADVANCED.md#multi-profile-setup)
+  - Learn more in [ADVANCED.md](Advanced-Configuration#multi-profile-setup)
 
 ### Enhance Your Stream
 
 - **OBS Integration**: Display entry counts and giveaway status on stream
-  - Setup guide in [ADVANCED.md](ADVANCED.md#obs-integration)
+  - Setup guide in [ADVANCED.md](Advanced-Configuration#obs-integration)
 - **Wheel of Names**: Enable visual wheel spins for winner selection
-  - Configuration in [ADVANCED.md](ADVANCED.md#wheel-of-names-integration)
+  - Configuration in [ADVANCED.md](Advanced-Configuration#wheel-of-names-integration)
 
 ### Advanced Features
 
 - **Anti-Bot Protection**: Configure account age, entropy checks, and rate limiting
-  - Details in [ADVANCED.md](ADVANCED.md#anti-bot-measures)
+  - Details in [ADVANCED.md](Advanced-Configuration#anti-bot-measures)
 - **Custom Triggers**: Set up StreamDeck buttons, hotkeys, or regex patterns
-  - Examples in [ADVANCED.md](ADVANCED.md#custom-triggers)
+  - Examples in [ADVANCED.md](Advanced-Configuration#custom-triggers)
 - **Toast Notifications**: Get desktop alerts for giveaway events
-  - Configuration in [USER_GUIDE.md](USER_GUIDE.md#toast-notifications)
+  - Configuration in [USER_GUIDE.md](User-Guide#toast-notifications)
 
 ### Resources
 
-- **API Reference**: Technical documentation for developers ([API_REFERENCE.md](API_REFERENCE.md))
-- **FAQ**: Common questions and troubleshooting ([FAQ.md](FAQ.md))
+- **API Reference**: Technical documentation for developers ([API Reference](API-Reference))
+- **FAQ**: Common questions and troubleshooting ([FAQ](FAQ))
 - **GitHub Issues**: Report bugs or request features at the [repository](https://github.com/Sythsaz/Giveaway-Bot/issues)
 
 ---
@@ -546,8 +546,8 @@ After completing your first giveaway, explore these features:
 
 If you encounter issues not covered in this guide:
 
-1. Check the [FAQ](FAQ.md) for common questions
-2. Review the [User Guide](USER_GUIDE.md) for detailed explanations
+1. Check the [FAQ](FAQ) for common questions
+2. Review the [User Guide](User-Guide) for detailed explanations
 3. Open an issue on [GitHub](https://github.com/Sythsaz/Giveaway-Bot/issues) with:
    - Your `!giveaway system test` output
    - Relevant log files (`logs/` folder)

@@ -4431,6 +4431,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 // Use safe string conversion for args to avoid null issues in string.Join
 #pragma warning disable IDE0028 // Simplify collection initialization
 #pragma warning disable IDE0300 // Use collection expression
+#pragma warning disable CA1846 // Prefer AsSpan over Substring
                 string[] argStrings;
                 if (args != null)
                 {
@@ -4438,13 +4439,15 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     for (int i = 0; i < args.Length; i++)
                     {
                         string val = args[i]?.ToString() ?? "null";
+#pragma warning disable
                         if (val.Length > 200) val = val.Substring(0, 200) + "...[TRUNCATED]";
+#pragma warning restore
                         argStrings[i] = val;
                     }
                 }
                 else
                 {
-                    argStrings = new string[0];
+                    argStrings = Array.Empty<string>();
                 }
                 Logger?.LogTrace(this, "Reflect", string.Format("Invoke: {0}({1})", name, string.Join(", ", argStrings)));
                 return m.Invoke(_cph, args);
@@ -4648,7 +4651,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public bool IsTwitchLive()
         {
             // Only check broadcaster status - bot streaming status is not relevant for giveaways
-            object res = InvokeSafe("IsTwitchBroadcasterLive", new object[0], 0);
+            object res = InvokeSafe("IsTwitchBroadcasterLive", Array.Empty<object>(), 0);
             bool isLive = res != null && (bool)res;
             if (res == null) LogTrace("[Platform] IsTwitchBroadcasterLive method not found or returned null");
             return isLive;
@@ -4660,7 +4663,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public bool IsYouTubeLive()
         {
             // Only check broadcaster status - bot streaming status is not relevant for giveaways
-            object res = InvokeSafe("IsYouTubeBroadcasterLive", new object[0], 0);
+            object res = InvokeSafe("IsYouTubeBroadcasterLive", Array.Empty<object>(), 0);
             bool isLive = res != null && (bool)res;
             if (res == null) LogTrace("[Platform] IsYouTubeBroadcasterLive method not found or returned null");
             return isLive;
@@ -4672,7 +4675,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public bool IsKickLive()
         {
             // Only check broadcaster status - bot streaming status is not relevant for giveaways
-            object res = InvokeSafe("IsKickBroadcasterLive", new object[0], 0);
+            object res = InvokeSafe("IsKickBroadcasterLive", Array.Empty<object>(), 0);
             bool isLive = res != null && (bool)res;
             if (res == null) LogTrace("[Platform] IsKickBroadcasterLive method not found or returned null");
             return isLive;
@@ -4693,7 +4696,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         /// <summary>
         /// Retrieves the event type that triggered the current action.
         /// </summary>
-        public object GetEventType() { return InvokeSafe("GetEventType", new object[0], 0); }
+        public object GetEventType() { return InvokeSafe("GetEventType", Array.Empty<object>(), 0); }
 
         /// <summary>
         /// Runs a specified Streamer.bot action.
@@ -5530,7 +5533,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
             if (name.Equals("Main", StringComparison.OrdinalIgnoreCase)) return (false, "Cannot join the void. 'Main' profile is eternal.", "");
 
             var config = GetConfig(adapter);
-            if (!config.Profiles.ContainsKey(name)) return (false, $"Profile '{name}' not found", "");
+            if (!config.Profiles.TryGetValue(name, out var profile)) return (false, $"Profile '{name}' not found", "");
 
             // TODO: Make Async
             try
@@ -5538,7 +5541,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 string backupDir = Path.Combine(_dir, "backups", $"deleted_{name}_{DateTime.Now:yyyyMMdd_HHmm}");
                 if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
-                var profile = config.Profiles[name];
+                // var profile = config.Profiles[name]; // Already retrieved via TryGetValue
 
                 // Backup profile configuration
                 string profileJson = JsonConvert.SerializeObject(profile, Formatting.Indented);

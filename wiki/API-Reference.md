@@ -145,6 +145,37 @@ Configuration for an individual giveaway profile.
 }
 ```
 
+### Message Localization Keys
+
+You can customize the following message keys in the `Messages` dictionary or via
+`GiveawayBot_{Profile}_Msg_{Key}` global variables.
+
+**Entry Messages**:
+
+| `EntryRejected_NotFollower` | Rejected due to `RequireFollower` | - |
+| `EntryRejected_NotSubscriber` | Rejected due to `RequireSubscriber` | - |
+| `EntryRejected_GiveawayClosed` | Rejected because giveaway is closed | - |
+
+**State Messages**:
+
+| Key                        | Description                     | Arguments                 |
+| :------------------------- | :------------------------------ | :------------------------ |
+| `GiveawayOpened`           | Giveaway started                | `{0}`=Profile Name        |
+| `GiveawayOpened_NoProfile` | Giveaway started (no name)      | -                         |
+| `GiveawayClosed`           | Giveaway ended                  | -                         |
+| `GiveawayFull`             | Giveaway reached max entries    | -                         |
+| `TimerUpdated`             | Auto-close timer changed        | `{0}`=Time Remaining      |
+| `WinnerSelected`           | Winner announcement             | `{0}`=Winner Name         |
+| `WinnerDrawn_Log`          | Internal log message for winner | `{0}`=Name, `{1}`=Tickets |
+
+**Error Messages**:
+
+| Key                  | Description                    | Arguments |
+| :------------------- | :----------------------------- | :-------- |
+| `Error_Loop`         | Anti-loop protection triggered | -         |
+| `Error_System`       | Generic system error           | -         |
+| `Error_NoPermission` | User missing permission        | -         |
+
 ---
 
 ### GiveawayState
@@ -554,11 +585,63 @@ GiveawayBot_{ProfileName}_{VariableName}
 
 ### Configuration Variables
 
-| Variable                              | Type   | Description                      |
-| ------------------------------------- | ------ | -------------------------------- |
-| `GiveawayBot_Profile_Config`          | `JSON` | Full profile configuration       |
-| `GiveawayBot_Profile_Config_Triggers` | `JSON` | Trigger map only                 |
-| `GiveawayBot_ExposeVariables`         | `Bool` | Global override for all profiles |
+(Editable in Streamer.bot UI)
+
+| Variable Name                           | Default          | Description                                            |
+| :-------------------------------------- | :--------------- | :----------------------------------------------------- |
+| `GiveawayBot_RunMode`                   | `Mirror`         | Config sync mode                                       |
+| `GiveawayBot_LogLevel`                  | `INFO`           | Minimum log severity                                   |
+| `GiveawayBot_LogMaxFileSizeMB`          | `10`             | Max size of a single log file                          |
+| `GiveawayBot_LogSizeCapMB`              | `100`            | Total log directory size cap                           |
+| `GiveawayBot_LogPruneProbability`       | `100`            | 1-in-N chance to prune logs on startup                 |
+| `GiveawayBot_Globals_WheelApiKey`       | _(empty)_        | Wheel API key (Auto-Encrypts if entered as plain text) |
+| `GiveawayBot_Globals_WheelApiKeyStatus` | `Missing`        | Current status of the API Key                          |
+| `GiveawayBot_Globals_EnabledPlatforms`  | `Twitch,YouTube` | Comma-separated list of active platforms               |
+| `GiveawayBot_Globals_SecurityToasts`    | `True`           | Toggle for security-related notifications              |
+| `GiveawayBot_ExposeVariables`           | `Bool`           | Global override for all profiles                       |
+
+### Global Metrics
+
+(Always available, useful for observability and debugging)
+
+| Variable Name                                 | Type    | Description                                |
+| :-------------------------------------------- | :------ | :----------------------------------------- |
+| `GiveawayBot_Metrics_Entries_Total`           | Integer | Lifetime entries accepted                  |
+| `GiveawayBot_Metrics_Entries_Rejected`        | Integer | Spam/bots/regex-mismatches blocked         |
+| `GiveawayBot_Metrics_Winners_Total`           | Integer | Total winners drawn                        |
+| `GiveawayBot_Metrics_Entries_Processed`       | Integer | Total entry commands handled               |
+| `GiveawayBot_Metrics_Entry_Processing_Avg_Ms` | Integer | Avg time to process an entry (performance) |
+| `GiveawayBot_Metrics_File_IO_Errors`          | Integer | Disk write failures (check permissions)    |
+| `GiveawayBot_Metrics_Config_Reloads`          | Integer | Number of times config was reloaded        |
+| `GiveawayBot_Metrics_LoopDetected`            | Integer | Anti-loop protection triggers fired        |
+| `GiveawayBot_Metrics_ApiErrors`               | Integer | Total API failures (Wheel + General)       |
+| `GiveawayBot_Metrics_SystemErrors`            | Integer | Internal exceptions rooted in bot logic    |
+
+**Wheel of Names Metrics**:
+
+| Variable Name                             | Type    | Description                            |
+| :---------------------------------------- | :------ | :------------------------------------- |
+| `GiveawayBot_Metrics_WheelApiCalls`       | Integer | Total calls to Wheel of Names API      |
+| `GiveawayBot_Metrics_WheelApiTotalMs`     | Integer | Total time spent waiting for Wheel API |
+| `GiveawayBot_Metrics_WheelApiAvgMs`       | Integer | Avg latency for Wheel API calls        |
+| `GiveawayBot_Metrics_WheelApiErrors`      | Integer | API failures (5xx, Network)            |
+| `GiveawayBot_Metrics_WheelApiInvalidKeys` | Integer | Auth failures (403)                    |
+| `GiveawayBot_Metrics_WheelApiTimeouts`    | Integer | Requests that took too long            |
+
+### Internal State Variables
+
+(Read-Only, used for debugging and sync)
+
+| Variable Name                              | Description                              |
+| :----------------------------------------- | :--------------------------------------- |
+| `GiveawayBot_Globals_Config`               | Full JSON content of current config      |
+| `GiveawayBot_Globals_Config_LastWriteTime` | Timestamp of last config file write      |
+| `GiveawayBot_Globals_LastConfigErrors`     | Error message if config failed to load   |
+| `GiveawayBot_Globals_BackupCount`          | Number of config backups found           |
+| `GiveawayBot_Globals_Instructions`         | Header instructions from config file     |
+| `GiveawayBot_Globals_TriggerHelp`          | Trigger prefix help text                 |
+| `GiveawayBot_Profile_Config`               | (Per Profile) Full profile configuration |
+| `GiveawayBot_Profile_Config_Triggers`      | (Per Profile) Trigger map only           |
 
 ### OBS Integration
 
@@ -762,7 +845,7 @@ Output format for entry/winner dumps.
 
 ## See Also
 
-- [USER_GUIDE.md](USER_GUIDE.md) - Installation and basic usage
-- [ADVANCED.md](ADVANCED.md) - Advanced features and customization
-- [DEPLOYMENT.md](DEPLOYMENT.md) - First-time setup walkthrough
-- [FAQ.md](FAQ.md) - Common questions and troubleshooting
+- [USER_GUIDE.md](User-Guide) - Installation and basic usage
+- [ADVANCED.md](Advanced-Configuration) - Advanced features and customization
+- [DEPLOYMENT.md](Deployment-Guide) - First-time setup walkthrough
+- [FAQ.md](FAQ) - Common questions and troubleshooting

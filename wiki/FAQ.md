@@ -2,7 +2,7 @@
 
 > **Version**: 1.4.3
 >
-> **[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md)**
+> **[← Back to USER_GUIDE](User-Guide) | [Advanced Topics →](Advanced-Configuration)**
 
 ---
 
@@ -175,7 +175,7 @@ when time runs out.
 ### Q: Can I change what the bot says?
 
 **A:** Yes! You can override any message (like "Winner Selected") by adding a `"Messages"` block to your config, or
-by simply setting a global variable like `GiveawayBot_Main_Msg_WinnerSelected`. See the [User Guide](USER_GUIDE.md)
+by simply setting a global variable like `GiveawayBot_Main_Msg_WinnerSelected`. See the [User Guide](User-Guide)
 for details.
 
 ---
@@ -220,37 +220,21 @@ visual spin.
 
 ### Q: Is my API key secure?
 
-**A:** Yes:
+**A:** The bot uses **Encryption-at-Rest** (AES-256-CBC) to protect your key from casual viewing, accidental stream leaks,
+and screen captures.
 
-- Encrypted with **AES-256-CBC** on first use
-- Derives encryption key from a **randomized salt** stored in your config
-- **Portable**: Works if you move your entire bot folder to a new PC
-- **Secure**: Won't work if someone steals just the config file (they need the salt + your specific setup context)
-- Never logged (all outputs sanitized with `[REDACTED]`)
+- **How it works**: The plain text key is encrypted using a unique "Salt" generated for your specific installation.
+- **Where is the key?**: The encrypted blob (`AES:...`) is stored in Streamer.bot variables.
+- **Where is the salt?**: The salt is stored in your `giveaway_config.json`.
 
-### Q: What data does the bot store?
-
-**A:**
-
-- **Entry Data**: Username, UserID, timestamp, sub status
-- **Logs**: Debug/error messages (sanitized)
-- **Config**: Your settings (no passwords)
-- **No sensitive data** like chat messages or personal info
-
-### Q: Is the bot GDPR compliant?
-
-**A:** The bot stores minimal data locally. For GDPR compliance:
-
-1. **Automated Deletion**: Run `!giveaway data delete <username>` to scrub a user's active entries, history,
-   and metrics from memory and logs.
-2. **Retention Policy**: Set `LogRetentionDays` to comply with your region (default: 90 days).
-3. **Manual**: You can also manually delete files from the `dumps` folder as well as from the Streamer Bot Variables.
-4. No data is sent to external services (except Wheel API if enabled).
+**Trade-off**: This makes the bot **fully portable** (you can copy the folder to a new PC and it works), but it means
+if someone steals your _entire_ folder (config + database), they could theoretically decrypt the key. It is designed to
+prevent **accidental leakage**, not defense against a hacker who already has full access to your hard drive.
 
 ### Q: Can other mods see my API keys?
 
-**A:** No. API keys stored in Streamer.bot variables are **only visible to the broadcaster** (you) until they are converted
-to the encrypted format. `AES:...` strings are unreadable.
+**A:** No. Once encrypted, the key appears as a random string of characters (e.g., `AES:8123...`) in the Streamer.bot
+UI. Moderators cannot reverse this to see the original key.
 
 ---
 
@@ -355,4 +339,4 @@ characters (`\u200B`).
 
 ---
 
-**[← Back to USER_GUIDE](USER_GUIDE.md) | [Advanced Topics →](ADVANCED.md) | [Quick Reference →](README.md)**
+**[← Back to USER_GUIDE](User-Guide) | [Advanced Topics →](Advanced-Configuration) | [Quick Reference →](Home)**

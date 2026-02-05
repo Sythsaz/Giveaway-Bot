@@ -2,6 +2,8 @@
 
 > **Giveaway System for Streamer.bot**
 >
+> 📖 **[READ THE WIKI DOCUMENTATION](https://github.com/Sythsaz/Giveaway-Bot/wiki)**
+>
 > **Active Development! There may be breaking changes until things get ironed out a bit better**
 >
 > [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -17,10 +19,13 @@
 
 ## 📖 Documentation
 
-- **[User Guide](docs/USER_GUIDE.md)**: Installation, commands, and configuration.
-- **[Advanced Guide](docs/ADVANCED.md)**: Custom triggers, OBS integration, and power-user features.
-- **[FAQ](docs/FAQ.md)**: Troubleshooting and common questions.
-- **[Developer Guide](docs/DEVELOPMENT.md)**: Architecture, contributing, and building.
+All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Giveaway-Bot/wiki)**.
+
+- **[User Guide](https://github.com/Sythsaz/Giveaway-Bot/wiki/User-Guide)**: Installation, commands, and configuration.
+- **[Advanced Guide](https://github.com/Sythsaz/Giveaway-Bot/wiki/Advanced-Configuration)**: Custom triggers, OBS
+  integration, and power-user features.
+- **[FAQ](https://github.com/Sythsaz/Giveaway-Bot/wiki/FAQ)**: Troubleshooting and common questions.
+- **[Developer Guide](https://github.com/Sythsaz/Giveaway-Bot/wiki/Developer-Guide)**: Architecture, contributing, and building.
 
 ## ✨ Key Features
 
@@ -50,51 +55,11 @@
    - Edit this file or use the [Example Configs](examples/).
 4. **Run**:
    - Type `!giveaway system test` in chat to verify installation.
+   - See the **[Deployment Guide](https://github.com/Sythsaz/Giveaway-Bot/wiki/Deployment-Guide)** for details.
 
-## ⚙️ Core Commands
-
-| Command  | Permission | Description                            |
-| :------- | :--------- | :------------------------------------- |
-| `!enter` | Everyone   | Enter the active giveaway              |
-| `!start` | Mod+       | Open giveaway for entries              |
-| `!end`   | Mod+       | Close giveaway                         |
-| `!draw`  | Mod+       | Pick a winner (spins wheel if enabled) |
-
-See [User Guide](docs/USER_GUIDE.md) for the full command list.
-
-## 🏗️ Architecture
-
-The bot uses a singleton manager pattern to handle state, configuration, and Streamer.bot interactions.
-
-```mermaid
-graph LR
-    User[Viewer] -- Enter Command --> SB[Streamer.bot]
-    SB -- Trigger --> Manager[GiveawayManager]
-    Manager -- Read/Write --> State[State: File or GlobalVars]
-    Manager -- Sync --> Wheel[Wheel of Names]
-    Manager -- Broadcast --> Chat[Twitch/YouTube/Kick]
-    Manager -- Alert --> Toast[Toast Notify]
-```
-
-See [Architecture Docs](docs/ARCHITECTURE.md) for details.
-
-## 📚 Documentation
-
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - First-time setup walkthrough (5 minutes from zero to first giveaway)
-- **[User Guide](docs/USER_GUIDE.md)** - Complete usage guide with all commands and features
-- **[API Reference](docs/API_REFERENCE.md)** - Technical documentation for all configuration options and commands
-- **[Advanced Guide](docs/ADVANCED.md)** - Power-user features and customization
-- **[FAQ](docs/FAQ.md)** - Frequently asked questions and troubleshooting
-- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing and development setup
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and component overview
-
-## 🔧 Compatibility
+## ⚙️ Compatibility
 
 **Runtime Environment**: C# 7.3 / .NET Framework 4.8 (Streamer.bot's current runtime)
-
-This project's C# version is tied to Streamer.bot's embedded scripting environment. If Streamer.bot upgrades to a
-newer .NET runtime, this project will adopt modern C# features accordingly. See [CONTRIBUTING.md](CONTRIBUTING.md)
-for details on C# 7.3 limitations during development.
 
 ## 🤝 Contributing
 
@@ -103,7 +68,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 
 ## 🔒 Security
 
-We take security seriously. See our [Security Policy](SECURITY.md) for details on supported versions and reporting vulnerabilities.
+We take security seriously. See our [Security Policy](SECURITY.md) for details.
 
 ---
 
