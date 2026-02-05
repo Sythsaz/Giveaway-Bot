@@ -12,6 +12,7 @@ obj/
 *.pdb
 !StreamerBot.Plugin.Interface.dll
 !StreamerBot.Common.dll
+*.csproj.user
 
 # Antigravity/Agent files
 .agent/
