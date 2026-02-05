@@ -280,6 +280,17 @@ public static class Loc
             { "EntryRejected_NotSubscriber", "Sorry, you must be a subscriber to join this giveaway!" },
             { "EntryRejected_GiveawayClosed", "The giveaway is currently closed." },
 
+            // Toasts & UI
+            { "ToastTitle", "Giveaway Bot" },
+            { "ToastTitle_Security", "Giveaway Bot - Security" },
+            { "ToastMsg_NewEntry", "New Entry: {0}" },
+            { "ToastMsg_Rejected_Pattern", "Entry Rejected: {0} (Username Pattern)" },
+            { "ToastMsg_Rejected_Age", "Entry Rejected: {0} (Account Too New)" },
+            { "ToastMsg_SpamDetected", "⚠ SPAM DETECTED: {0} (Rate Limit)" },
+            { "ToastMsg_Opened", "Giveaway '{0}' is OPEN!" },
+            { "ToastMsg_Closed", "Giveaway '{0}' is CLOSED!" },
+            { "ToastMsg_Winner", "Winner: {0}!" },
+
             // Draw
             { "WinnerSelected", "🎉 Congratulations @{0}! You have won the giveaway!" },
             { "WinnerDrawn_Log", "Winner drawn: {0} (Tickets: {1})" },
@@ -290,6 +301,13 @@ public static class Loc
             { "GiveawayClosed", "🚫 The giveaway is now CLOSED! No more entries accepted." },
             { "GiveawayFull", "🚫 The giveaway is FULL! No more entries accepted." },
             { "TimerUpdated", "⏳ Time limit updated! Ends in {0}." },
+            
+            // Update Service
+            { "Update_CheckFailed", "❌ Failed to fetch release info." },
+            { "Update_Available", "⬇ Update Available: {0}\nDownloading..." },
+            { "Update_Downloaded", "✅ Saved to: updates/{0}\nImport into Streamer.bot to apply." },
+            { "Update_FailedDownload", "❌ Failed to download file." },
+            { "Update_UpToDate", "✅ You are on the latest version ({0})." },
             
             // Errors
             { "Error_Loop", "Loop detected. Setup error." },
@@ -350,6 +368,8 @@ public static class Loc
         return template;
     }
 }
+
+
 
     /// <summary>
     /// Core logic manager for the Giveaway Bot.
@@ -1702,7 +1722,7 @@ public static class Loc
         /// <param name="value">The new value for the metric.</param>
         private void UpdateMetric(CPHAdapter adapter, string name, long value)
         {
-            string key = "Giveaway Global Metrics " + name;
+            string key = GiveawayConstants.GlobalMetricsPrefix + name;
             // Use locally cached check instead of GetGlobalVar for better performance and reduced spam
             SetGlobalVarIfChanged(adapter, key, value, true);
             
@@ -1734,10 +1754,10 @@ public static class Loc
         // Always sync the full state JSON for persistence/visibility, regardless of ExposeVariables
         // This is potentially large, so we check diff first
         // HIDDEN from UI (persisted=false) - internal state JSON
-        SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} StateBlob", JsonConvert.SerializeObject(state), false);
+        SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileStateBlobSuffix}", JsonConvert.SerializeObject(state), false);
 
         // Check for global override in variables
-        bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>("Giveaway Global ExposeVariables", true));
+        bool? overrideVal = ParseBoolVariant(adapter.GetGlobalVar<string>(GiveawayConstants.GlobalExposeVariables, true));
         string currentRunMode = ConfigLoader.GetRunMode(adapter); // Use authoritative mode (includes overrides)
         bool isMirror = globals.RunMode == "Mirror";
         adapter.LogDebug($"[DEBUG] Sync Check: Mirror={isMirror}, Override={overrideVal}, ConfExpose={config.ExposeVariables}");
@@ -1748,7 +1768,7 @@ public static class Loc
             // --- Helper for Variables with Help Text Defaults ---
             void SyncVar(string keySuffix, object value, object defaultValue, string helpText)
             {
-                string fullKey = $"Giveaway {profileName} {keySuffix}";
+                string fullKey = $"{GiveawayConstants.ProfileVarBase} {profileName} {keySuffix}";
                 
                 // If value matches default, we prefer to show the Help Text to document the variable
                 bool isDefault = false;
@@ -1774,13 +1794,13 @@ public static class Loc
             SyncVar("TicketCount", totalTickets, null, null);
             
             // HIDDEN State identifiers
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} GiveawayId", state.CurrentGiveawayId ?? "", false);
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} WinnerName", state.LastWinnerName ?? "", true);
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} WinnerUserId", state.LastWinnerUserId ?? "", true);
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} WinnerCount", state.WinnerCount, true);
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} CumulativeEntries", state.CumulativeEntries, true);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileGiveawayIdSuffix}", state.CurrentGiveawayId ?? "", false);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileWinnerNameSuffix}", state.LastWinnerName ?? "", true);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileWinnerUserIdSuffix}", state.LastWinnerUserId ?? "", true);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileWinnerCountSuffix}", state.WinnerCount, true);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileCumulativeEntriesSuffix}", state.CumulativeEntries, true);
             int subCount = state.Entries.Values.Count(e => e.IsSub);
-            SetGlobalVarIfChanged(adapter, $"Giveaway {profileName} SubEntryCount", subCount, true);
+            SetGlobalVarIfChanged(adapter, $"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileSubEntryCountSuffix}", subCount, true);
             
             // Dynamic Config Exposure (Editable)
             // Use Help Text for defaults
@@ -1822,7 +1842,7 @@ public static class Loc
             SyncVar("RedemptionCooldownMinutes", config.RedemptionCooldownMinutes, 0, "Enter cooldown in minutes (0=Disabled)");
             
             // Log trace only if we are actually syncing something relevant
-            if (!_lastSyncedValues.ContainsKey($"Giveaway {profileName} IsActive"))
+            if (!_lastSyncedValues.ContainsKey($"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileIsActiveSuffix}"))
             {
                 adapter.Logger?.LogTrace(adapter, profileName, $"Syncing {profileName} config variables...");
             }
@@ -2331,7 +2351,7 @@ public static class Loc
             if (fullSync && GlobalConfig.Globals != null)
             {
                  // Check status: Direct > Indirect
-                 string directKey = adapter.GetGlobalVar<string>("Giveaway Wheel Api Key");
+                 string directKey = adapter.GetGlobalVar<string>(GiveawayConstants.LegacyWheelApiKey);
                  
                 // TODO: What about other encryption methods?
                 // Auto-Encryption Logic: If key is plain text (not empty, not ENC:), validate and encrypt it.
@@ -2355,7 +2375,7 @@ public static class Loc
                             string encrypted = GiveawayManager.EncryptSecret(directKey);
                             if (!string.IsNullOrEmpty(encrypted))
                             {
-                                adapter.SetGlobalVar("Giveaway Global WheelApiKey", encrypted, true);
+                                adapter.SetGlobalVar(GiveawayConstants.GlobalWheelApiKey, encrypted, true);
                                 adapter.LogInfo("🔒 API Key validated and encrypted successfully.");
                                 directKey = encrypted; // Update local var for status check
                             }
@@ -2389,16 +2409,16 @@ public static class Loc
                  else if (!string.IsNullOrEmpty(indirectKey)) expectedStatus = "Configured (Indirect)";
                  if (indirectKey == "ERROR: Key in Name Field!") expectedStatus = "ERROR: Key in Name Field!";
 
-                 string currentStatus = adapter.GetGlobalVar<string>("Giveaway Wheel Api Key Status");
+                 string currentStatus = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalWheelApiKeyStatus);
                  
                  if (!string.Equals(currentStatus, expectedStatus, StringComparison.Ordinal))
                  {
-                     adapter.SetGlobalVar("Giveaway Wheel Api Key Status", expectedStatus, true);
+                     adapter.SetGlobalVar(GiveawayConstants.GlobalWheelApiKeyStatus, expectedStatus, true);
                  }
 
                  
                  // RunMode
-                 string runModeVal = adapter.GetGlobalVar<string>("Giveaway Global RunMode", true);
+                 string runModeVal = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalRunMode, true);
                  if (!string.IsNullOrEmpty(runModeVal) && runModeVal != GlobalConfig.Globals.RunMode)
                  {
                      GlobalConfig.Globals.RunMode = runModeVal;
@@ -2407,7 +2427,7 @@ public static class Loc
                  }
 
                  // LogLevel
-                 string logLevelVal = adapter.GetGlobalVar<string>("Giveaway Global LogLevel", true);
+                 string logLevelVal = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalLogLevel, true);
                  if (!string.IsNullOrEmpty(logLevelVal))
                  {
                      string normalized = logLevelVal.ToUpperInvariant();
@@ -2452,7 +2472,7 @@ public static class Loc
                     if (fullSync)
                     {
                         // Check triggers variable for 2-way sync
-                        string varName = $"Giveaway {name} Triggers";
+                        string varName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileTriggersSuffix}";
                         string triggersJson = adapter.GetGlobalVar<string>(varName, true);
                         if (!string.IsNullOrEmpty(triggersJson))
                         {
@@ -2504,7 +2524,7 @@ public static class Loc
                     }
                 
                     // Check Messages variable for 2-way sync
-                    string msgVarName = $"Giveaway {name} Messages";
+                    string msgVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileMessagesSuffix}";
                     string msgJson = adapter.GetGlobalVar<string>(msgVarName, true);
                     if (!string.IsNullOrEmpty(msgJson))
                     {
@@ -2544,7 +2564,7 @@ public static class Loc
 
                 if (allowSync)
                 {
-                    string timerVarName = $"Giveaway {name} TimerDuration";
+                    string timerVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileTimerDurationSuffix}";
                     string timerVal = adapter.GetGlobalVar<string>(timerVarName, true);
                     
                     // Normalize nulls
@@ -2591,7 +2611,7 @@ public static class Loc
                     // --- Dynamic Variable Updates ---
 
                     // MaxEntriesPerMinute (Validation: >= 0)
-                    string maxEntriesVarName = $"Giveaway {name} MaxEntriesPerMinute";
+                    string maxEntriesVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileMaxEntriesSuffix}";
                     string maxEntriesVal = adapter.GetGlobalVar<string>(maxEntriesVarName, true);
                     if (int.TryParse(maxEntriesVal, out int newMaxEntries) && newMaxEntries >= 0)
                     {
@@ -2611,7 +2631,7 @@ public static class Loc
                     syncBool("RequireSubscriber", v => { if(profile.RequireSubscriber != v) { profile.RequireSubscriber = v; dirty = true; adapter.LogInfo($"[Config] Require Subscriber for '{name}' updated to {v}"); } });
 
                     // SubLuckMultiplier (Validation: >= 1.0)
-                    string subLuckVarName = $"Giveaway {name} SubLuckMultiplier";
+                    string subLuckVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileSubLuckMultiplierSuffix}";
                     string subLuckVal = adapter.GetGlobalVar<string>(subLuckVarName, true);
                     if (decimal.TryParse(subLuckVal, out decimal newSubLuck) && newSubLuck >= 1.0m)
                     {
@@ -2630,7 +2650,7 @@ public static class Loc
                     {
                         // Replace underscores with spaces for the lookup key
                         string cleanSuffix = vSuffix.Replace('_', ' ');
-                        string val = adapter.GetGlobalVar<string>($"Giveaway {name} {cleanSuffix}", true);
+                        string val = adapter.GetGlobalVar<string>($"{GiveawayConstants.ProfileVarBase} {name} {cleanSuffix}", true);
                         if (val != null) 
                         {
                             // If the value matches the generic Help Text, do NOT import it as configuration
@@ -2641,13 +2661,13 @@ public static class Loc
                     void syncBool(string vSuffix, Action<bool> setter)
                     {
                         string cleanSuffix = vSuffix.Replace('_', ' ');
-                        bool? val = ParseBoolVariant(adapter.GetGlobalVar<string>($"Giveaway {name} {cleanSuffix}", true));
+                        bool? val = ParseBoolVariant(adapter.GetGlobalVar<string>($"{GiveawayConstants.ProfileVarBase} {name} {cleanSuffix}", true));
                         if (val.HasValue) setter(val.Value);
                     }
                     void syncInt(string vSuffix, Action<int> setter)
                     {
                         string cleanSuffix = vSuffix.Replace('_', ' ');
-                         if (int.TryParse(adapter.GetGlobalVar<string>($"Giveaway {name} {cleanSuffix}", true), out int val) && val >= 0) setter(val);
+                         if (int.TryParse(adapter.GetGlobalVar<string>($"{GiveawayConstants.ProfileVarBase} {name} {cleanSuffix}", true), out int val) && val >= 0) setter(val);
                     }
 
                     // Wheel Configuration
@@ -2682,7 +2702,7 @@ public static class Loc
                     syncBool("EnableEntropyCheck", v => { if(profile.EnableEntropyCheck != v) { profile.EnableEntropyCheck = v; dirty = true; } });
                     
                     // WinChance
-                    string winChanceVar = $"Giveaway {name} WinChance";
+                    string winChanceVar = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileWinChanceSuffix}";
                     string winChanceVal = adapter.GetGlobalVar<string>(winChanceVar, true);
                     if (double.TryParse(winChanceVal, out double newChance) && newChance >= 0 && newChance <= 1.0)
                     {
@@ -2690,7 +2710,7 @@ public static class Loc
                     }
 
                     // Dump Config
-                    string dumpFmtVar = $"Giveaway {name} DumpFormat";
+                    string dumpFmtVar = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileDumpFormatSuffix}";
                     string dumpFmtVal = adapter.GetGlobalVar<string>(dumpFmtVar, true);
                     if (!string.IsNullOrEmpty(dumpFmtVal) && Enum.TryParse(dumpFmtVal, true, out DumpFormat newFmt))
                     {
@@ -2715,7 +2735,7 @@ public static class Loc
                 // Checks Giveaway {name} Msg {key}
                 foreach (var key in Loc.Keys)
                 {
-                    string varName = $"Giveaway {name} Msg {key}";
+                    string varName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileMsgPrefix}{key}";
                     string varValue = adapter.GetGlobalVar<string>(varName, true);
                     
                     // If variable exists
@@ -2738,7 +2758,7 @@ public static class Loc
                 // Dynamic IsActive Check (Remote Start/Stop)
                 if (States.TryGetValue(name, out var profileState))
                 {
-                    string activeVarName = $"Giveaway {name} IsActive";
+                    string activeVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileIsActiveSuffix}";
                     string activeValStr = adapter.GetGlobalVar<string>(activeVarName, true);
                     if (!string.IsNullOrEmpty(activeValStr))
                     {
@@ -2932,18 +2952,18 @@ public static class Loc
                             }
                         }
 
-                        if (CheckCmd(rawInput, "config gen") || CheckCmd(sourceDetails, "config gen"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_ConfigGen) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_ConfigGen))
                         {
-                            adapter.LogTrace("[Trigger] Matched: config gen");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_ConfigGen}");
                             _configLoader.GenerateDefaultConfig(adapter);
                             GlobalConfig = _configLoader.GetConfig(adapter); // Refresh local cache immediately
 
                             SyncAllVariables(adapter);
                             Messenger?.SendBroadcast(adapter, "Config generated!", platform ?? "Twitch");
                         }
-                        if (CheckCmd(rawInput, "config check") || CheckCmd(sourceDetails, "config check"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_ConfigCheck) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_ConfigCheck))
                         {
-                            adapter.LogTrace("[Trigger] Matched: config check");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_ConfigCheck}");
                             _configLoader.InvalidateCache(); // Force fresh reload from disk/global
                             var report = _configLoader.ValidateConfig(adapter);
                             adapter.LogInfo($"[Config] Logic Check: {report}");
@@ -2955,19 +2975,19 @@ public static class Loc
 
                             Messenger?.SendBroadcast(adapter, "Report: " + report, platform ?? "Twitch");
                         }
-                        if (CheckCmd(rawInput, "system test") || CheckCmd(sourceDetails, "system test"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_SystemTest) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_SystemTest))
                         {
-                            adapter.LogTrace("[Trigger] Matched: system test");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_SystemTest}");
                             await PerformSystemCheck(adapter);
                         }
-                        if (CheckCmd(rawInput, "regex test") || CheckCmd(sourceDetails, "regex test"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_RegexTest) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_RegexTest))
                         {
-                            adapter.LogTrace("[Trigger] Matched: regex test");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_RegexTest}");
                             await HandleRegexTest(adapter, rawInput, platform);
                         }
-                        if (CheckCmd(rawInput, "create") || CheckCmd(sourceDetails, "create"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_Create) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_Create))
                         {
-                            adapter.LogTrace("[Trigger] Matched: create");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_Create}");
                             var match = _createRegex.Match(rawInput);
                             if (!match.Success) { Messenger?.SendBroadcast(adapter, "Usage: !giveaway create <name>", platform ?? "Twitch"); return true; }
 
@@ -2984,9 +3004,9 @@ public static class Loc
                                 Messenger?.SendBroadcast(adapter, $"⚠ Create failed: {createError}", platform ?? "Twitch");
                             }
                         }
-                        if (CheckCmd(rawInput, "delete") || CheckCmd(sourceDetails, "delete"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_Delete) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_Delete))
                         {
-                            adapter.LogTrace("[Trigger] Matched: delete");
+                            adapter.LogTrace($"[Trigger] Matched: {GiveawayConstants.Cmd_Delete}");
                             var match = _deleteRegex.Match(rawInput);
                             if (!match.Success) { Messenger?.SendBroadcast(adapter, "Usage: !giveaway delete <name> confirm", platform ?? "Twitch"); return true; }
 
@@ -3010,11 +3030,11 @@ public static class Loc
                                 Messenger?.SendBroadcast(adapter, $"⚠ Delete failed: {deleteError}", platform);
                             }
                         }
-                        if (CheckCmd(rawInput, "stats") || CheckCmd(sourceDetails, "stats"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_Stats) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_Stats))
                         {
                             return await HandleStatsCommand(adapter, rawInput, platform);
                         }
-                        if (CheckCmd(rawInput, "update") || CheckCmd(sourceDetails, "update"))
+                        if (CheckCmd(rawInput, GiveawayConstants.Cmd_Update) || CheckCmd(sourceDetails, GiveawayConstants.Cmd_Update))
                         {
                             if (!IsBroadcaster(adapter))
                             {
@@ -3042,19 +3062,26 @@ public static class Loc
                 if (action == null) return true;
 
                 // Execute the requested action
-                switch (action.ToLower())
+                if (action.Equals(GiveawayConstants.Action_MockEntry, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Enter, StringComparison.OrdinalIgnoreCase))
                 {
-                    case "entry":
-                    case "enter": return await HandleEntry(adapter, profileConfig, profileState, profileName);
-                    case "draw":
-                    case "winner": return await HandleDraw(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
-                    case "start":
-                    case "open": return await HandleStart(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
-                    case "end":
-                    case "close": return await HandleEnd(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
-                    default:
-                        adapter.LogWarn($"[{profileName}] Unknown action: {action}");
-                        return true;
+                     return await HandleEntry(adapter, profileConfig, profileState, profileName);
+                }
+                else if (action.Equals(GiveawayConstants.Action_MockDraw, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Winner, StringComparison.OrdinalIgnoreCase))
+                {
+                     return await HandleDraw(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
+                }
+                else if (action.Equals(GiveawayConstants.Action_MockStart, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Open, StringComparison.OrdinalIgnoreCase))
+                {
+                     return await HandleStart(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
+                }
+                else if (action.Equals(GiveawayConstants.Action_MockEnd, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Close, StringComparison.OrdinalIgnoreCase))
+                {
+                     return await HandleEnd(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
+                }
+                else
+                {
+                    adapter.LogWarn($"[{profileName}] Unknown action: {action}");
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -3069,9 +3096,9 @@ public static class Loc
         }
 
 
-        private static bool CheckProfileCmd(string s) => s != null && (s.Contains("!giveaway profile") || s.Contains("!ga profile") || s.Contains("!giveaway p") || s.Contains("!ga p"));
-        private static bool CheckMgmt(string s) => s != null && (CheckCmd(s, "config") || CheckCmd(s, "system") || CheckCmd(s, "create") || CheckCmd(s, "delete"));
-        private static bool CheckCmd(string s, string sub) => s != null && (s.Contains("!giveaway " + sub) || s.Contains("!ga " + sub));
+        private static bool CheckProfileCmd(string s) => s != null && (s.Contains(GiveawayConstants.CmdPattern_GiveawayPrefix + GiveawayConstants.CmdPrefix_Profile) || s.Contains(GiveawayConstants.CmdPattern_GaPrefix + GiveawayConstants.CmdPrefix_Profile) || s.Contains(GiveawayConstants.CmdPattern_GiveawayPrefix + GiveawayConstants.CmdPrefix_ProfileShort) || s.Contains(GiveawayConstants.CmdPattern_GaPrefix + GiveawayConstants.CmdPrefix_ProfileShort));
+        private static bool CheckMgmt(string s) => s != null && (CheckCmd(s, GiveawayConstants.CmdPrefix_Config) || CheckCmd(s, GiveawayConstants.CmdPrefix_System) || CheckCmd(s, GiveawayConstants.Cmd_Create) || CheckCmd(s, GiveawayConstants.Cmd_Delete));
+        private static bool CheckCmd(string s, string sub) => s != null && (s.Contains(GiveawayConstants.CmdPattern_GiveawayPrefix + sub) || s.Contains(GiveawayConstants.CmdPattern_GaPrefix + sub));
 
         /// <summary>
         /// Handles a user entering the giveaway. Checks for spam, active status, and duplicates.
@@ -3109,132 +3136,18 @@ public static class Loc
                 }
             }
 
-            // =========================================================================================
-            // VALIDATION PIPELINE
-            // 1. Game Filters (Modify Config)
-            // 2. Redemption Cooldown (User-Specific)
-            // 3. Global Spam Rate Limit
-            // 4. Username Pattern (Regex)
-            // 5. Entropy (Keyboard Smash)
-            // 6. Account Age (Anti-Bot)
-            // 7. State/Duplicate Checks
-            // =========================================================================================
-
-            // GAME FILTER
-            // Apply game filter FIRST (modifies config.UsernamePattern and config.EnableEntropyCheck)
-            ApplyGameFilter(config);
-
-            // Check redemption cooldown (if enabled)
-            if (config.RedemptionCooldownMinutes > 0)
+            // Resolve Platform: CPH Arg -> Default "Twitch"
+            // We need this early for platform-specific validation (e.g. Followers)
+            string platform = "Twitch";
+            if (adapter.TryGetArg<string>("platform", out var detectedPlatform) && !string.IsNullOrEmpty(detectedPlatform))
             {
-                if (state.RedemptionCooldowns.TryGetValue(userId, out var lastRedemption))
-                {
-                    var elapsed = (DateTime.Now - lastRedemption).TotalMinutes;
-                    if (elapsed < config.RedemptionCooldownMinutes)
-                    {
-                        var remaining = (int)Math.Ceiling(config.RedemptionCooldownMinutes - elapsed);
-                        adapter.LogTrace($"[{profileName}] Redemption cooldown active for {userName} ({remaining}min remaining)");
-                        IncGlobalMetric(adapter, "EntriesRejected");
-                        IncGlobalMetric(adapter, "EntriesRejectedCooldown");
-                        return true;
-                    }
-                }
-                // Update cooldown timestamp after passing the check
-                state.RedemptionCooldowns[userId] = DateTime.Now;
+                platform = detectedPlatform;
             }
 
-            // Strictness Check: Follower
-            if (config.RequireFollower)
+            // Separate validation logic to helper method to reduce complexity
+            if (!ValidateEntryRequest(adapter, config, state, profileName, userId, userName, platform))
             {
-                // TODO: Currently limited to Twitch as Streamer.bot CPH support for YT/Trovo checks is generic/complex.
-                if (!adapter.TwitchIsUserFollower(userId))
-                {
-                    adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a follower).");
-                    
-                    var msg = Loc.Get("EntryRejected_NotFollower");
-                    // Only whisper/reply if it's the first attempt to avoid spam? 
-                    // For now, standard reply logic handles spam via global cooldowns if we wanted, 
-                    // but rejection here counts as a "fail" without triggering bot output usually, unless we explicitly enable it.
-                    // Silent rejection to avoid chat spam, or explicit reply?
-                    
-                    IncGlobalMetric(adapter, "EntriesRejected");
-                    // Optionally notify user via chat if bandwidth allows (omitted to prevent spam for now)
-                    return true;
-                }
-            }
-
-            // Strictness Check: Subscriber
-            if (config.RequireSubscriber)
-            {
-                if (!adapter.TwitchIsUserSubscriber(userId))
-                {
-                    adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a subscriber).");
-                    IncGlobalMetric(adapter, "EntriesRejected");
-                    return true;
-                }
-            }
-
-            // Global rate limit check (prevents bot spam from overwhelming the system)
-            if (state.IsSpamming(config.MaxEntriesPerMinute, GlobalConfig.Globals.SpamWindowSeconds))
-            {
-                adapter.LogTrace($"[HandleEntry] RATE LIMIT: {userName} rejected for {profileName} (Limit: {config.MaxEntriesPerMinute}/min).");
-                IncGlobalMetric(adapter, "EntriesRateLimited");
-                
-                if (GlobalConfig.Globals.EnableSecurityToasts)
-                {
-                    // Throttled toast to prevent spamming the streamer's screen
-                    adapter.ShowToastNotification("Giveaway Bot - Security", $"⚠ SPAM DETECTED: {userName} (Rate Limit)");
-                }
                 return true;
-            }
-
-            // Username Pattern Check
-            // Validates the username against a streamer-defined regex pattern (if configured)
-            if (IsUsernameRegexInvalid(userName, config, adapter))
-            {
-                // Rejection logged within IsUsernameRegexInvalid
-                IncGlobalMetric(adapter, "EntriesRejected");
-                return true; 
-            }
-
-
-            // Entropy Check (Keyboard Smashing Detection)
-            // Detects low-quality names like "asdfgh", "zzzzzz", etc.
-            if (config.EnableEntropyCheck)
-            {
-                if (!EntryValidator.HasSufficientEntropy(userName, _configLoader.GetConfig(adapter).Globals.MinUsernameEntropy))
-                {
-                    adapter.LogTrace($"[{profileName}] Entry rejected: Low entropy/suspicious name (User: {userName})");
-                    IncGlobalMetric(adapter, "EntriesRejected");
-                    if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
-                        adapter.ShowToastNotification("Giveaway Bot", $"Entry Rejected: {userName} (Username Pattern)");
-                    return true;
-                }
-            }
-
-            // Account Age Check
-            // Rejects entries from accounts that are too new (potential bots/alts)
-            if (config.MinAccountAgeDays > 0)
-            {
-                // Try to get account creation date from Streamer.bot (if available)
-                if (adapter.TryGetArg<DateTime>("createdAt", out var createdAt))
-                {
-                    var accountAgeDays = (DateTime.Now - createdAt).TotalDays;
-                    if (accountAgeDays < config.MinAccountAgeDays)
-                    {
-                        adapter.LogTrace($"[{profileName}] Entry rejected: Account too new ({accountAgeDays:F1} days < {config.MinAccountAgeDays} required) (User: {userName})");
-                        IncGlobalMetric(adapter, "EntriesRejected");
-                        if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
-                            adapter.ShowToastNotification("Giveaway Bot", $"Entry Rejected: {userName} (Account Too New)");
-                        return true;
-                    }
-                    adapter.LogTrace($"[{profileName}] Account age check passed: {userName} ({accountAgeDays:F1} days old)");
-                }
-                else
-                {
-                    // Account creation date not available - log and allow entry
-                    adapter.LogTrace($"[{profileName}] Account age validation skipped: 'createdAt' argument not available from Streamer.bot (User: {userName})");
-                }
             }
 
             // Lock critical section to ensure thread-safe entry addition
@@ -3245,13 +3158,13 @@ public static class Loc
                 if (!state.IsActive)
                 {
                     adapter.LogTrace($"[{profileName}] Entry rejected: Giveaway not active (User: {userName})");
-                    IncGlobalMetric(adapter, "EntriesRejected");
+                    IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
                     return true;
                 }
                 if (state.Entries.ContainsKey(userId))
                 {
                     adapter.LogTrace($"[{profileName}] Entry rejected: Duplicate (User: {userName})");
-                    IncGlobalMetric(adapter, "EntriesRejected");
+                    IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
                     return true;
                 }
 
@@ -3300,17 +3213,14 @@ public static class Loc
                 }
 
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
-                IncGlobalMetric(adapter, "Entries_Total");
+                IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesTotal);
                 adapter.LogInfo($"[{profileName}] Accepted: {userName} (Tickets: {tickets})");
 
-                IncUserMetric(adapter, userId, userName, "EntriesTotal");
+                IncUserMetric(adapter, userId, userName, GiveawayConstants.Metric_EntriesTotalUser);
 
-                // Extract platform from trigger args (fallback: Twitch)
-                string platform = "Twitch";
-                if (adapter.TryGetArg<string>("platform", out var detectedPlatform) && !string.IsNullOrEmpty(detectedPlatform))
-                {
-                    platform = detectedPlatform;
-                }
+                IncUserMetric(adapter, userId, userName, GiveawayConstants.Metric_EntriesTotalUser);
+
+                // Platform is already resolved at start of method
                 
                 // Extract message ID for threaded replies
                 string msgId = null;
@@ -3329,7 +3239,7 @@ public static class Loc
                     Messenger?.SendBroadcast(adapter, acceptedMsg, platform);
                         
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
-                         adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {userName}");
+                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_NewEntry", userName));
                 }
 
                 return true;
@@ -3337,7 +3247,7 @@ public static class Loc
             catch (Exception ex)
             {
                 adapter.Logger?.LogError(adapter, profileName, "HandleEntry Failed", ex);
-                IncGlobalMetric(adapter, "SystemErrors");
+                IncGlobalMetric(adapter, GiveawayConstants.Metric_SystemErrors);
                 return true;
             }
             finally 
@@ -3352,6 +3262,131 @@ public static class Loc
                     _cachedMetrics.EntriesProcessedCount++;
                 }
             }
+        }
+
+        /// <summary>
+        /// Performs all pre-lock validation checks for an entry request.
+        /// Includes Game Filters, Cooldowns, Rate Limits, Strictness Checks (Follower/Sub), Regex, Entropy, and Account Age.
+        /// Returns true if the entry request is valid and should proceed to locking/state checks.
+        /// Returns false if rejected (logs and metrics are handled internally).
+        /// </summary>
+        private bool ValidateEntryRequest(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string userId, string userName, string platform)
+        {
+            // GAME FILTER
+            // Apply game filter FIRST (modifies config.UsernamePattern and config.EnableEntropyCheck)
+            ApplyGameFilter(config);
+
+            // Check redemption cooldown (if enabled)
+            if (config.RedemptionCooldownMinutes > 0)
+            {
+                if (state.RedemptionCooldowns.TryGetValue(userId, out var lastRedemption))
+                {
+                    var elapsed = (DateTime.Now - lastRedemption).TotalMinutes;
+                    if (elapsed < config.RedemptionCooldownMinutes)
+                    {
+                        var remaining = (int)Math.Ceiling(config.RedemptionCooldownMinutes - elapsed);
+                        adapter.LogTrace($"[{profileName}] Redemption cooldown active for {userName} ({remaining}min remaining)");
+                        IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                        IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejectedCooldown);
+                        return false;
+                    }
+                }
+                // Update cooldown timestamp after passing the check
+                state.RedemptionCooldowns[userId] = DateTime.Now;
+            }
+
+            // Strictness Check: Follower (Twitch Only)
+            if (config.RequireFollower)
+            {
+                if (platform.Equals("Twitch", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!adapter.TwitchIsUserFollower(userId))
+                    {
+                        adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a follower).");
+                        IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                        return false;
+                    }
+                }
+                else
+                {
+                    adapter.LogVerbose($"[{profileName}] Skipped RequireFollower check for {userName} (Platform: {platform})");
+                }
+            }
+
+            // Strictness Check: Subscriber (Twitch Only)
+            if (config.RequireSubscriber)
+            {
+                if (platform.Equals("Twitch", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!adapter.TwitchIsUserSubscriber(userId))
+                    {
+                        adapter.LogTrace($"[HandleEntry] Rejected {userName} (Not a subscriber).");
+                        IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                        return false;
+                    }
+                }
+                else
+                {
+                     adapter.LogVerbose($"[{profileName}] Skipped RequireSubscriber check for {userName} (Platform: {platform})");
+                }
+            }
+
+            // Global rate limit check
+            if (state.IsSpamming(config.MaxEntriesPerMinute, GlobalConfig.Globals.SpamWindowSeconds))
+            {
+                adapter.LogTrace($"[HandleEntry] RATE LIMIT: {userName} rejected for {profileName} (Limit: {config.MaxEntriesPerMinute}/min).");
+                IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRateLimited);
+                
+                if (GlobalConfig.Globals.EnableSecurityToasts)
+                {
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle_Security"), Loc.Get("ToastMsg_SpamDetected", userName));
+                }
+                return false;
+            }
+
+            // Username Pattern Check
+            if (IsUsernameRegexInvalid(userName, config, adapter))
+            {
+                IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                return false; 
+            }
+
+            // Entropy Check
+            if (config.EnableEntropyCheck)
+            {
+                if (!EntryValidator.HasSufficientEntropy(userName, _configLoader.GetConfig(adapter).Globals.MinUsernameEntropy))
+                {
+                    adapter.LogTrace($"[{profileName}] Entry rejected: Low entropy/suspicious name (User: {userName})");
+                    IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                    if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Pattern", userName));
+                    return false;
+                }
+            }
+
+            // Account Age Check
+            if (config.MinAccountAgeDays > 0)
+            {
+                if (adapter.TryGetArg<DateTime>("createdAt", out var createdAt))
+                {
+                    var accountAgeDays = (DateTime.Now - createdAt).TotalDays;
+                    if (accountAgeDays < config.MinAccountAgeDays)
+                    {
+                        adapter.LogTrace($"[{profileName}] Entry rejected: Account too new ({accountAgeDays:F1} days < {config.MinAccountAgeDays} required) (User: {userName})");
+                        IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                        if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
+                            adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Age", userName));
+                        return false;
+                    }
+                    adapter.LogTrace($"[{profileName}] Account age check passed: {userName} ({accountAgeDays:F1} days old)");
+                }
+                else
+                {
+                    adapter.LogTrace($"[{profileName}] Account age validation skipped: 'createdAt' argument not available from Streamer.bot (User: {userName})");
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -3439,7 +3474,7 @@ public static class Loc
                     state.LastWinnerName = winnerEntry.UserName;
                     state.LastWinnerUserId = winnerEntry.UserId;
                     state.WinnerCount++;
-                    IncGlobalMetric(adapter, "WinnersTotal");
+                    IncGlobalMetric(adapter, GiveawayConstants.Metric_WinnersTotal);
                     
                     // Track successful draw
                     if (_cachedMetrics != null)
@@ -3455,7 +3490,7 @@ public static class Loc
                     {
                          // Fallback Broadcast if EventBus is missing
                          string rawTmpl = GiveawayManager.PickRandomMessage(config.WheelSettings?.WinnerMessage);
-                         string msg = rawTmpl?.Replace("{name}", winnerEntry.UserName) ?? $"Winner: {winnerEntry.UserName}!";
+                         string msg = rawTmpl?.Replace("{name}", winnerEntry.UserName) ?? Loc.Get("ToastMsg_Winner", winnerEntry.UserName);
                          Messenger?.SendBroadcast(adapter, msg, platform);
                     }
                 }
@@ -3501,7 +3536,7 @@ public static class Loc
             }
 
 
-            IncGlobalMetric(adapter, "Giveaway_Started");
+            IncGlobalMetric(adapter, GiveawayConstants.Metric_GiveawayStarted);
 
             PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals);
             SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
@@ -3516,9 +3551,14 @@ public static class Loc
                 else
                 {
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
-                        adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is OPEN!");
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Opened", profileName));
                 }
 
+                return true;
+            }
+            catch (Exception ex)
+            {
+                adapter.LogError($"[{profileName}] HandleStart Failed: {ex.Message}");
                 return true;
             }
             finally { _lock.Release(); }
@@ -3552,7 +3592,7 @@ public static class Loc
             state.RedemptionCooldowns.Clear(); // Reset cooldowns for next giveaway
             
 
-            IncGlobalMetric(adapter, "Giveaway_Ended");
+            IncGlobalMetric(adapter, GiveawayConstants.Metric_GiveawayEnded);
 
             PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals);
             SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
@@ -3569,9 +3609,14 @@ public static class Loc
                 else
                 {
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
-                        adapter.ShowToastNotification("Giveaway Bot", $"Giveaway '{profileName}' is CLOSED!");
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Closed", profileName));
                 }
 
+                return true;
+            }
+            catch (Exception ex)
+            {
+                adapter.LogError($"[{profileName}] HandleEnd Failed: {ex.Message}");
                 return true;
             }
             finally { _lock.Release(); }
@@ -4153,7 +4198,7 @@ private async Task<bool> HandleStatsCommand(CPHAdapter adapter, string rawInput,
 /// </summary>
 /// <param name="s">The input string to check.</param>
 /// <returns>True if the string contains a data command, false otherwise.</returns>
-private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveaway data") || s.Contains("!ga data") || s.Contains("!giveaway d") || s.Contains("!ga d"));
+private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayConstants.CmdPattern_GiveawayPrefix + GiveawayConstants.CmdPrefix_Data) || s.Contains(GiveawayConstants.CmdPattern_GaPrefix + GiveawayConstants.CmdPrefix_Data) || s.Contains(GiveawayConstants.CmdPattern_GiveawayPrefix + GiveawayConstants.CmdPrefix_DataShort) || s.Contains(GiveawayConstants.CmdPattern_GaPrefix + GiveawayConstants.CmdPrefix_DataShort));
 
 
     }
@@ -4361,7 +4406,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public static bool IsManagedVariable(string name) 
         { 
             return name != null && (name.StartsWith(GiveawayConstants.GlobalVarPrefix, StringComparison.OrdinalIgnoreCase) || 
-                                    name.StartsWith(GiveawayConstants.LegacyGlobalVarPrefix, StringComparison.OrdinalIgnoreCase)); 
+                                    name.StartsWith(GiveawayConstants.LegacyGlobalVarPrefix, StringComparison.OrdinalIgnoreCase) || 
+                                    // Identify all profile-related variables (Giveaway {Profile} ...)
+                                    name.StartsWith(GiveawayConstants.ProfileVarBase + " ", StringComparison.OrdinalIgnoreCase)); 
         }
 
         /// <summary>
@@ -6425,6 +6472,16 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
 
     public static class GiveawayConstants
     {
+        // Metrics
+        public const string Metric_EntriesRejected = "EntriesRejected";
+        public const string Metric_EntriesRejectedCooldown = "EntriesRejectedCooldown";
+        public const string Metric_EntriesRateLimited = "EntriesRateLimited";
+        public const string Metric_EntriesTotal = "Entries_Total";
+        public const string Metric_EntriesTotalUser = "EntriesTotal";
+        public const string Metric_WinnersTotal = "WinnersTotal";
+        public const string Metric_GiveawayStarted = "Giveaway_Started";
+        public const string Metric_GiveawayEnded = "Giveaway_Ended";
+        public const string Metric_SystemErrors = "SystemErrors";
         public const string GlobalStatePrefix = "Giveaway State ";
         public const string GlobalRunMode = "Giveaway Global Run Mode";
         public const string GlobalConfig = "Giveaway Global Config";
@@ -6436,12 +6493,70 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public const string GlobalBackupCount = "Giveaway Global Backup Count";
         public const string GlobalLogPruneProbability = "Giveaway Global Log Prune Probability";
         public const string GlobalLogLevel = "Giveaway Global Log Level";
+        public const string GlobalWheelApiKey = "Giveaway Global Wheel Api Key";
+        public const string LegacyWheelApiKey = "Giveaway Wheel Api Key";
         public const string GlobalWheelApiKeyStatus = "Giveaway Global Wheel Api Key Status";
+        
+        // Actions
+        public const string Action_Enter = "Enter";
+        public const string Action_Winner = "Winner";
+        public const string Action_Open = "Open";
+        public const string Action_Close = "Close";
+        public const string Action_MockEntry = "Entry"; // Handling legacy/aliases
+        public const string Action_MockDraw = "Draw";
+        public const string Action_MockStart = "Start";
+        public const string Action_MockEnd = "End";
+
+        // Management Commands
+        public const string Cmd_ConfigGen = "config gen";
+        public const string Cmd_ConfigCheck = "config check";
+        public const string Cmd_SystemTest = "system test";
+        public const string Cmd_RegexTest = "regex test";
+        public const string Cmd_Create = "create";
+        public const string Cmd_Delete = "delete";
+        public const string Cmd_Stats = "stats";
+        public const string Cmd_Update = "update";
+        
+        // Command Prefixes (for helper methods)
+        public const string CmdPrefix_Config = "config";
+        public const string CmdPrefix_System = "system";
+        public const string CmdPrefix_Profile = "profile";
+        public const string CmdPrefix_ProfileShort = "p";
+        public const string CmdPrefix_Data = "data";
+        public const string CmdPrefix_DataShort = "d";
+        
+        // Command Patterns
+        public const string CmdPattern_GiveawayPrefix = "!giveaway ";
+        public const string CmdPattern_GaPrefix = "!ga ";
         public const string GlobalLastConfigErrors = "Giveaway Global Last Config Errors";
         public const string GlobalHealthTest = "Giveaway Health Test";
         public const string UserVarPrefix = "Giveaway User Var";
         public const string GlobalVarPrefix = "Giveaway Var";
         public const string LegacyGlobalVarPrefix = "Giveaway Global Var";
+        
+        // Profile Variable Patterns
+        public const string GlobalExposeVariables = "Giveaway Global ExposeVariables";
+        public const string GlobalMetricsPrefix = "Giveaway Global Metrics ";
+
+        public const string ProfileVarBase = "Giveaway";
+        public const string ProfileSubLuckMultiplierSuffix = "SubLuckMultiplier";
+        public const string ProfileWinChanceSuffix = "WinChance";
+        public const string ProfileDumpFormatSuffix = "DumpFormat";
+        public const string ProfileIsActiveSuffix = "IsActive";
+        public const string ProfileMsgPrefix = "Msg ";
+        public const string ProfileStateBlobSuffix = "StateBlob";
+        public const string ProfileTriggersSuffix = "Triggers";
+        public const string ProfileMessagesSuffix = "Messages";
+        public const string ProfileTimerDurationSuffix = "TimerDuration";
+        public const string ProfileMaxEntriesSuffix = "MaxEntriesPerMinute";
+        
+        // Profile Internal State
+        public const string ProfileGiveawayIdSuffix = "GiveawayId";
+        public const string ProfileWinnerNameSuffix = "WinnerName";
+        public const string ProfileWinnerUserIdSuffix = "WinnerUserId";
+        public const string ProfileWinnerCountSuffix = "WinnerCount";
+        public const string ProfileCumulativeEntriesSuffix = "CumulativeEntries";
+        public const string ProfileSubEntryCountSuffix = "SubEntryCount";
     }
 
     /// <summary>
@@ -6589,15 +6704,15 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
         public Dictionary<string, string> Triggers { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public GiveawayProfileConfig()
         {
-            Triggers.Add("command:!enter", "Enter");
-            Triggers.Add("command:!draw", "Winner");
-            Triggers.Add("command:!start", "Open");
-            Triggers.Add("command:!end", "Close");
+            Triggers.Add("command:!enter", GiveawayConstants.Action_Enter);
+            Triggers.Add("command:!draw", GiveawayConstants.Action_Winner);
+            Triggers.Add("command:!start", GiveawayConstants.Action_Open);
+            Triggers.Add("command:!end", GiveawayConstants.Action_Close);
             // Aliases for users who prefer the full prefix
-            Triggers.Add("command:!ga start", "Open");
-            Triggers.Add("command:!ga end", "Close");
-            Triggers.Add("command:!ga draw", "Winner");
-            Triggers.Add("command:!ga enter", "Enter");
+            Triggers.Add("command:!ga start", GiveawayConstants.Action_Open);
+            Triggers.Add("command:!ga end", GiveawayConstants.Action_Close);
+            Triggers.Add("command:!ga draw", GiveawayConstants.Action_Winner);
+            Triggers.Add("command:!ga enter", GiveawayConstants.Action_Enter);
             WheelSettings = new WheelConfig();
         }
 
@@ -7706,7 +7821,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 var release = await GetLatestReleaseInfoAsync(adapter);
                 if (release == null)
                 {
-                    if (notifyIfUpToDate) adapter.ShowToastNotification("Update Check", "❌ Failed to fetch release info.");
+                    if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_CheckFailed"));
                     return;
                 }
 
@@ -7717,14 +7832,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                 if (IsNewer(remoteVersion, currentVersion))
                 {
                     adapter.LogInfo($"[UpdateService] Update Available: {currentVersion} -> {remoteVersion}");
-                    adapter.ShowToastNotification("Giveaway Bot Update", $"⬇ Update Available: {remoteTag}\nDownloading...");
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Available", remoteTag));
 
                     // 3. Download
                     string savedPath = await DownloadUpdateAsync(adapter, remoteTag);
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         string fileName = Path.GetFileName(savedPath);
-                        adapter.ShowToastNotification("Update Downloaded", $"✅ Saved to: updates/{fileName}\nImport into Streamer.bot to apply.");
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", fileName));
                         adapter.LogInfo($"[UpdateService] Update saved to: {savedPath}");
                         
                         // Copy to clipboard instructions? No, just log.
@@ -7732,13 +7847,13 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains("!giveawa
                     }
                     else
                     {
-                        adapter.ShowToastNotification("Update Failed", "❌ Failed to download file.");
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_FailedDownload"));
                     }
                 }
                 else if (notifyIfUpToDate)
                 {
                     adapter.LogInfo("[UpdateService] Bot is up to date.");
-                    adapter.ShowToastNotification("Update Check", $"✅ You are on the latest version ({currentVersion}).");
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_UpToDate", currentVersion));
                 }
             }
             catch (Exception ex)
