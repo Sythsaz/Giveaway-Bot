@@ -1,5 +1,7 @@
 <!--
   Change "StreamerBotPath" to your current Streamer Bot install location
+  run:
+    Copy-Item StreamerBot.csproj.user.template StreamerBot.csproj.userCopy-Item StreamerBot.csproj.user.template StreamerBot.csproj.user
 -->
 <Project>
   <PropertyGroup>
