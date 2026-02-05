@@ -13,8 +13,8 @@
 
     <!--
       Set the following directory with your Streamer.bot install location.
-      For local development, create a 'StreamerBot.csproj.user' file (ignored by git)
-      and override this property there, or edit strictly locally.
+      For local development, copy 'StreamerBot.csproj.user.template' to 'StreamerBot.csproj.user'
+      (ignored by git) and set your custom path there.
     -->
     <StreamerBotPath Condition="'$(StreamerBotPath)' == ''">C:\Streamer.bot</StreamerBotPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);_tests\bin\**;_tests\obj\**</DefaultItemExcludes>
