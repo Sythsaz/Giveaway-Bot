@@ -15,6 +15,8 @@ jobs:
     name: Verify C# 7.3 Compatibility
     runs-on: [self-hosted, linux, x64, giveaway-bot]
     timeout-minutes: 5
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
