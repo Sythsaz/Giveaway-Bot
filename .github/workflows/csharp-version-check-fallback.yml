@@ -16,6 +16,8 @@ jobs:
   csharp-version-check-fallback:
     name: Verify C# 7.3 Compatibility (GitHub Runner)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
