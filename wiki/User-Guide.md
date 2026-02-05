@@ -4,10 +4,10 @@
 > **Compatibility**: Streamer.bot v0.2.3+ (Targeting .NET Framework 4.8 / C# 7.3)
 > 📖 **Additional Documentation:**
 >
-> - **[FAQ.md](FAQ.md)** - Frequently asked questions and error messages
-> - **[ADVANCED.md](ADVANCED.md)** - Security, performance, migration guides
-> - **[README.md](README.md)** - Command cheat sheet and Setup Guide
-> - **[ROADMAP.md](ROADMAP.md)** - Future enhancements and feature roadmap
+> - **[FAQ.md](FAQ)** - Frequently asked questions and error messages
+> - **[ADVANCED.md](Advanced-Configuration)** - Security, performance, migration guides
+> - **[README.md](Home)** - Command cheat sheet and Setup Guide
+> - **[ROADMAP.md](Roadmap)** - Future enhancements and feature roadmap
 
 ---
 
@@ -582,7 +582,7 @@ Messenger.Send($"Tournament Seeds: {string.Join(", ", winners.Select(w => w.User
 - Charity stream donation tiers
 - Chat game integration (!trivia winner gets auto-entry)
 
-See [FAQ.md](FAQ.md) for common questions and [ADVANCED.md](ADVANCED.md) for technical details.
+See [FAQ.md](FAQ) for common questions and [ADVANCED.md](Advanced-Configuration) for technical details.
 
 ---
 
@@ -705,6 +705,8 @@ Add a `"Messages"` block to your profile config:
 | `WinnerSelected`           | Winner announcement       | `{0}` = Winner Name                      |
 | `EntryRejected_MaxEntries` | User hit rate limit       | None                                     |
 
+**See Also**: For a complete list of all 20+ customizable query keys, see [API Reference - Message Localization Keys](API-Reference#message-localization-keys).
+
 > [!TIP]
 > **Placeholders**: Text like `{0}` and `{1}` are placeholders. The bot replaces them with actual data (like names
 > or numbers) when the message is sent. You can move them around or remove them, but keep the brackets! Example:
@@ -774,7 +776,7 @@ Get visual alerts on your Windows desktop for bot events. Add this object to you
 
 > [!TIP]
 > **Power Users**: You can start/stop giveaways automatically using Stream Deck or other Actions by toggling variables.
-> See the [Advanced Guide](ADVANCED.md#remote-control--automation) for details.
+> See the [Advanced Guide](Advanced-Configuration#remote-control--automation) for details.
 
 ### External Bot Integration
 
