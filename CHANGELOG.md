@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ROADMAP.md**: Added Technical Constraints section clarifying C# 7.3 is tied to Streamer.bot runtime
 - **README.md**: Added Compatibility section explaining C# 7.3 runtime requirement
 
+### Fixed
+
+- **Metrics Bug**: Removed duplicate `IncUserMetric` call in `HandleEntry` that was double-counting user entry statistics
+- **Config Compatibility**: Restored `GlobalRunMode` constant to `"Giveaway Global RunMode"` (removed space) to maintain backward compatibility with existing user configurations
+- **Variable Management**: Fixed `IsManagedVariable` pattern to only match profile-specific variables (`"Giveaway {Profile} ..."`) instead of all variables starting with `"Giveaway "`
+
 ### Infrastructure
 
 - **Build Enforcement**: Set `LangVersion=7.3` in StreamerBot.csproj to prevent C# 8.0+ compilation
