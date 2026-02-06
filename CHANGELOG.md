@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+
+### Fixed
+- **Wiki Generator**: Updated `GenerateWiki.cs` to resolve C# 5 compilation errors in CI (removed `out var`) and fixed parser to support `Triggers.Add` for command generation.
 
 ## [1.5.0] - 2026-02-05
 
