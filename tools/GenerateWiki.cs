@@ -58,6 +58,8 @@ namespace WikiGenerator
             var items = new List<DocItem>();
             string[] lines = code.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
 
+            string currentTypeName = null;
+
             for (int i = 0; i < lines.Length; i++)
             {
                 string line = lines[i].Trim();
@@ -84,7 +86,19 @@ namespace WikiGenerator
                         }
 
                         var docItem = ParseDocBlock(docBlock.ToString(), signature);
-                        if (docItem != null) items.Add(docItem);
+                        if (docItem != null)
+                        {
+                             // Track current class/interface for later members
+                             if (docItem.Type == "Class" || docItem.Type == "Interface")
+                             {
+                                 currentTypeName = docItem.Name;
+                             }
+                             else
+                             {
+                                 docItem.ContainingType = currentTypeName;
+                             }
+                             items.Add(docItem);
+                        }
                     }
                 }
                 // 2. Parse Constants (even without comments, for Commands)
@@ -156,11 +170,7 @@ namespace WikiGenerator
             {
                 item.Type = "Method";
                 // Method parsing logic
-                 var parts = signature.Split(new[] { '(', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                 for (int k = 0; k < parts.Length; k++)
-                 {
-                     if (parts[k].Contains("(")) { item.Name = parts[k].Split('(')[0]; break; }
-                 }
+                item.Name = GetMethodName(signature); // <-- reusing helper
                  // Parameters
                   var paramMatches = Regex.Matches(xml, @"<param name=""(.*?)"">(.*?)</param>", RegexOptions.Singleline);
                   foreach (Match p in paramMatches)
@@ -271,29 +281,20 @@ namespace WikiGenerator
             // Find properties belonging to these classes.
             // Since our parser is linear, we need to associate properties with the last seen class.
 
-            var classProps = new Dictionary<string, List<DocItem>>();
-            string currentClassName = "";
-
-            foreach (var item in items)
-            {
-                if (item.Type == "Class") currentClassName = item.Name;
-
-                if (item.Type == "Property" && configClasses.Contains(currentClassName))
-                {
-                    if (!classProps.ContainsKey(currentClassName)) classProps[currentClassName] = new List<DocItem>();
-                    classProps[currentClassName].Add(item);
-                }
-            }
+            var classProps = items
+                .Where(i => i.Type == "Property" && configClasses.Contains(i.ContainingType))
+                .GroupBy(i => i.ContainingType)
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             foreach (var className in configClasses)
             {
-                if (!classProps.ContainsKey(className)) continue;
+                if (!classProps.TryGetValue(className, out var props)) continue;
 
                 sb.AppendLine(string.Format("## {0}", className));
                 sb.AppendLine("| Setting | Type | Default | Description |");
                 sb.AppendLine("| :--- | :--- | :--- | :--- |");
 
-                foreach (var prop in classProps[className])
+                foreach (var prop in props)
                 {
                     // Clean default value
                     string def = prop.DefaultValue ?? "null";
@@ -389,6 +390,7 @@ namespace WikiGenerator
         public string Remarks { get; set; }
         public string OriginalXml { get; set; }
         public List<ParamInfo> Params { get; set; }
+        public string ContainingType { get; set; } // <- new
 
         public DocItem()
         {

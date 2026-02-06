@@ -6889,7 +6889,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             "HOW TO CONFIGURE:",
             "1. PROFILES: Create different setups like 'Main', 'Monthly', or 'SubOnly'.",
             "2. TRIGGERS: Connect real events to actions. Format is 'Type:Name'.",
-            "3. WHEEL (If Enabled): Set 'Giveaway Global WheelApiKey' in Streamer Bot's Global Persistant Variables.",
+            "3. WHEEL (If Enabled): Set 'Giveaway Global WheelApiKey' in Streamer Bot's Global Persistent Variables.",
             "4. OBS (If Enabled): Set 'ObsScene' and 'ObsSource' in Profile.",
             "5. EXAMPLE: 'command:!join' means 'For the Command named !join'.",
             "6. TROUBLESHOOTING: Run chat command '!giveaway config check' if you get any errors.",
@@ -7004,7 +7004,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// </summary>
         public int LogSizeCapMB { get; set; } = 100;
 
-        [JsonProperty("_log_file_size_limit_help")] public string LogMaxFileSizeHelp { get; set; } = "Max PDF size for a single log file in MB (default: 10). Rotates to new file if exceeded.";
+        [JsonProperty("_log_file_size_limit_help")] public string LogMaxFileSizeHelp { get; set; } = "Max size for a single log file in MB (default: 10). Rotates to new file if exceeded.";
 
         /// <summary>
         /// Maximum size of a single log file in MB before rotation.
@@ -7447,16 +7447,16 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// </summary>
         /// <param name="adapter">The CPH adapter for logging.</param>
         /// <param name="entries">The list of names/entries to put on the wheel.</param>
-        /// <param name="apiKey">The API key for authentication.</param>
+        /// <param name="apiKeyVarName">The NAME of the Global Variable containing the API key.</param>
         /// <param name="config">The wheel configuration (title, description, settings).</param>
         /// <param name="validateKey">Whether to perform a pre-flight validation of the API key.</param>
         /// <returns>The URL path of the created wheel (e.g., "/abc-123"), or null on failure.</returns>
-        public async Task<string> CreateWheel(CPHAdapter adapter, List<string> entries, string apiKey, WheelConfig config, bool validateKey = true)
+        public async Task<string> CreateWheel(CPHAdapter adapter, List<string> entries, string apiKeyVarName, WheelConfig config, bool validateKey = true)
         {
-            string key = adapter.GetGlobalVar<string>(apiKey, true);
+            string key = adapter.GetGlobalVar<string>(apiKeyVarName, true);
             if (string.IsNullOrEmpty(key))
             {
-                adapter.Logger?.LogWarn(adapter, "WheelAPI", $"API Key variable '{apiKey}' is empty.");
+                adapter.Logger?.LogWarn(adapter, "WheelAPI", $"API Key variable '{apiKeyVarName}' is empty.");
                 return null;
             }
 
