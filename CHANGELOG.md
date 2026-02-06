@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - 2026-02-05
 
-
 ### Changed (v1.5.0)
 
 - **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants` for
