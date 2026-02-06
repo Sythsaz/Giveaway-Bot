@@ -1,0 +1,40 @@
+name: C# 7.3 .NET Tests
+
+on:
+  pull_request:
+    paths:
+      - "**/*.cs"
+      - "_tests/**"
+      - "_tests/Tests.csproj"
+      - ".github/workflows/tests.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.cs"
+      - "_tests/**"
+      - "_tests/Tests.csproj"
+      - ".github/workflows/tests.yml"
+
+jobs:
+  test:
+    name: Run C# 7.3 unit and integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore test dependencies
+        run: dotnet restore _tests/Tests.csproj
+
+      - name: Run tests (forced C# 7.3)
+        run: dotnet test _tests/Tests.csproj --configuration Release --no-restore --verbosity minimal -p:LangVersion=7.3
