@@ -13,19 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (v1.5.3)
 
-- **Separate GameName Dumps**: New `DumpSeparateGameNames` configuration option creates additional `*_GameNames.txt` and `*_Winners_GameNames.txt` files containing only parsed game names/codes (e.g., `PlayerName.1234`) without Discord/Twitch usernames. This makes it easier to import winner lists into game APIs or reward distribution tools that require in-game identifiers.
+- **Separate GameName Dumps**: New `DumpSeparateGameNames` configuration option creates additional
+  `*_GameNames.txt` and `*_Winners_GameNames.txt` files containing only parsed game names/codes
+  (e.g., `PlayerName.1234`) without Discord/Twitch usernames. This makes it easier to import winner
+  lists into game APIs or reward distribution tools that require in-game identifiers.
   - Applies to both entry dumps and winner dumps
   - Falls back to username if no GameName is parsed
   - Controlled per-profile via `DumpSeparateGameNames` setting
-- **Bidirectional Config Sync (Mirror Mode)**: Profile configuration variables can now be modified directly in Streamer.bot's global variables and automatically sync back to the config file. Previously, Mirror mode only supported Config → GlobalVar sync, requiring manual config file edits for changes.
-  - All editable profile settings supported: dump options, entry requirements, luck multipliers, wheel/OBS settings, validation rules, timer duration
+- **Bidirectional Config Sync (Mirror Mode)**: Profile configuration variables can now be modified
+  directly in Streamer.bot's global variables and automatically sync back to the config file.
+  Previously, Mirror mode only supported Config → GlobalVar sync, requiring manual config file edits.
+  - All editable profile settings supported: dump options, entry requirements, luck multipliers,
+    wheel/OBS settings, validation rules, timer duration
   - Changes detected during lifecycle ticks (every 30 seconds) or triggered actions
   - Comprehensive logging of detected changes at INFO level (`[Mirror] Detected external change: ...`)
   - Automatic config file save when changes detected
 
 ### Fixed (v1.5.3)
 
-- **Test Suite**: Added `SeparateGameNameDumpsTests` to verify GameName dump file creation and content validation
+- **Test Suite**: Added `SeparateGameNameDumpsTests` to verify GameName dump file creation and
+  content validation
 
 ## [1.5.1] - 2026-02-06
 
@@ -39,8 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (v1.5.0)
 
-- **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants` for
-  all 30+ profile variable keys.
+- **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants`
+  for all 30+ profile variable keys.
   - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
   - Ensures strict consistency between the internal variable generation and the consumption logic.
 - **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names
