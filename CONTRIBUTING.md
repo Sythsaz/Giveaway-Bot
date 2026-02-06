@@ -276,6 +276,32 @@ dotnet run
 
 6. **Open a Pull Request** on GitHub using the [PR template](.github/pull_request_template.md)
 
+### Wiki Generation
+
+If you modify configuration classes or commands, you must update the valid documentation.
+The project includes a standalone tool in `tools/GenerateWiki.cs` to automate this.
+
+**Prerequisites:**
+
+1. **Clone the Wiki repository** as a sibling directory to your project (or verify your workspace structure):
+   - `../Giveaway-Bot` (This repo)
+   - `../Giveaway-Bot.wiki` (Wiki repo)
+
+   The generator expects to output files to `../../Giveaway-Bot.wiki`.
+
+**To compile and run:**
+
+```bash
+# 1. Compile (using standard Windows .NET compiler)
+c:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:tools\GenerateWiki.exe tools\GenerateWiki.cs
+
+# 2. Run the generator (MUST run from tools directory)
+cd tools
+.\GenerateWiki.exe
+```
+
+This will automatically update the markdown files in the sibling Wiki directory.
+
 ### PR Checklist
 
 Your PR should include:

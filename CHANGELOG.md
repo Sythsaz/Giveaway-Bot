@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Fixed
+
+- **Wiki Generator**: Updated `GenerateWiki.cs` to resolve C# 5 compilation errors (removed `out var`),
+  robust parsing for `Triggers.Add` (insensitive to whitespace),
+  and enforced alphabetical sorting for stable documentation output.
 
 ## [1.5.0] - 2026-02-05
 
@@ -32,11 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all 30+ profile variable keys.
   - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
   - Ensures strict consistency between the internal variable generation and the consumption logic.
-- **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names and adding dynamic timer examples.
+- **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names
+  and adding dynamic timer examples.
 - **Config Instructions**: Fixed internal help text in `GiveawayBot.cs` to correctly reference `Giveaway Global WheelApiKey`.
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
-- **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods and properties.
+- **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods
+  and properties.
 - **Code Quality**: Enhanced `ParseBoolVariant` to return `null` for invalid inputs, improving config parsing robustness.
 - **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 - **DEVELOPMENT.md**: Enhanced with three-layer C# 7.3 enforcement documentation (build-time, IDE, pre-commit)
