@@ -37,7 +37,7 @@ jobs:
 
     - name: Run Generator
       run: |
-        .\tools\GenerateWiki.exe ".\GiveawayBot.cs" ".\wiki\API-Reference.md"
+        .\tools\GenerateWiki.exe ".\GiveawayBot.cs" ".\wiki"
 
     - name: Push to Wiki
       run: |
