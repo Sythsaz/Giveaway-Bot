@@ -115,6 +115,20 @@ namespace WikiGenerator
                          });
                      }
                 }
+                // 3. Parse Command Triggers (e.g., Triggers.Add("command:!enter", ...))
+                else if (line.Contains("Triggers.Add(\"command:"))
+                {
+                     var match = Regex.Match(line, @"Triggers\.Add\(""command:(.+?)"",\s*GiveawayConstants\.Action_(.+?)\)");
+                     if (match.Success)
+                     {
+                         items.Add(new DocItem {
+                             Type = "CommandTrigger",
+                             Name = match.Groups[2].Value, // Action (e.g. Enter)
+                             DefaultValue = match.Groups[1].Value, // Command (e.g. !enter)
+                             Signature = line
+                         });
+                     }
+                }
             }
             return items;
         }
@@ -276,7 +290,7 @@ namespace WikiGenerator
             sb.AppendLine("> Detailed reference for `giveaway_config.json` settings.");
             sb.AppendLine();
 
-            string[] configClasses = new[] { "GlobalSettings", "GiveawayProfileConfig" };
+            string[] configClasses = new[] { "GiveawayBotConfig", "GiveawayProfileConfig" };
 
             // Find properties belonging to these classes.
             // Since our parser is linear, we need to associate properties with the last seen class.
@@ -288,7 +302,8 @@ namespace WikiGenerator
 
             foreach (var className in configClasses)
             {
-                if (!classProps.TryGetValue(className, out var props)) continue;
+                List<DocItem> props;
+                if (!classProps.TryGetValue(className, out props)) continue;
 
                 sb.AppendLine(string.Format("## {0}", className));
                 sb.AppendLine("| Setting | Type | Default | Description |");
@@ -330,7 +345,8 @@ namespace WikiGenerator
             var prefixItem = items.FirstOrDefault(i => i.Name == "CmdPattern_GiveawayPrefix");
             if (prefixItem != null) prefix = prefixItem.DefaultValue;
 
-             foreach (var item in items.Where(i => i.Type == "Constant"))
+
+            foreach (var item in items.Where(i => i.Type == "Constant"))
             {
                 if (item.Name.StartsWith("Cmd_"))
                 {
@@ -338,6 +354,14 @@ namespace WikiGenerator
                     string actionName = item.Name.Replace("Cmd_", "");
                     sb.AppendLine(string.Format("| **{0}** | `{1}{2}` |", actionName, prefix, cmdValues));
                 }
+            }
+
+            foreach (var item in items.Where(i => i.Type == "CommandTrigger"))
+            {
+                // Group by action if needed, or just list them
+                // item.Name = Action (e.g. Enter)
+                // item.DefaultValue = Command (e.g. !enter)
+                sb.AppendLine(string.Format("| **{0}** | `{1}` |", item.Name, item.DefaultValue));
             }
 
             sb.AppendLine();
