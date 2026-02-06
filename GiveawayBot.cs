@@ -410,6 +410,11 @@ public static class Loc
         // Key: Global Variable Name, Value: Last synced value
         private Dictionary<string, object> _lastSyncedValues = new Dictionary<string, object>();
 
+        // Operation tracking to prevent race conditions in Mirror mode
+        // Tracks current state-changing operations to prevent false remote detection
+        // Format: "START:ProfileName" or "END:ProfileName"
+        private string _currentOperation = null;
+
         /// <summary>
         /// Helper to set a global variable only if the value has changed.
         /// Dramatically reduces log spam by avoiding redundant SetGlobalVar calls.
@@ -1616,58 +1621,58 @@ public static class Loc
 
             // Only log trace if we haven't synced this batch recently or on first run
             // (Approximated by checking one key var presence in cache)
-            if (!_lastSyncedValues.ContainsKey("Giveaway Global RunMode"))
+            if (!_lastSyncedValues.ContainsKey("Giveaway Global Run Mode"))
             {
                 adapter.Logger?.LogTrace(adapter, "System", "Syncing Global Configuration Variables...");
             }
 
             // Touch input overrides so they aren't pruned
-            adapter.TouchGlobalVar("Giveaway Global RunMode");
-            adapter.TouchGlobalVar("Giveaway Global ExposeVariables");
+            adapter.TouchGlobalVar("Giveaway Global Run Mode");
+            adapter.TouchGlobalVar("Giveaway Global Expose Variables");
             // Triggers variable pattern logic handled in CheckForConfigUPdates, but global touch here?
 
             var g = GlobalConfig.Globals;
 
             // Sync RunMode & LogLevel (Always set to ensure normalization)
-            SetGlobalVarIfChanged(adapter, "Giveaway Global RunMode", g.RunMode ?? "FileSystem", true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Run Mode", g.RunMode ?? "FileSystem", true);
             string level = string.IsNullOrEmpty(g.LogLevel) ? "INFO" : g.LogLevel.ToUpperInvariant();
-            SetGlobalVarIfChanged(adapter, "Giveaway Global LogLevel", level, true);
+            SetGlobalVarIfChanged(adapter, GiveawayConstants.GlobalLogLevel, level, true);
             string currentLevelVar = level;
 
             // Expose all GlobalSettings fields
-            SetGlobalVarIfChanged(adapter, "Giveaway Global LogToStreamerBot", g.LogToStreamerBot, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Log To Streamer Bot", g.LogToStreamerBot, true);
 
-            SetGlobalVarIfChanged(adapter, "Giveaway Global WheelApiKeyVar", g.WheelApiKeyVar, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Wheel Api Key Var", g.WheelApiKeyVar, true);
 
             // Direct API Key Status Check & Initialization
             // Ensure the direct variable exists so users can see it in valid variable lists
-            string keyVal = adapter.GetGlobalVar<string>("Giveaway Global WheelApiKey");
+            string keyVal = adapter.GetGlobalVar<string>("Giveaway Global Wheel Api Key");
             if (keyVal == null)
             {
                 // Default as Help Text
-                adapter.SetGlobalVar("Giveaway Global WheelApiKey", "Enter Wheel of Names API Key", true);
+                adapter.SetGlobalVar("Giveaway Global Wheel Api Key", "Enter Wheel of Names API Key", true);
                 keyVal = "Enter Wheel of Names API Key";
             }
             string keyStatus = (string.IsNullOrEmpty(keyVal) || keyVal.StartsWith("Enter ")) ? "Missing" : "Configured";
-            SetGlobalVarIfChanged(adapter, "Giveaway Global WheelApiKeyStatus", keyStatus, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Wheel Api Key Status", keyStatus, true);
 
-            SetGlobalVarIfChanged(adapter, "Giveaway Global LogRetentionDays", g.LogRetentionDays, true);
-            SetGlobalVarIfChanged(adapter, "Giveaway Global LogSizeCapMB", g.LogSizeCapMB, true);
-            SetGlobalVarIfChanged(adapter, "Giveaway Global FallbackPlatform", g.FallbackPlatform ?? "", true);
-            SetGlobalVarIfChanged(adapter, "Giveaway Global StatePersistenceMode", g.StatePersistenceMode ?? "Both", true);
-            SetGlobalVarIfChanged(adapter, "Giveaway Global StateSyncIntervalSeconds", g.StateSyncIntervalSeconds, true);
-            SetGlobalVarIfChanged(adapter, "Giveaway Global SecurityToasts", g.EnableSecurityToasts, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Log Retention Days", g.LogRetentionDays, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Log Size Cap MB", g.LogSizeCapMB, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Fallback Platform", g.FallbackPlatform ?? "", true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global State Persistence Mode", g.StatePersistenceMode ?? "Both", true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global State Sync Interval Seconds", g.StateSyncIntervalSeconds, true);
+            SetGlobalVarIfChanged(adapter, "Giveaway Global Security Toasts", g.EnableSecurityToasts, true);
 
             if (g.EnabledPlatforms != null)
             {
-                SetGlobalVarIfChanged(adapter, "Giveaway Global EnabledPlatforms", string.Join(",", g.EnabledPlatforms), true);
+                SetGlobalVarIfChanged(adapter, "Giveaway Global Enabled Platforms", string.Join(",", g.EnabledPlatforms), true);
             }
 
             // Sync Root Config Metadata
             if (GlobalConfig.Instructions != null)
                 SetGlobalVarIfChanged(adapter, "Giveaway Global Instructions", string.Join("\n", GlobalConfig.Instructions), true);
             if (GlobalConfig.TriggerPrefixHelp != null)
-                SetGlobalVarIfChanged(adapter, "Giveaway Global TriggerHelp", string.Join("\n", GlobalConfig.TriggerPrefixHelp), true);
+                SetGlobalVarIfChanged(adapter, "Giveaway Global Trigger Prefix Help", string.Join("\n", GlobalConfig.TriggerPrefixHelp), true);
 
             // Auto-Import Globals from Config (e.g., API Keys)
             if (g.ImportGlobals != null)
@@ -1697,20 +1702,20 @@ public static class Loc
             }
 
             // Sync Metrics (Update existing or bootstrap)
-            UpdateMetric(adapter, "EntriesTotal", totalEntries);
-            UpdateMetric(adapter, "WinnersTotal", totalActiveWinners);
+            UpdateMetric(adapter, "Entries Total", totalEntries);
+            UpdateMetric(adapter, "Winners Total", totalActiveWinners);
 
             // Explicitly touch/bootstrap the primary management metrics to ensure they don't get pruned
-            UpdateMetric(adapter, "EntriesRejected", 0);
-            UpdateMetric(adapter, "ApiErrors", 0);
-            UpdateMetric(adapter, "SystemErrors", 0);
+            UpdateMetric(adapter, "Entries Rejected", 0);
+            UpdateMetric(adapter, "Api Errors", 0);
+            UpdateMetric(adapter, "System Errors", 0);
 
             // Extra safety for configuration status and json vars
-            adapter.TouchGlobalVar("Giveaway Global ConfigStatus");
-            adapter.TouchGlobalVar("Giveaway Global LastConfigErrors");
+            adapter.TouchGlobalVar("Giveaway Global Config Status");
+            adapter.TouchGlobalVar("Giveaway Global Last Config Errors");
             adapter.TouchGlobalVar("Giveaway Global Config");
-            adapter.TouchGlobalVar("Giveaway Global ConfigLastWriteTime");
-            adapter.TouchGlobalVar("Giveaway Global BackupCount");
+            adapter.TouchGlobalVar("Giveaway Global Config Last Write Time");
+            adapter.TouchGlobalVar("Giveaway Global Backup Count");
         }
 
         /// <summary>
@@ -1788,7 +1793,7 @@ public static class Loc
             }
 
             // Runtime State (Read-Only Status)
-            SyncVar("IsActive", state.IsActive, null, null); // Always show bool
+            SyncVar(GiveawayConstants.ProfileIsActiveSuffix, state.IsActive, null, null); // Always show bool
             SyncVar("EntryCount", state.Entries.Count, null, null);
             var totalTickets = state.Entries.Values.Sum(e => e.TicketCount);
             SyncVar("TicketCount", totalTickets, null, null);
@@ -1805,41 +1810,41 @@ public static class Loc
             // Dynamic Config Exposure (Editable)
             // Use Help Text for defaults
 
-            SyncVar("TimerDuration", config.TimerDuration, null, "Enter duration (e.g. 10m, 1h)");
-            SyncVar("MaxEntriesPerMinute", config.MaxEntriesPerMinute, 0, "Enter max entries per minute (0=Unlimited)");
-            SyncVar("RequireFollower", config.RequireFollower, null, "Require follower? (True/False)");
-            SyncVar("RequireSubscriber", config.RequireSubscriber, null, "Require subscriber? (True/False)");
-            SyncVar("SubLuckMultiplier", config.SubLuckMultiplier, 1.0m, "Enter multiplier >= 1.0 (e.g. 1.5)");
+            SyncVar(GiveawayConstants.ProfileTimerDurationSuffix, config.TimerDuration, null, "Enter duration (e.g. 10m, 1h)");
+            SyncVar(GiveawayConstants.ProfileMaxEntriesSuffix, config.MaxEntriesPerMinute, 0, "Enter max entries per minute (0=Unlimited)");
+            SyncVar(GiveawayConstants.ProfileRequireFollowerSuffix, config.RequireFollower, null, "Require follower? (True/False)");
+            SyncVar(GiveawayConstants.ProfileRequireSubscriberSuffix, config.RequireSubscriber, null, "Require subscriber? (True/False)");
+            SyncVar(GiveawayConstants.ProfileSubLuckMultiplierSuffix, config.SubLuckMultiplier, 1.0m, "Enter multiplier >= 1.0 (e.g. 1.5)");
 
             // Wheel & OBS Settings
-            SyncVar("EnableWheel", config.EnableWheel, false, "Enable Wheel? (True/False)");
-            SyncVar("EnableObs", config.EnableObs, false, "Enable OBS? (True/False)");
-            SyncVar("ObsScene", config.ObsScene, null, "Enter OBS Scene Name");
-            SyncVar("ObsSource", config.ObsSource, null, "Enter OBS Source Name");
+            SyncVar(GiveawayConstants.ProfileEnableWheelSuffix, config.EnableWheel, false, "Enable Wheel? (True/False)");
+            SyncVar(GiveawayConstants.ProfileEnableObsSuffix, config.EnableObs, false, "Enable OBS? (True/False)");
+            SyncVar(GiveawayConstants.ProfileObsSceneSuffix, config.ObsScene, null, "Enter OBS Scene Name");
+            SyncVar(GiveawayConstants.ProfileObsSourceSuffix, config.ObsSource, null, "Enter OBS Source Name");
 
             // Wheel of Names Configuration
             if (config.WheelSettings == null) config.WheelSettings = new WheelConfig();
-            SyncVar("WheelSettingsTitle", config.WheelSettings.Title, null, "Enter Wheel Title");
-            SyncVar("WheelSettingsDescription", config.WheelSettings.Description, null, "Enter Wheel Description");
-            SyncVar("WheelSettingsSpinTime", config.WheelSettings.SpinTime, 10000, "Enter spin time in ms (e.g. 6000)");
-            SyncVar("WheelSettingsAutoRemoveWinner", config.WheelSettings.AutoRemoveWinner, false, "Remove winner after spin? (True/False)");
-            SyncVar("WheelSettingsShareMode", config.WheelSettings.ShareMode, null, "Enter share mode (e.g. 'link')");
-            SyncVar("WheelSettingsWinnerMessage", config.WheelSettings.WinnerMessage, null, "Enter winner message");
+            SyncVar(GiveawayConstants.ProfileWheelTitleSuffix, config.WheelSettings.Title, null, "Enter Wheel Title");
+            SyncVar(GiveawayConstants.ProfileWheelDescriptionSuffix, config.WheelSettings.Description, null, "Enter Wheel Description");
+            SyncVar(GiveawayConstants.ProfileWheelSpinTimeSuffix, config.WheelSettings.SpinTime, 10000, "Enter spin time in ms (e.g. 6000)");
+            SyncVar(GiveawayConstants.ProfileWheelAutoRemoveWinnerSuffix, config.WheelSettings.AutoRemoveWinner, false, "Remove winner after spin? (True/False)");
+            SyncVar(GiveawayConstants.ProfileWheelShareModeSuffix, config.WheelSettings.ShareMode, null, "Enter share mode (e.g. 'link')");
+            SyncVar(GiveawayConstants.ProfileWheelWinnerMessageSuffix, config.WheelSettings.WinnerMessage, null, "Enter winner message");
 
             // Dump/Export Settings
-            SyncVar("DumpFormat", config.DumpFormat.ToString(), "JSON", "JSON|CSV|XML");
-            SyncVar("DumpEntriesOnEnd", config.DumpEntriesOnEnd, false, "Dump on end? (True/False)");
-            SyncVar("DumpEntriesOnEntry", config.DumpEntriesOnEntry, false, "Dump on new entry? (True/False)");
-            SyncVar("DumpEntriesOnEntryThrottleSeconds", config.DumpEntriesOnEntryThrottleSeconds, 5, "Enter throttle in seconds (Default: 5)");
-            SyncVar("DumpWinnersOnDraw", config.DumpWinnersOnDraw, false, "Dump when winner drawn? (True/False)");
+            SyncVar(GiveawayConstants.ProfileDumpFormatSuffix, config.DumpFormat.ToString(), "JSON", "JSON|CSV|XML");
+            SyncVar(GiveawayConstants.ProfileDumpOnEndSuffix, config.DumpEntriesOnEnd, false, "Dump on end? (True/False)");
+            SyncVar(GiveawayConstants.ProfileDumpOnEntrySuffix, config.DumpEntriesOnEntry, false, "Dump on new entry? (True/False)");
+            SyncVar(GiveawayConstants.ProfileDumpThrottleSuffix, config.DumpEntriesOnEntryThrottleSeconds, 5, "Enter throttle in seconds (Default: 5)");
+            SyncVar(GiveawayConstants.ProfileDumpWinnersSuffix, config.DumpWinnersOnDraw, false, "Dump when winner drawn? (True/False)");
 
             // Entry Validation
-            SyncVar("UsernameRegex", config.UsernameRegex, null, "Enter Regex for username validation");
-            SyncVar("MinAccountAgeDays", config.MinAccountAgeDays, 0, "Enter min account age in days (0=Disabled)");
-            SyncVar("EnableEntropyCheck", config.EnableEntropyCheck, true, "Check for random keys? (True/False)");
-            SyncVar("WinChance", config.WinChance, 1.0, "Enter win chance (0.0 to 1.0)");
-            SyncVar("GameFilter", config.GameFilter, null, "Enter game name to filter (e.g. 'GW2')");
-            SyncVar("RedemptionCooldownMinutes", config.RedemptionCooldownMinutes, 0, "Enter cooldown in minutes (0=Disabled)");
+            SyncVar(GiveawayConstants.ProfileUsernameRegexSuffix, config.UsernameRegex, null, "Enter Regex for username validation");
+            SyncVar(GiveawayConstants.ProfileMinAccountAgeSuffix, config.MinAccountAgeDays, 0, "Enter min account age in days (0=Disabled)");
+            SyncVar(GiveawayConstants.ProfileEnableEntropySuffix, config.EnableEntropyCheck, true, "Check for random keys? (True/False)");
+            SyncVar(GiveawayConstants.ProfileWinChanceSuffix, config.WinChance, 1.0, "Enter win chance (0.0 to 1.0)");
+            SyncVar(GiveawayConstants.ProfileGameFilterSuffix, config.GameFilter, null, "Enter game name to filter (e.g. 'GW2')");
+            SyncVar(GiveawayConstants.ProfileRedemptionCooldownSuffix, config.RedemptionCooldownMinutes, 0, "Enter cooldown in minutes (0=Disabled)");
 
             // Log trace only if we are actually syncing something relevant
             if (!_lastSyncedValues.ContainsKey($"{GiveawayConstants.ProfileVarBase} {profileName} {GiveawayConstants.ProfileIsActiveSuffix}"))
@@ -2351,7 +2356,7 @@ public static class Loc
             if (fullSync && GlobalConfig.Globals != null)
             {
                  // Check status: Direct > Indirect
-                 string directKey = adapter.GetGlobalVar<string>(GiveawayConstants.LegacyWheelApiKey);
+                 string directKey = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalWheelApiKey);
 
                 // TODO: What about other encryption methods?
                 // Auto-Encryption Logic: If key is plain text (not empty, not ENC:), validate and encrypt it.
@@ -2394,7 +2399,7 @@ public static class Loc
                  if (string.IsNullOrEmpty(directKey))
                  {
                      // Fallback check
-                     string keyName = GlobalConfig.Globals.WheelApiKeyVar ?? "WheelOfNamesApiKey";
+                     string keyName = GlobalConfig.Globals.WheelApiKeyVar ?? "Wheel Of Names Api Key";
                      indirectKey = adapter.GetGlobalVar<string>(keyName);
 
                      // Check for common error: Key in Name Field
@@ -2423,7 +2428,7 @@ public static class Loc
                  {
                      GlobalConfig.Globals.RunMode = runModeVal;
                      dirty = true;
-                     adapter.LogInfo($"[Config] RunMode updated to '{runModeVal}' via Global Variable.");
+                     adapter.LogInfo($"[Config] Run Mode updated to '{runModeVal}' via Global Variable.");
                  }
 
                  // LogLevel
@@ -2435,17 +2440,17 @@ public static class Loc
                      {
                          GlobalConfig.Globals.LogLevel = normalized;
                          dirty = true;
-                         adapter.LogInfo($"[Config] LogLevel updated to '{normalized}' via Global Variable.");
+                         adapter.LogInfo($"[Config] Log Level updated to '{normalized}' via Global Variable.");
                      }
                  }
 
                  // FallbackPlatform
-                 string fallbackVal = adapter.GetGlobalVar<string>("Giveaway Global FallbackPlatform", true);
+                 string fallbackVal = adapter.GetGlobalVar<string>("Giveaway Global Fallback Platform", true);
                  if (!string.IsNullOrEmpty(fallbackVal) && fallbackVal != GlobalConfig.Globals.FallbackPlatform)
                  {
                      GlobalConfig.Globals.FallbackPlatform = fallbackVal;
                      dirty = true;
-                     adapter.LogInfo($"[Config] FallbackPlatform updated to '{fallbackVal}' via Global Variable.");
+                     adapter.LogInfo($"[Config] Fallback Platform updated to '{fallbackVal}' via Global Variable.");
                  }
 
                  // SecurityToasts
@@ -2582,6 +2587,8 @@ public static class Loc
                         // Dynamic Runtime Adjustment
                         if (States.TryGetValue(name, out var state) && state.IsActive && state.StartTime.HasValue)
                         {
+                        try
+                        {
                             int? newDurationSec = ParseDuration(timerVal);
                             if (newDurationSec.HasValue)
                             {
@@ -2604,6 +2611,13 @@ public static class Loc
                                 adapter.LogInfo($"[Timer] Runtime timer disabled (Manual close only).");
                             }
                         }
+                        catch (Exception ex)
+                        {
+                             adapter.LogWarn($"[Timer] Failed to parse duration '{timerVal}': {ex.Message}");
+                             state.AutoCloseTime = null;
+                        }
+
+                        }
                     }
 
                     if (fullSync)
@@ -2624,13 +2638,13 @@ public static class Loc
                     }
 
 
-                    //  RequireFollower (Validation: bool)
-                    syncBool("RequireFollower", v => { if(profile.RequireFollower != v) { profile.RequireFollower = v; dirty = true; adapter.LogInfo($"[Config] Require Follower for '{name}' updated to {v}"); } });
+                    //  Require Follower (Validation: bool)
+                    syncBool("Require Follower", v => { if(profile.RequireFollower != v) { profile.RequireFollower = v; dirty = true; adapter.LogInfo($"[Config] Require Follower for '{name}' updated to {v}"); } });
 
-                    //  RequireSubscriber (Validation: bool)
-                    syncBool("RequireSubscriber", v => { if(profile.RequireSubscriber != v) { profile.RequireSubscriber = v; dirty = true; adapter.LogInfo($"[Config] Require Subscriber for '{name}' updated to {v}"); } });
+                    //  Require Subscriber (Validation: bool)
+                    syncBool("Require Subscriber", v => { if(profile.RequireSubscriber != v) { profile.RequireSubscriber = v; dirty = true; adapter.LogInfo($"[Config] Require Subscriber for '{name}' updated to {v}"); } });
 
-                    // SubLuckMultiplier (Validation: >= 1.0)
+                    // Sub Luck Multiplier (Validation: >= 1.0)
                     string subLuckVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileSubLuckMultiplierSuffix}";
                     string subLuckVal = adapter.GetGlobalVar<string>(subLuckVarName, true);
                     if (decimal.TryParse(subLuckVal, out decimal newSubLuck) && newSubLuck >= 1.0m)
@@ -2671,35 +2685,35 @@ public static class Loc
                     }
 
                     // Wheel Configuration
-                    syncBool("EnableWheel", v => { if(profile.EnableWheel != v) { profile.EnableWheel = v; dirty = true; adapter.LogInfo($"[Config] EnableWheel updated for '{name}'."); } });
+                    syncBool("Enable Wheel", v => { if(profile.EnableWheel != v) { profile.EnableWheel = v; dirty = true; adapter.LogInfo($"[Config] Enable Wheel updated for '{name}'."); } });
 
                     if (profile.WheelSettings == null) profile.WheelSettings = new WheelConfig();
-                    syncStr("WheelSettingsTitle", v => { if(profile.WheelSettings.Title != v) { profile.WheelSettings.Title = v; dirty = true; } }, "Enter Wheel Title");
-                    syncStr("WheelSettingsDescription", v => { if(profile.WheelSettings.Description != v) { profile.WheelSettings.Description = v; dirty = true; } }, "Enter Wheel Description");
-                    syncStr("WheelSettingsWinnerMessage", v => { if(profile.WheelSettings.WinnerMessage != v) { profile.WheelSettings.WinnerMessage = v; dirty = true; } }, "Enter winner message");
-                    syncInt("WheelSettingsSpinTime", v => { if(v > 0 && profile.WheelSettings.SpinTime != v) { profile.WheelSettings.SpinTime = v; dirty = true; } });
-                    syncBool("WheelSettingsAutoRemoveWinner", v => { if(profile.WheelSettings.AutoRemoveWinner != v) { profile.WheelSettings.AutoRemoveWinner = v; dirty = true; } });
-                    syncStr("WheelSettingsShareMode", v => { if(profile.WheelSettings.ShareMode != v) { profile.WheelSettings.ShareMode = v; dirty = true; } }, "Enter share mode (e.g. 'link')");
+                    syncStr("Wheel Settings Title", v => { if(profile.WheelSettings.Title != v) { profile.WheelSettings.Title = v; dirty = true; } }, "Enter Wheel Title");
+                    syncStr("Wheel Settings Description", v => { if(profile.WheelSettings.Description != v) { profile.WheelSettings.Description = v; dirty = true; } }, "Enter Wheel Description");
+                    syncStr("Wheel Settings Winner Message", v => { if(profile.WheelSettings.WinnerMessage != v) { profile.WheelSettings.WinnerMessage = v; dirty = true; } }, "Enter winner message");
+                    syncInt("Wheel Settings Spin Time", v => { if(v > 0 && profile.WheelSettings.SpinTime != v) { profile.WheelSettings.SpinTime = v; dirty = true; } });
+                    syncBool("Wheel Settings Auto Remove Winner", v => { if(profile.WheelSettings.AutoRemoveWinner != v) { profile.WheelSettings.AutoRemoveWinner = v; dirty = true; } });
+                    syncStr("Wheel Settings Share Mode", v => { if(profile.WheelSettings.ShareMode != v) { profile.WheelSettings.ShareMode = v; dirty = true; } }, "Enter share mode (e.g. 'link')");
 
                     // OBS Configuration
-                    syncBool("EnableObs", v => { if(profile.EnableObs != v) { profile.EnableObs = v; dirty = true; adapter.LogInfo($"[Config] EnableObs updated for '{name}'."); } });
-                    syncStr("ObsScene", v => { if(profile.ObsScene != v) { profile.ObsScene = v; dirty = true; } }, "Enter OBS Scene Name");
-                    syncStr("ObsSource", v => { if(profile.ObsSource != v) { profile.ObsSource = v; dirty = true; } }, "Enter OBS Source Name");
+                    syncBool("Enable OBS", v => { if(profile.EnableObs != v) { profile.EnableObs = v; dirty = true; adapter.LogInfo($"[Config] Enable OBS updated for '{name}'."); } });
+                    syncStr("Obs Scene", v => { if(profile.ObsScene != v) { profile.ObsScene = v; dirty = true; } }, "Enter OBS Scene Name");
+                    syncStr("Obs Source", v => { if(profile.ObsSource != v) { profile.ObsSource = v; dirty = true; } }, "Enter OBS Source Name");
 
                     // Validation & Filters
-                    syncStr("UsernameRegex", v => { if(profile.UsernameRegex != v) { profile.UsernameRegex = v; dirty = true; } }, "Enter Regex for username validation");
-                    syncStr("GameFilter", v => { if(profile.GameFilter != v) { profile.GameFilter = v; dirty = true; } }, "Enter game name to filter (e.g. 'GW2')");
-                    syncInt("MinAccountAgeDays", v => { if(profile.MinAccountAgeDays != v) { profile.MinAccountAgeDays = v; dirty = true; } });
+                    syncStr("Username Regex", v => { if(profile.UsernameRegex != v) { profile.UsernameRegex = v; dirty = true; } }, "Enter Regex for username validation");
+                    syncStr("Game Filter", v => { if(profile.GameFilter != v) { profile.GameFilter = v; dirty = true; } }, "Enter game name to filter (e.g. 'GW2')");
+                    syncInt("Min Account Age Days", v => { if(profile.MinAccountAgeDays != v) { profile.MinAccountAgeDays = v; dirty = true; } });
 
-                    // Enhanced RedemptionCooldown Parsing
-                    syncStr("RedemptionCooldownMinutes", v => {
+                    // Enhanced Redemption Cooldown Parsing
+                    syncStr("Redemption Cooldown Minutes", v => {
                         int mins = ParseDurationMinutes(v);
                         if (profile.RedemptionCooldownMinutes != mins) {
                             profile.RedemptionCooldownMinutes = mins;
                             dirty = true;
                         }
                     }, "Enter cooldown in minutes (0=Disabled)");
-                    syncBool("EnableEntropyCheck", v => { if(profile.EnableEntropyCheck != v) { profile.EnableEntropyCheck = v; dirty = true; } });
+                    syncBool("Enable Entropy Check", v => { if(profile.EnableEntropyCheck != v) { profile.EnableEntropyCheck = v; dirty = true; } });
 
                     // WinChance
                     string winChanceVar = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileWinChanceSuffix}";
@@ -2716,10 +2730,10 @@ public static class Loc
                     {
                         if (profile.DumpFormat != newFmt) { profile.DumpFormat = newFmt; dirty = true; }
                     }
-                    syncBool("DumpEntriesOnEnd", v => { if(profile.DumpEntriesOnEnd != v) { profile.DumpEntriesOnEnd = v; dirty = true; } });
-                    syncBool("DumpEntriesOnEntry", v => { if(profile.DumpEntriesOnEntry != v) { profile.DumpEntriesOnEntry = v; dirty = true; } });
-                    syncBool("DumpWinnersOnDraw", v => { if(profile.DumpWinnersOnDraw != v) { profile.DumpWinnersOnDraw = v; dirty = true; } });
-                    syncInt("DumpEntriesOnEntryThrottleSeconds", v => { if(profile.DumpEntriesOnEntryThrottleSeconds != v) { profile.DumpEntriesOnEntryThrottleSeconds = v; dirty = true; } });
+                    syncBool("Dump Entries On End", v => { if(profile.DumpEntriesOnEnd != v) { profile.DumpEntriesOnEnd = v; dirty = true; } });
+                    syncBool("Dump Entries On Entry", v => { if(profile.DumpEntriesOnEntry != v) { profile.DumpEntriesOnEntry = v; dirty = true; } });
+                    syncBool("Dump Winners On Draw", v => { if(profile.DumpWinnersOnDraw != v) { profile.DumpWinnersOnDraw = v; dirty = true; } });
+                    syncInt("Dump Entries On Entry Throttle Seconds", v => { if(profile.DumpEntriesOnEntryThrottleSeconds != v) { profile.DumpEntriesOnEntryThrottleSeconds = v; dirty = true; } });
 
                     }
                 }
@@ -2758,6 +2772,15 @@ public static class Loc
                 // Dynamic IsActive Check (Remote Start/Stop)
                 if (States.TryGetValue(name, out var profileState))
                 {
+                    // RACE CONDITION PREVENTION: Skip remote detection if we're currently changing this profile's state
+                    // This prevents false triggers when Mirror mode reads stale global variables during state transitions
+                    if (_currentOperation != null && 
+                        (_currentOperation == $"START:{name}" || _currentOperation == $"END:{name}"))
+                    {
+                        adapter.LogTrace($"[Sync] Skipping remote detection for '{name}' - operation in progress: {_currentOperation}");
+                        continue;
+                    }
+                    
                     string activeVarName = $"{GiveawayConstants.ProfileVarBase} {name} {GiveawayConstants.ProfileIsActiveSuffix}";
                     string activeValStr = adapter.GetGlobalVar<string>(activeVarName, true);
                     if (!string.IsNullOrEmpty(activeValStr))
@@ -3062,19 +3085,20 @@ public static class Loc
                 if (action == null) return true;
 
                 // Execute the requested action
-                if (action.Equals(GiveawayConstants.Action_MockEntry, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Enter, StringComparison.OrdinalIgnoreCase))
+                // Execute the requested action
+                if (action.Equals(GiveawayConstants.Action_Enter, StringComparison.OrdinalIgnoreCase))
                 {
                      return await HandleEntry(adapter, profileConfig, profileState, profileName);
                 }
-                else if (action.Equals(GiveawayConstants.Action_MockDraw, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Winner, StringComparison.OrdinalIgnoreCase))
+                else if (action.Equals(GiveawayConstants.Action_Winner, StringComparison.OrdinalIgnoreCase))
                 {
                      return await HandleDraw(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
                 }
-                else if (action.Equals(GiveawayConstants.Action_MockStart, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Open, StringComparison.OrdinalIgnoreCase))
+                else if (action.Equals(GiveawayConstants.Action_Open, StringComparison.OrdinalIgnoreCase))
                 {
                      return await HandleStart(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
                 }
-                else if (action.Equals(GiveawayConstants.Action_MockEnd, StringComparison.OrdinalIgnoreCase) || action.Equals(GiveawayConstants.Action_Close, StringComparison.OrdinalIgnoreCase))
+                else if (action.Equals(GiveawayConstants.Action_Close, StringComparison.OrdinalIgnoreCase))
                 {
                      return await HandleEnd(adapter, profileConfig, profileState, profileName, platform ?? "Twitch");
                 }
@@ -3307,7 +3331,7 @@ public static class Loc
                 }
                 else
                 {
-                    adapter.LogVerbose($"[{profileName}] Skipped RequireFollower check for {userName} (Platform: {platform})");
+                    adapter.LogVerbose($"[{profileName}] Skipped Require Follower check for {userName} (Platform: {platform})");
                 }
             }
 
@@ -3325,7 +3349,7 @@ public static class Loc
                 }
                 else
                 {
-                     adapter.LogVerbose($"[{profileName}] Skipped RequireSubscriber check for {userName} (Platform: {platform})");
+                    adapter.LogVerbose($"[{profileName}] Skipped Require Subscriber check for {userName} (Platform: {platform})");
                 }
             }
 
@@ -3356,7 +3380,7 @@ public static class Loc
                 {
                     adapter.LogTrace($"[{profileName}] Entry rejected: Low entropy/suspicious name (User: {userName})");
                     IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
-                    if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
+                    if (config.ToastNotifications.TryGetValue("Entry Rejected", out var notify) && notify)
                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Pattern", userName));
                     return false;
                 }
@@ -3372,7 +3396,7 @@ public static class Loc
                     {
                         adapter.LogTrace($"[{profileName}] Entry rejected: Account too new ({accountAgeDays:F1} days < {config.MinAccountAgeDays} required) (User: {userName})");
                         IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
-                        if (config.ToastNotifications.TryGetValue("EntryRejected", out var notify) && notify)
+                        if (config.ToastNotifications.TryGetValue("Entry Rejected", out var notify) && notify)
                             adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Age", userName));
                         return false;
                     }
@@ -3512,6 +3536,9 @@ public static class Loc
         /// </summary>
         private async Task<bool> HandleStart(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform)
         {
+            // Track this operation to prevent false remote END detection during startup
+            _currentOperation = $"START:{profileName}";
+            
             await _lock.WaitAsync();
             try
             {
@@ -3552,11 +3579,15 @@ public static class Loc
                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Opened", profileName));
                 }
 
+                // Clear operation tracking after successful start
+                _currentOperation = null;
+                
                 return true;
             }
             catch (Exception ex)
             {
                 adapter.LogError($"[{profileName}] HandleStart Failed: {ex.Message}");
+                _currentOperation = null; // Clear on error too
                 return true;
             }
             finally { _lock.Release(); }
@@ -3569,6 +3600,9 @@ public static class Loc
         /// </summary>
         private async Task<bool> HandleEnd(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform, bool bypassAuth = false)
         {
+            // Track this operation to prevent false remote START detection during shutdown
+            _currentOperation = $"END:{profileName}";
+            
             if (!bypassAuth)
             {
                 adapter.TryGetArg<bool>("isModerator", out var isMod);
@@ -3610,11 +3644,15 @@ public static class Loc
                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Closed", profileName));
                 }
 
+                // Clear operation tracking after successful end
+                _currentOperation = null;
+                
                 return true;
             }
             catch (Exception ex)
             {
                 adapter.LogError($"[{profileName}] HandleEnd Failed: {ex.Message}");
+                _currentOperation = null; // Clear on error too
                 return true;
             }
             finally { _lock.Release(); }
@@ -4404,7 +4442,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public static bool IsManagedVariable(string name)
         {
             return name != null && (name.StartsWith(GiveawayConstants.GlobalVarPrefix, StringComparison.OrdinalIgnoreCase) ||
-                                    name.StartsWith(GiveawayConstants.LegacyGlobalVarPrefix, StringComparison.OrdinalIgnoreCase) ||
                                     // Identify all profile-related variables (Giveaway {Profile} ...)
                                     name.StartsWith(GiveawayConstants.ProfileVarBase + " {", StringComparison.OrdinalIgnoreCase));
         }
@@ -6471,17 +6508,17 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     public static class GiveawayConstants
     {
         // Metrics
-        public const string Metric_EntriesRejected = "EntriesRejected";
-        public const string Metric_EntriesRejectedCooldown = "EntriesRejectedCooldown";
-        public const string Metric_EntriesRateLimited = "EntriesRateLimited";
-        public const string Metric_EntriesTotal = "Entries_Total";
-        public const string Metric_EntriesTotalUser = "EntriesTotal";
-        public const string Metric_WinnersTotal = "WinnersTotal";
-        public const string Metric_GiveawayStarted = "Giveaway_Started";
-        public const string Metric_GiveawayEnded = "Giveaway_Ended";
-        public const string Metric_SystemErrors = "SystemErrors";
+        public const string Metric_EntriesRejected = "Entries Rejected";
+        public const string Metric_EntriesRejectedCooldown = "Entries Rejected Cooldown";
+        public const string Metric_EntriesRateLimited = "Entries Rate Limited";
+        public const string Metric_EntriesTotal = "Entries Total";
+        public const string Metric_EntriesTotalUser = "Entries Total"; // Keep consistent with Total
+        public const string Metric_WinnersTotal = "Winners Total";
+        public const string Metric_GiveawayStarted = "Giveaway Started";
+        public const string Metric_GiveawayEnded = "Giveaway Ended";
+        public const string Metric_SystemErrors = "System Errors";
         public const string GlobalStatePrefix = "Giveaway State ";
-        public const string GlobalRunMode = "Giveaway Global RunMode";
+        public const string GlobalRunMode = "Giveaway Global Run Mode";
         public const string GlobalConfig = "Giveaway Global Config";
         public const string GlobalConfigLastWrite = "Giveaway Global Config Last Write Time";
         public const string GlobalMultiPlatform = "Giveaway Global Enable Multi Platform";
@@ -6490,9 +6527,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public const string GlobalLogMaxFileSize = "Giveaway Global Log Max File Size MB";
         public const string GlobalBackupCount = "Giveaway Global Backup Count";
         public const string GlobalLogPruneProbability = "Giveaway Global Log Prune Probability";
-        public const string GlobalLogLevel = "Giveaway Global Log Level";
+        public const string GlobalLogLevel = "Giveaway Global LogLevel";
         public const string GlobalWheelApiKey = "Giveaway Global Wheel Api Key";
-        public const string LegacyWheelApiKey = "Giveaway Wheel Api Key";
         public const string GlobalWheelApiKeyStatus = "Giveaway Global Wheel Api Key Status";
 
         // Actions
@@ -6500,10 +6536,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public const string Action_Winner = "Winner";
         public const string Action_Open = "Open";
         public const string Action_Close = "Close";
-        public const string Action_MockEntry = "Entry"; // Handling legacy/aliases
-        public const string Action_MockDraw = "Draw";
-        public const string Action_MockStart = "Start";
-        public const string Action_MockEnd = "End";
 
         // Management Commands
         public const string Cmd_ConfigGen = "config gen";
@@ -6530,31 +6562,53 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public const string GlobalHealthTest = "Giveaway Health Test";
         public const string UserVarPrefix = "Giveaway User Var";
         public const string GlobalVarPrefix = "Giveaway Var";
-        public const string LegacyGlobalVarPrefix = "Giveaway Global Var";
 
         // Profile Variable Patterns
-        public const string GlobalExposeVariables = "Giveaway Global ExposeVariables";
+        public const string GlobalExposeVariables = "Giveaway Global Expose Variables";
         public const string GlobalMetricsPrefix = "Giveaway Global Metrics ";
 
         public const string ProfileVarBase = "Giveaway";
-        public const string ProfileSubLuckMultiplierSuffix = "SubLuckMultiplier";
-        public const string ProfileWinChanceSuffix = "WinChance";
-        public const string ProfileDumpFormatSuffix = "DumpFormat";
-        public const string ProfileIsActiveSuffix = "IsActive";
+        public const string ProfileSubLuckMultiplierSuffix = "Sub Luck Multiplier";
+        public const string ProfileWinChanceSuffix = "Win Chance";
+        public const string ProfileDumpFormatSuffix = "Dump Format";
+        public const string ProfileIsActiveSuffix = "Is Active";
         public const string ProfileMsgPrefix = "Msg ";
-        public const string ProfileStateBlobSuffix = "StateBlob";
+        public const string ProfileStateBlobSuffix = "State Blob";
         public const string ProfileTriggersSuffix = "Triggers";
         public const string ProfileMessagesSuffix = "Messages";
-        public const string ProfileTimerDurationSuffix = "TimerDuration";
-        public const string ProfileMaxEntriesSuffix = "MaxEntriesPerMinute";
+        public const string ProfileTimerDurationSuffix = "Timer Duration";
+        public const string ProfileMaxEntriesSuffix = "Max Entries Per Minute";
+
+        // New Constants for SyncProfileVariables
+        public const string ProfileRequireFollowerSuffix = "Require Follower";
+        public const string ProfileRequireSubscriberSuffix = "Require Subscriber";
+        public const string ProfileEnableWheelSuffix = "Enable Wheel";
+        public const string ProfileEnableObsSuffix = "Enable OBS";
+        public const string ProfileObsSceneSuffix = "Obs Scene";
+        public const string ProfileObsSourceSuffix = "Obs Source";
+        public const string ProfileWheelTitleSuffix = "Wheel Settings Title";
+        public const string ProfileWheelDescriptionSuffix = "Wheel Settings Description";
+        public const string ProfileWheelSpinTimeSuffix = "Wheel Settings Spin Time";
+        public const string ProfileWheelAutoRemoveWinnerSuffix = "Wheel Settings Auto Remove Winner";
+        public const string ProfileWheelShareModeSuffix = "Wheel Settings Share Mode";
+        public const string ProfileWheelWinnerMessageSuffix = "Wheel Settings Winner Message";
+        public const string ProfileDumpOnEndSuffix = "Dump Entries On End";
+        public const string ProfileDumpOnEntrySuffix = "Dump Entries On Entry";
+        public const string ProfileDumpThrottleSuffix = "Dump Entries On Entry Throttle Seconds";
+        public const string ProfileDumpWinnersSuffix = "Dump Winners On Draw";
+        public const string ProfileUsernameRegexSuffix = "Username Regex";
+        public const string ProfileMinAccountAgeSuffix = "Min Account Age Days";
+        public const string ProfileEnableEntropySuffix = "Enable Entropy Check";
+        public const string ProfileGameFilterSuffix = "Game Filter";
+        public const string ProfileRedemptionCooldownSuffix = "Redemption Cooldown Minutes";
 
         // Profile Internal State
-        public const string ProfileGiveawayIdSuffix = "GiveawayId";
-        public const string ProfileWinnerNameSuffix = "WinnerName";
-        public const string ProfileWinnerUserIdSuffix = "WinnerUserId";
-        public const string ProfileWinnerCountSuffix = "WinnerCount";
-        public const string ProfileCumulativeEntriesSuffix = "CumulativeEntries";
-        public const string ProfileSubEntryCountSuffix = "SubEntryCount";
+        public const string ProfileGiveawayIdSuffix = "Giveaway Id";
+        public const string ProfileWinnerNameSuffix = "Winner Name";
+        public const string ProfileWinnerUserIdSuffix = "Winner User Id";
+        public const string ProfileWinnerCountSuffix = "Winner Count";
+        public const string ProfileCumulativeEntriesSuffix = "Cumulative Entries";
+        public const string ProfileSubEntryCountSuffix = "Sub Entry Count";
     }
 
     /// <summary>
