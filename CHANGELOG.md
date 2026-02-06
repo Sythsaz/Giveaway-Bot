@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [1.5.0] - 2026-02-05
+
+### Added (v1.5.0)
+
 - Community files: CONTRIBUTING.md, CHANGELOG.md, CODE_OF_CONDUCT.md, SECURITY.md
 - Pull Request template for standardized contributions
 - GitHub Actions workflows for markdown linting and automated releases
@@ -22,10 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pre-commit Git hook** for real-time C# 8.0+ feature detection before commits
 - **VS Code workspace settings** for proper bash syntax highlighting in Git hooks
 
-### Changed
+### Changed (v1.5.0)
 
-## TODO add how variables changed
-
+- **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants` for
+  all 30+ profile variable keys.
+  - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
+  - Ensures strict consistency between the internal variable generation and the consumption logic.
+- **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names and adding dynamic timer examples.
+- **Config Instructions**: Fixed internal help text in `GiveawayBot.cs` to correctly reference `Giveaway Global WheelApiKey`.
 - Reorganized documentation from root to `/docs` folder
 - Enhanced README with badges, visual assets, and architecture overview
 - **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods and properties.
@@ -36,35 +44,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ROADMAP.md**: Added Technical Constraints section clarifying C# 7.3 is tied to Streamer.bot runtime
 - **README.md**: Added Compatibility section explaining C# 7.3 runtime requirement
 
-### Fixed
+### Fixed (v1.5.0)
 
+- **Timer Crash**: Resolved a critical issue where an empty or invalid "Timer Duration" global variable would
+  cause the bot to crash during configuration updates. Invalid values now safely disable the timer and log a warning.
 - **Metrics Bug**: Removed duplicate `IncUserMetric` call in `HandleEntry` that was double-counting user entry statistics
 - **Config Compatibility**: Restored `GlobalRunMode` constant to `"Giveaway Global RunMode"` (removed space)
   to maintain backward compatibility with existing user configurations
 - **Variable Management**: Fixed `IsManagedVariable` pattern to only match profile-specific variables
   (`"Giveaway {Profile} ..."`) instead of all variables starting with `"Giveaway "`
 
-### Infrastructure
+### Infrastructure (v1.5.0)
 
 - **Build Enforcement**: Set `LangVersion=7.3` in StreamerBot.csproj to prevent C# 8.0+ compilation
 - **Nullable Types**: Disabled nullable reference types (`Nullable=disable`) for C# 7.3 compatibility
 - **Implicit Usings**: Disabled global using directives (`ImplicitUsings=disable`) - C# 10.0 feature
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
-
-## [1.5.0] - 2026-02-05
-
-### Fixed (v1.5.0)
-
-- **Timer Crash**: Resolved a critical issue where an empty or invalid "Timer Duration" global variable would
-  cause the bot to crash during configuration updates. Invalid values now safely disable the timer and log a warning.
-
-### Changed (v1.5.0)
-
-- **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants` for
-  all 30+ profile variable keys.
-  - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
-  - Ensures strict consistency between the internal variable generation and the consumption logic.
 
 ## [1.4.2] - 2026-01-31
 

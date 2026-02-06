@@ -11,7 +11,8 @@
         "command:!start": "Open",
         "command:!end": "Close"
       },
-      "SubLuckMultiplier": 1, 
+      "SubLuckMultiplier": 1,
+      "TimerDuration": "10m",
       "EnableWheel": true,
       "WheelSettings": {
         "Title": "Main Giveaway",
@@ -32,7 +33,7 @@
       "Triggers": {
         "command:!subgiveaway": "Enter"
       },
-      "SubLuckMultiplier": 99, 
+      "SubLuckMultiplier": 99,
       "MinAccountAgeDays": 30,
       "EnableEntropyCheck": true
     }

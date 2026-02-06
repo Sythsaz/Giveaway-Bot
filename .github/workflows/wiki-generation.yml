@@ -1,0 +1,49 @@
+name: Update Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'GiveawayBot.cs'
+      - 'tools/GenerateWiki.cs'
+      - '.github/workflows/wiki-generation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-wiki:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Checkout Wiki
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ github.repository }}.wiki
+        path: wiki
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Compile Generator
+      run: |
+        cd tools
+        C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:GenerateWiki.exe GenerateWiki.cs
+
+    - name: Run Generator
+      run: |
+        .\tools\GenerateWiki.exe ".\GiveawayBot.cs" ".\wiki\API-Reference.md"
+
+    - name: Push to Wiki
+      run: |
+        cd wiki
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add .
+        git diff-index --quiet HEAD || git commit -m "Auto-update API Reference"
+        git push
