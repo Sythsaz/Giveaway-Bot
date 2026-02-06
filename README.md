@@ -41,6 +41,7 @@ All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Gi
 - **Automated Config**: Auto-Import global variables (API keys) from JSON on startup.
 - **Observability**: Real-time **OBS variables** and automated wheel spins.
 - **Wheel of Names Integration**: Seamlessly sync entries to the wheel and trigger spins.
+- **Discord Integration**: Automatically announce winners to a Discord channel (Native or Webhook).
 - **Auto-Update**: Built-in command `!giveaway update` to check for and download the latest version.
 
 ## 🚀 Quick Start
