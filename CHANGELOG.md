@@ -7,28 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **Wiki Generator**: Updated `GenerateWiki.cs` to resolve C# 5 compilation errors (removed `out var`),
-  robust parsing for `Triggers.Add` (insensitive to whitespace),
-  and enforced alphabetical sorting for stable documentation output.
-
 ## [1.5.0] - 2026-02-05
-
-### Added (v1.5.0)
-
-- Community files: CONTRIBUTING.md, CHANGELOG.md, CODE_OF_CONDUCT.md, SECURITY.md
-- Pull Request template for standardized contributions
-- GitHub Actions workflows for markdown linting and automated releases
-- **GitHub Actions workflow for C# 7.3 compatibility checks** (validates no C# 8.0+ features in PRs)
-- Comprehensive documentation reorganization into `/docs` folder
-- Architecture documentation with system diagrams
-- Developer guide for contributors
-- Example configurations covering multiple use cases
-- Visual assets: repository logo, banner, and feature mockups
-- GitHub repository topics for improved discoverability
-- **Pre-commit Git hook** for real-time C# 8.0+ feature detection before commits
-- **VS Code workspace settings** for proper bash syntax highlighting in Git hooks
 
 ### Changed (v1.5.0)
 
@@ -39,12 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names
   and adding dynamic timer examples.
 - **Config Instructions**: Fixed internal help text in `GiveawayBot.cs` to correctly reference `Giveaway Global WheelApiKey`.
-- Reorganized documentation from root to `/docs` folder
-- Enhanced README with badges, visual assets, and architecture overview
 - **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods
   and properties.
 - **Code Quality**: Enhanced `ParseBoolVariant` to return `null` for invalid inputs, improving config parsing robustness.
-- **Security**: Upgraded API key encryption to use portable, randomized salt instead of machine-bound key. Includes auto-migration.
 - **DEVELOPMENT.md**: Enhanced with three-layer C# 7.3 enforcement documentation (build-time, IDE, pre-commit)
 - **CONTRIBUTING.md**: Expanded C# 7.3 constraints section with pre-commit hook usage and common pitfalls
 - **ROADMAP.md**: Added Technical Constraints section clarifying C# 7.3 is tied to Streamer.bot runtime
@@ -59,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to maintain backward compatibility with existing user configurations
 - **Variable Management**: Fixed `IsManagedVariable` pattern to only match profile-specific variables
   (`"Giveaway {Profile} ..."`) instead of all variables starting with `"Giveaway "`
+- **Wiki Generator**: Updated `GenerateWiki.cs` to resolve C# 5 compilation errors (removed `out var`),
+  robust parsing for `Triggers.Add` (insensitive to whitespace),
+  and enforced alphabetical sorting for stable documentation output.
 
 ### Infrastructure (v1.5.0)
 
