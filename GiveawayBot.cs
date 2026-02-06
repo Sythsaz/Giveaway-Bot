@@ -414,6 +414,7 @@ public static class Loc
         // Tracks current state-changing operations to prevent false remote detection
         // Format: "START:ProfileName" or "END:ProfileName"
         private string _currentOperation = null;
+        private readonly object _opLock = new object();
 
         /// <summary>
         /// Helper to set a global variable only if the value has changed.
@@ -527,6 +528,30 @@ public static class Loc
                 return valMinutes * 60; // Convert minutes to seconds
 
             return null;
+        }
+
+        /// <summary>
+        /// Safely parses a duration string without throwing exceptions.
+        /// Wraps ParseDuration logic in a try-catch for robustness.
+        /// </summary>
+        public static bool TryParseDurationSafe(string durationStr, out int seconds, CPHAdapter adapter = null)
+        {
+            seconds = 0;
+            try
+            {
+                int? result = ParseDuration(durationStr);
+                if (result.HasValue)
+                {
+                    seconds = result.Value;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                adapter?.LogWarn($"[Timer] Error parsing duration '{durationStr}': {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -2587,34 +2612,28 @@ public static class Loc
                         // Dynamic Runtime Adjustment
                         if (States.TryGetValue(name, out var state) && state.IsActive && state.StartTime.HasValue)
                         {
-                        try
+                        if (TryParseDurationSafe(timerVal, out int newDurationSec, adapter) && newDurationSec > 0)
                         {
-                            int? newDurationSec = ParseDuration(timerVal);
-                            if (newDurationSec.HasValue)
-                            {
-                                // Treat new duration as "time remaining from now" (not total time from start)
-                                var newEndTime = DateTime.Now.AddSeconds(newDurationSec.Value);
-                                state.AutoCloseTime = newEndTime;
+                            // Treat new duration as "time remaining from now" (not total time from start)
+                            var newEndTime = DateTime.Now.AddSeconds(newDurationSec);
+                            state.AutoCloseTime = newEndTime;
 
-                                var remaining = newEndTime - DateTime.Now;
-                                string timeStr = $"{(int)remaining.TotalMinutes}m {(int)remaining.Seconds}s";
+                            var remaining = newEndTime - DateTime.Now;
+                            string timeStr = $"{(int)remaining.TotalMinutes}m {(int)remaining.Seconds}s";
 
-                                string msg = Loc.Get("Timer Updated", name, timeStr);
-                                // Broadcast update to chat
-                                Messenger?.SendBroadcast(adapter, msg, GlobalConfig.Globals.FallbackPlatform);
-                                adapter.LogInfo($"[Timer] Updated runtime auto-close to {newEndTime} (Ends in {timeStr})");
-                            }
-                            else
-                            {
-                                // Timer removed/invalid - Switch to manual
-                                state.AutoCloseTime = null;
-                                adapter.LogInfo($"[Timer] Runtime timer disabled (Manual close only).");
-                            }
+                            string msg = Loc.Get("Timer Updated", name, timeStr);
+                            // Broadcast update to chat
+                            Messenger?.SendBroadcast(adapter, msg, GlobalConfig.Globals.FallbackPlatform);
+                            adapter.LogInfo($"[Timer] Updated runtime auto-close to {newEndTime} (Ends in {timeStr})");
                         }
-                        catch (Exception ex)
+                        else
                         {
-                             adapter.LogWarn($"[Timer] Failed to parse duration '{timerVal}': {ex.Message}");
-                             state.AutoCloseTime = null;
+                            // Timer removed/invalid - Switch to manual
+                            state.AutoCloseTime = null;
+                            if (!string.IsNullOrWhiteSpace(timerVal))
+                                adapter.LogWarn($"[Timer] Invalid duration '{timerVal}' - disabling runtime timer.");
+                            else
+                                adapter.LogInfo($"[Timer] Runtime timer disabled (Manual close only).");
                         }
 
                         }
@@ -3537,7 +3556,7 @@ public static class Loc
         private async Task<bool> HandleStart(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform)
         {
             // Track this operation to prevent false remote END detection during startup
-            _currentOperation = $"START:{profileName}";
+            lock (_opLock) { _currentOperation = $"START:{profileName}"; }
             
             await _lock.WaitAsync();
             try
@@ -3580,14 +3599,14 @@ public static class Loc
                 }
 
                 // Clear operation tracking after successful start
-                _currentOperation = null;
+                lock (_opLock) { _currentOperation = null; }
                 
                 return true;
             }
             catch (Exception ex)
             {
                 adapter.LogError($"[{profileName}] HandleStart Failed: {ex.Message}");
-                _currentOperation = null; // Clear on error too
+                lock (_opLock) { _currentOperation = null; } // Clear on error too
                 return true;
             }
             finally { _lock.Release(); }
@@ -3601,7 +3620,7 @@ public static class Loc
         private async Task<bool> HandleEnd(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform, bool bypassAuth = false)
         {
             // Track this operation to prevent false remote START detection during shutdown
-            _currentOperation = $"END:{profileName}";
+            lock (_opLock) { _currentOperation = $"END:{profileName}"; }
             
             if (!bypassAuth)
             {
@@ -3645,14 +3664,14 @@ public static class Loc
                 }
 
                 // Clear operation tracking after successful end
-                _currentOperation = null;
+                lock (_opLock) { _currentOperation = null; }
                 
                 return true;
             }
             catch (Exception ex)
             {
                 adapter.LogError($"[{profileName}] HandleEnd Failed: {ex.Message}");
-                _currentOperation = null; // Clear on error too
+                lock (_opLock) { _currentOperation = null; } // Clear on error too
                 return true;
             }
             finally { _lock.Release(); }
@@ -6527,7 +6546,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public const string GlobalLogMaxFileSize = "Giveaway Global Log Max File Size MB";
         public const string GlobalBackupCount = "Giveaway Global Backup Count";
         public const string GlobalLogPruneProbability = "Giveaway Global Log Prune Probability";
-        public const string GlobalLogLevel = "Giveaway Global LogLevel";
+        public const string GlobalLogLevel = "Giveaway Global Log Level";
+        public const string GlobalFallbackPlatform = "Giveaway Global Fallback Platform";
         public const string GlobalWheelApiKey = "Giveaway Global Wheel Api Key";
         public const string GlobalWheelApiKeyStatus = "Giveaway Global Wheel Api Key Status";
 
