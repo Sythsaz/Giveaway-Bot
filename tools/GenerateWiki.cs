@@ -116,7 +116,7 @@ namespace WikiGenerator
                      }
                 }
                 // 3. Parse Command Triggers (e.g., Triggers.Add("command:!enter", ...))
-                else if (line.Contains("Triggers.Add(\"command:"))
+                else if (line.Contains("Triggers.Add") && line.Contains("command:"))
                 {
                      // Broaden matching for Triggers.Add to allow flexible whitespace/args
                      // e.g. Triggers.Add("command:!enter", GiveawayConstants.Action_Enter)
