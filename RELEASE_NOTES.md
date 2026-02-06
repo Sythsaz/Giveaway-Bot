@@ -1,6 +1,21 @@
-# Release Notes v1.4.3
+# Release Notes v1.5.0
 
-This release introduces **Portable Encryption**, **GDPR Compliance Tools**, and **Smart Sync Performance** optimizations.
+This release focuses on **Documentation Synchronization**, **Code Quality Refactors**, and **Infrastructure Hardening**.
+
+## [1.5.0] - 2026-02-05
+
+### Changed (v1.5.0)
+
+- **Documentation**: Fully verified and synchronized Wiki/Examples with code.
+  - **Critical Fix**: Corrected API Key variable name documentation to `Giveaway Global WheelApiKey`.
+  - **New Examples**: Added `TimerDuration` to profile examples.
+- **Code Quality**: Refactored `SyncProfileVariables` to use centralized constants, eliminating magic strings.
+- **Infrastructure**: Enforced C# 7.3 compatibility via GitHub Actions and pre-commit hooks to match Streamer.bot runtime.
+
+### Fixed (v1.5.0)
+
+- **Timer Crash**: Fixed a crash caused by invalid/empty Timer Duration variables.
+- **Config Help**: Corrected internal help text to point to the correct Global Variable name.
 
 ## [1.4.3] - 2026-02-03
 
