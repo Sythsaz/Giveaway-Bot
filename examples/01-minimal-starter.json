@@ -27,6 +27,7 @@
     "RunMode": "Mirror",
     "StatePersistenceMode": "File",
     "FallbackPlatform": "Twitch",
-    "EnabledPlatforms": ["Twitch", "YouTube"]
+    "EnabledPlatforms": ["Twitch", "YouTube"],
+    "Giveaway Global WheelApiKey": ""
   }
 }
