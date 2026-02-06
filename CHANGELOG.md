@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+## [1.5.3] - 2026-02-06
+
+### Added (v1.5.3)
+
+- **Bidirectional Config Sync (Mirror Mode)**: Profile configuration variables can now be modified directly in Streamer.bot's global variables and automatically sync back to the config file. Previously, Mirror mode only supported Config → GlobalVar sync, requiring manual config file edits for changes.
+  - All editable profile settings supported: dump options, entry requirements, luck multipliers, wheel/OBS settings, validation rules, timer duration
+  - Changes detected during lifecycle ticks (every 30 seconds) or triggered actions
+  - Comprehensive logging of detected changes at INFO level (`[Mirror] Detected external change: ...`)
+  - Automatic config file save when changes detected
+
+### Changed (v1.5.3)
+
+- **Separate GameName Dumps**: New `DumpSeparateGameNames` option creates additional `*_GameNames.txt` files containing only parsed game names/codes (e.g., `PlayerName.1234`) without usernames, making it easier to import into game APIs or reward distribution tools.
+
+## [1.5.1] - 2026-02-06
+
+### Added (v1.5.1)
+
+- **Discord Integration**: Automatically announcer winners to a Discord channel.
+- **Dual Mode Support**: Supports both **Streamer.bot Native Integration** (Channel ID) and standard **Webhooks**.
+- **Configurable Messages**: Customize the announcement message with `{winner}` placeholder via `DiscordMessage` setting.
+
 ## [1.5.0] - 2026-02-05
 
 ### Changed (v1.5.0)

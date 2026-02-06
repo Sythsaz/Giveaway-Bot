@@ -59,6 +59,7 @@ namespace StreamerBot.Tests
             await ProfileEdgeCaseTests.Run();
             await ProfileLogicTests.Run();
             await IntegrationTests.Run();
+            await SeparateGameNameDumpsTests.Run();
             await ProfileStrictnessTests.Run();
             await CoreTests.Run();
 

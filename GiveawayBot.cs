@@ -40,6 +40,7 @@
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable IDE0028 // Duplicate suppression (just in case)
 
+// css_ref System.Net.Http.dll
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -55,7 +56,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -194,7 +194,7 @@ public class CPHInline
 
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
-        public const string Version = "1.5.0";
+        public const string Version = "1.5.2";
 
 
         /// <summary>
@@ -285,6 +285,7 @@ public static class Loc
             { "ToastTitle_Security", "Giveaway Bot - Security" },
             { "ToastMsg_NewEntry", "New Entry: {0}" },
             { "ToastMsg_Rejected_Pattern", "Entry Rejected: {0} (Username Pattern)" },
+            { "EntryRejected_GW2Pattern", "Sorry @{0}, please include your Guild Wars 2 account name (Format: Name.1234)" },
             { "ToastMsg_Rejected_Age", "Entry Rejected: {0} (Account Too New)" },
             { "ToastMsg_SpamDetected", "⚠ SPAM DETECTED: {0} (Rate Limit)" },
             { "ToastMsg_Opened", "Giveaway '{0}' is OPEN!" },
@@ -377,7 +378,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.0"; // Semantic Versioning
+        public const string Version = "1.5.2"; // Semantic Versioning
 
         // ==================== Instance Fields ====================
 
@@ -1522,47 +1523,62 @@ public static class Loc
 
 
         /// <summary>
-        /// Validates username against configured regex pattern (if enabled).
-        /// Returns true if username is INVALID (should be rejected).
-        /// Includes 100ms timeout protection against ReDoS (Regular Expression Denial of Service) attacks.
+        /// Validates username OR entry input against configured regex pattern.
+        /// Returns true if INVALID (should be rejected).
+        /// Supports dual-check: If userName matches, it's valid. If not, checks gameNameInput.
         /// </summary>
-        /// <param name="username">Username to validate</param>
-        /// <param name="config">Profile configuration containing UsernameRegex</param>
-        /// <param name="adapter">CPH adapter for logging</param>
-        /// <returns>True if username is INVALID (reject entry), False if valid or validation disabled</returns>
-        private bool IsUsernameRegexInvalid(string username, GiveawayProfileConfig config, CPHAdapter adapter)
+        /// <returns>True if INVALID (reject), False if Valid (allow)</returns>
+        private bool IsEntryNameInvalid(string userName, string gameNameInput, GiveawayProfileConfig config, CPHAdapter adapter, out string validName)
         {
+            validName = userName; // Default to userName
             if (string.IsNullOrEmpty(config.UsernameRegex))
-                return false; // Validation disabled
+            {
+                // Validation disabled, but still capture explicit input if provided
+                if (!string.IsNullOrEmpty(gameNameInput)) validName = gameNameInput;
+                return false; 
+            }
 
             try
             {
-                // Recompile regex only if pattern changed (performance optimization)
+                // Recompile regex only if pattern changed
                 if (_usernameRegex == null || _lastUsernamePattern != config.UsernameRegex)
                 {
                     _usernameRegex = new Regex(config.UsernameRegex, RegexOptions.None, TimeSpan.FromMilliseconds(GlobalConfig.Globals.RegexTimeoutMs));
                     _lastUsernamePattern = config.UsernameRegex;
-                    adapter.LogTrace($"[Validation] Compiled new username regex pattern: '{config.UsernameRegex}'");
+                    adapter.LogTrace($"[Validation] Compiled new regex pattern: '{config.UsernameRegex}'");
                 }
 
-                if (!_usernameRegex.IsMatch(username))
+                // CHECK 1: Twitch Username
+                if (_usernameRegex.IsMatch(userName))
                 {
-                    adapter.LogTrace($"[Validation] Username '{username}' rejected: Does not match pattern '{config.UsernameRegex}'");
-                    return true; // INVALID - reject
+                    // Valid Twitch Name
+                    return false;
                 }
 
-                return false; // Valid - allow
+                // CHECK 2: Input Argument (Game Name)
+                if (!string.IsNullOrEmpty(gameNameInput))
+                {
+                    if (_usernameRegex.IsMatch(gameNameInput))
+                    {
+                        validName = gameNameInput; // Use the game name
+                        return false; 
+                    }
+                }
+
+                // Both failed
+                adapter.LogTrace($"[Validation] Entry rejected: '{userName}' (and input '{gameNameInput}') did not match pattern '{config.UsernameRegex}'");
+                return true; 
             }
             catch (RegexMatchTimeoutException)
             {
-                adapter.LogError($"[Validation] Regex timeout (potential ReDoS): '{config.UsernameRegex}'");
+                adapter.LogError($"[Validation] Regex timeout: '{config.UsernameRegex}'");
                 IncGlobalMetric(adapter, "Validation_RegexTimeouts");
-                return false; // Fail-open on timeout (security > strictness)
+                return false; // Fail-open
             }
             catch (ArgumentException ex)
             {
-                adapter.LogError($"[Validation] Invalid regex pattern: '{config.UsernameRegex}' - {ex.Message}");
-                return false; // Fail-open on invalid regex
+                adapter.LogError($"[Validation] Invalid regex: '{config.UsernameRegex}' - {ex.Message}");
+                return false; // Fail-open
             }
         }
 
@@ -1578,25 +1594,23 @@ public static class Loc
         /// </summary>
         /// <param name="adapter">CPH adapter instance.</param>
         /// <param name="u">The user's ID (e.g., Twitch User ID).</param>
-        /// <param name="userName">The user's display name.</param>
-        /// <param name="n">Metric key suffix (e.g., "EntriesTotal", "WinsTotal").</param>
-        /// <param name="d">Amount to increment (default: 1).</param>
-        private void IncUserMetric(CPHAdapter adapter, string u, string userName, string n, long d = 1)
+        /// Increments a metric for a specific user.
+        /// </summary>
+        private void IncUserMetric(CPHAdapter adapter, string userId, string userName, string metricKey, string gameName = null)
         {
-            var v = adapter.GetUserVar<long>(u, $"Giveaway User Metrics {n}", true);
-            var newVal = v + d;
-            adapter.SetUserVar(u, $"Giveaway User Metrics {n}", newVal, true);
-
             if (_cachedMetrics != null)
             {
-                if (!_cachedMetrics.UserMetrics.TryGetValue(u, out var userSet))
+                if (!_cachedMetrics.UserMetrics.TryGetValue(userId, out var uMetric))
                 {
-                    userSet = new UserMetricSet { UserName = userName };
-                    _cachedMetrics.UserMetrics[u] = userSet;
+                    uMetric = new UserMetricSet { UserName = userName, GameName = gameName };
+                    _cachedMetrics.UserMetrics[userId] = uMetric;
                 }
-                userSet.UserName = userName; // Keep it fresh
-                userSet.Metrics[n] = newVal;
-                _cachedMetrics.LastUpdated = DateTime.Now;
+                
+                // Update Name/GameName if provided, just in case they changed
+                if (!string.IsNullOrEmpty(gameName)) uMetric.GameName = gameName;
+
+                if (!uMetric.Metrics.ContainsKey(metricKey)) uMetric.Metrics[metricKey] = 0;
+                uMetric.Metrics[metricKey]++;
             }
         }
 
@@ -1840,6 +1854,10 @@ public static class Loc
         if (isMirror || (overrideVal ?? globals.ExposeVariables ?? config.ExposeVariables))
         {
             adapter.LogDebug($"[DEBUG] Entering Sync Block for {profileName}");
+            
+            // Track if config needs to be saved (Mirror mode only)
+            bool configDirty = false;
+            
             // --- Helper for Variables with Help Text Defaults ---
             void SyncVar(string keySuffix, object value, object defaultValue, string helpText)
             {
@@ -1859,6 +1877,66 @@ public static class Loc
                 else
                 {
                     SetGlobalVarIfChanged(adapter, fullKey, value ?? "", true);
+                }
+            }
+            
+            // --- Helper for Bidirectional Sync (Mirror Mode) ---
+            // Reads a variable back and returns the updated value if changed externally
+            T CheckVarChange<T>(string keySuffix, T currentValue, T defaultValue, Func<string, T> parser = null)
+            {
+                if (!isMirror) return currentValue; // Only in Mirror mode
+                
+                string fullKey = $"{GiveawayConstants.ProfileVarBase} {profileName} {keySuffix}";
+                string rawValue = adapter.GetGlobalVar<string>(fullKey, true);
+                
+                if (string.IsNullOrEmpty(rawValue)) return currentValue; // No value set
+                
+                try
+                {
+                    T parsedValue;
+                    if (parser != null)
+                    {
+                        parsedValue = parser(rawValue);
+                    }
+                    else if (typeof(T) == typeof(bool))
+                    {
+                        bool? boolVal = ParseBoolVariant(rawValue);
+                        if (!boolVal.HasValue) return currentValue;
+                        parsedValue = (T)(object)boolVal.Value;
+                    }
+                    else if (typeof(T) == typeof(int))
+                    {
+                        if (!int.TryParse(rawValue, out int intVal)) return currentValue;
+                        parsedValue = (T)(object)intVal;
+                    }
+                    else if (typeof(T) == typeof(decimal))
+                    {
+                        if (!decimal.TryParse(rawValue, out decimal decVal)) return currentValue;
+                        parsedValue = (T)(object)decVal;
+                    }
+                    else if (typeof(T) == typeof(string))
+                    {
+                        parsedValue = (T)(object)rawValue;
+                    }
+                    else
+                    {
+                        return currentValue; // Unsupported type
+                    }
+                    
+                    // Check if value changed
+                    if (!EqualityComparer<T>.Default.Equals(currentValue, parsedValue))
+                    {
+                        adapter.LogInfo($"[Mirror] Detected external change: {fullKey} = '{parsedValue}' (was '{currentValue}')");
+                        configDirty = true;
+                        return parsedValue;
+                    }
+                    
+                    return currentValue;
+                }
+                catch (Exception ex)
+                {
+                    adapter.LogWarn($"[Mirror] Failed to parse variable {fullKey}: {ex.Message}");
+                    return currentValue;
                 }
             }
 
@@ -1907,6 +1985,7 @@ public static class Loc
             SyncVar(GiveawayConstants.ProfileDumpOnEntrySuffix, config.DumpEntriesOnEntry, false, "Dump on new entry? (True/False)");
             SyncVar(GiveawayConstants.ProfileDumpThrottleSuffix, config.DumpEntriesOnEntryThrottleSeconds, 5, "Enter throttle in seconds (Default: 5)");
             SyncVar(GiveawayConstants.ProfileDumpWinnersSuffix, config.DumpWinnersOnDraw, false, "Dump when winner drawn? (True/False)");
+            SyncVar(GiveawayConstants.ProfileDumpSeparateGameNamesSuffix, config.DumpSeparateGameNames, false, "Dump separate game names? (True/False)");
 
             // Entry Validation
             SyncVar(GiveawayConstants.ProfileUsernameRegexSuffix, config.UsernameRegex, null, "Enter Regex for username validation");
@@ -1921,8 +2000,60 @@ public static class Loc
             {
                 adapter.Logger?.LogTrace(adapter, profileName, $"Syncing {profileName} config variables...");
             }
+            
+            // --- Bidirectional Sync: Apply Variable Changes to Config (Mirror Mode Only) ---
+            if (isMirror)
+            {
+                // Read back config variables and detect external changes
+                config.DumpSeparateGameNames = CheckVarChange(GiveawayConstants.ProfileDumpSeparateGameNamesSuffix, config.DumpSeparateGameNames, false);
+                config.DumpEntriesOnEnd = CheckVarChange(GiveawayConstants.ProfileDumpOnEndSuffix, config.DumpEntriesOnEnd, false);
+                config.DumpEntriesOnEntry = CheckVarChange(GiveawayConstants.ProfileDumpOnEntrySuffix, config.DumpEntriesOnEntry, false);
+                config.DumpWinnersOnDraw = CheckVarChange(GiveawayConstants.ProfileDumpWinnersSuffix, config.DumpWinnersOnDraw, false);
+                config.DumpEntriesOnEntryThrottleSeconds = CheckVarChange(GiveawayConstants.ProfileDumpThrottleSuffix, config.DumpEntriesOnEntryThrottleSeconds, 5);
+                config.RequireFollower = CheckVarChange(GiveawayConstants.ProfileRequireFollowerSuffix, config.RequireFollower, false);
+                config.RequireSubscriber = CheckVarChange(GiveawayConstants.ProfileRequireSubscriberSuffix, config.RequireSubscriber, false);
+                config.SubLuckMultiplier = CheckVarChange(GiveawayConstants.ProfileSubLuckMultiplierSuffix, config.SubLuckMultiplier, 1.0m);
+                config.EnableWheel = CheckVarChange(GiveawayConstants.ProfileEnableWheelSuffix, config.EnableWheel, false);
+                config.EnableObs = CheckVarChange(GiveawayConstants.ProfileEnableObsSuffix, config.EnableObs, false);
+                config.EnableEntropyCheck = CheckVarChange(GiveawayConstants.ProfileEnableEntropySuffix, config.EnableEntropyCheck, true);
+                config.WinChance = CheckVarChange(GiveawayConstants.ProfileWinChanceSuffix, config.WinChance, 1.0);
+                config.MaxEntriesPerMinute = CheckVarChange(GiveawayConstants.ProfileMaxEntriesSuffix, config.MaxEntriesPerMinute, 0);
+                config.MinAccountAgeDays = CheckVarChange(GiveawayConstants.ProfileMinAccountAgeSuffix, config.MinAccountAgeDays, 0);
+                config.RedemptionCooldownMinutes = CheckVarChange(GiveawayConstants.ProfileRedemptionCooldownSuffix, config.RedemptionCooldownMinutes, 0);
+                
+                // String fields
+                config.TimerDuration = CheckVarChange(GiveawayConstants.ProfileTimerDurationSuffix, config.TimerDuration, (string)null);
+                config.ObsScene = CheckVarChange(GiveawayConstants.ProfileObsSceneSuffix, config.ObsScene, (string)null);
+                config.ObsSource = CheckVarChange(GiveawayConstants.ProfileObsSourceSuffix, config.ObsSource, (string)null);
+                config.UsernameRegex = CheckVarChange(GiveawayConstants.ProfileUsernameRegexSuffix, config.UsernameRegex, (string)null);
+                config.GameFilter = CheckVarChange(GiveawayConstants.ProfileGameFilterSuffix, config.GameFilter, (string)null);
+                
+                // Wheel settings
+                if (config.WheelSettings != null)
+                {
+                    config.WheelSettings.Title = CheckVarChange(GiveawayConstants.ProfileWheelTitleSuffix, config.WheelSettings.Title, (string)null);
+                    config.WheelSettings.Description = CheckVarChange(GiveawayConstants.ProfileWheelDescriptionSuffix, config.WheelSettings.Description, (string)null);
+                    config.WheelSettings.SpinTime = CheckVarChange(GiveawayConstants.ProfileWheelSpinTimeSuffix, config.WheelSettings.SpinTime, 10000);
+                    config.WheelSettings.AutoRemoveWinner = CheckVarChange(GiveawayConstants.ProfileWheelAutoRemoveWinnerSuffix, config.WheelSettings.AutoRemoveWinner, false);
+                    config.WheelSettings.ShareMode = CheckVarChange(GiveawayConstants.ProfileWheelShareModeSuffix, config.WheelSettings.ShareMode, (string)null);
+                    config.WheelSettings.WinnerMessage = CheckVarChange(GiveawayConstants.ProfileWheelWinnerMessageSuffix, config.WheelSettings.WinnerMessage, (string)null);
+                }
+                
+                // If config changed, save it
+                if (configDirty)
+                {
+                    adapter.LogInfo($"[Mirror] Config changes detected for '{profileName}'. Saving to disk and GlobalVar...");
+                    // Get the full config - we already have it in GlobalConfig
+                    var fullConfig = GlobalConfig;
+                    // Ensure the updated config object is assigned
+                    fullConfig.Profiles[profileName] = config;
+                    string json = JsonConvert.SerializeObject(fullConfig, Formatting.Indented);
+                    var configLoader = new ConfigLoader();
+                    configLoader.WriteConfigTextAsync(adapter, json).Wait(); // Sync call acceptable here
+                }
+            }
         }
-
+        
         adapter.Logger?.LogTrace(adapter, profileName, $"Sync Complete: {profileName} (Entries: {state.Entries.Count}, Active: {state.IsActive}, Sub Luck: {config.SubLuckMultiplier})");
     }
 
@@ -3296,9 +3427,35 @@ public static class Loc
             // We need this early for platform-specific validation (e.g. Followers)
             string platform = "Twitch";
             if (adapter.TryGetArg<string>("platform", out var detectedPlatform) && !string.IsNullOrEmpty(detectedPlatform))
-            {
                 platform = detectedPlatform;
+
+
+            // Username/GameName Pattern Check
+            // Extract arguments as potential Game Name
+            string gameNameInput = null;
+            if (adapter.TryGetArg<string>("rawInput", out var rawInput) && !string.IsNullOrEmpty(rawInput))
+            {
+                // Simple heuristic: Take everything after first space if it starts with !
+                var parts = rawInput.Split(new[] { ' ' }, 2);
+                if (parts.Length > 1) gameNameInput = parts[1].Trim();
+                else if (!rawInput.StartsWith("!")) gameNameInput = rawInput.Trim(); // Just text
             }
+
+            string validName = userName;
+            string finalEntryName = userName; // Default
+            
+            // Perform Regex Validation (if configured)
+            if (IsEntryNameInvalid(userName, gameNameInput, config, adapter, out validName))
+            {
+                IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                
+                if (config.ToastNotifications.TryGetValue("Entry Rejected", out var notify) && notify)
+                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Pattern", userName));
+                
+                Messenger?.SendReply(adapter, Loc.Get("EntryRejected_GW2Pattern", userName), platform, userName);
+                return true; // Reject and return
+            }
+            finalEntryName = validName;
 
             // Separate validation logic to helper method to reduce complexity
             if (!ValidateEntryRequest(adapter, config, state, profileName, userId, userName, platform))
@@ -3338,6 +3495,7 @@ public static class Loc
                 {
                     UserId = userId,
                     UserName = userName,
+                    GameName = finalEntryName != userName ? finalEntryName : null,
                     IsSub = isSub,
                     EntryTime = DateTime.Now,
                     TicketCount = tickets
@@ -3372,7 +3530,7 @@ public static class Loc
                 IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesTotal);
                 adapter.LogInfo($"[{profileName}] Accepted: {userName} (Tickets: {tickets})");
 
-                IncUserMetric(adapter, userId, userName, GiveawayConstants.Metric_EntriesTotalUser);
+                IncUserMetric(adapter, userId, userName, GiveawayConstants.Metric_EntriesTotalUser, state.Entries[userId].GameName);
 
                 // Platform is already resolved at start of method
 
@@ -3503,12 +3661,41 @@ public static class Loc
                 return false;
             }
 
-            // Username Pattern Check
-            if (IsUsernameRegexInvalid(userName, config, adapter))
+            // Username/GameName Pattern Check
+            // Extract arguments as potential Game Name
+            string gameNameInput = null;
+            if (adapter.TryGetArg<string>("rawInput", out var rawInput) && !string.IsNullOrEmpty(rawInput))
+            {
+                // Remove !command if present (simple heuristic, though rawInput usually contains just args in some SB versions, check !enter)
+                // Actually CPH 'rawInput' is usually the full message. 'input0' is first arg.
+                // Let's rely on 'rawInput' and strip the command if it starts with it.
+                // Or safely, just check 'input0', 'input1' etc? 
+                // Best: Use 'rawInput' but trim command.
+                // However, TriggerInspector has already run.
+                
+                // Let's assume rawInput might contain the command.
+                // But simplified: Just take everything after the first space if it starts with !
+                var parts = rawInput.Split(new[] { ' ' }, 2);
+                if (parts.Length > 1) gameNameInput = parts[1].Trim();
+                else if (!rawInput.StartsWith("!")) gameNameInput = rawInput.Trim(); // Just text
+            }
+
+            string validName = userName;
+            if (IsEntryNameInvalid(userName, gameNameInput, config, adapter, out validName))
             {
                 IncGlobalMetric(adapter, GiveawayConstants.Metric_EntriesRejected);
+                
+                // Notify User
+                if (config.ToastNotifications.TryGetValue("Entry Rejected", out var notify) && notify)
+                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("ToastMsg_Rejected_Pattern", userName));
+                
+                Messenger?.SendReply(adapter, Loc.Get("EntryRejected_GW2Pattern", userName), platform, userName); // Reply is safe?
+                // Note: SendReply might cause loop if not careful, but it's a rejection.
+
                 return false;
             }
+            // Capture the validated name (Game Name OR User Name) for storage
+            string finalEntryName = validName;
 
             // Entropy Check
             if (config.EnableEntropyCheck)
@@ -3635,7 +3822,7 @@ public static class Loc
                 var winnerEntry = state.Entries.Values.FirstOrDefault(e => e.UserName == winnerName);
                 if (winnerEntry != null && winnerEntry.UserId != null)
                 {
-                    IncUserMetric(adapter, winnerEntry.UserId, winnerEntry.UserName ?? "Unknown", "WinsTotal");
+                    IncUserMetric(adapter, winnerEntry.UserId, winnerEntry.UserName ?? "Unknown", "WinsTotal", winnerEntry.GameName);
                     state.LastWinnerName = winnerEntry.UserName;
                     state.LastWinnerUserId = winnerEntry.UserId;
                     state.WinnerCount++;
@@ -3660,8 +3847,10 @@ public static class Loc
                     }
                 }
 
+
+
                 // Winner message handled by EventBus subscribers
-                if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config);
+                if (config.DumpWinnersOnDraw) await DumpWinnersAsync(adapter, profileName, pool, config, state);
                 PersistenceService.SaveState(adapter, profileName, state, GlobalConfig.Globals, true);
                 SyncProfileVariables(adapter, profileName, config, state, GlobalConfig.Globals);
                 return true;
@@ -3825,7 +4014,8 @@ public static class Loc
         /// <param name="profileName">Name of the profile (used for directory structure).</param>
         /// <param name="pool">List of winner usernames.</param>
         /// <param name="config">Profile configuration determining the output format.</param>
-        private static async Task DumpWinnersAsync(CPHAdapter adapter, string profileName, List<string> pool, GiveawayProfileConfig config)
+        /// <param name="state">Giveaway state to lookup extra entry details (like GameName).</param>
+        private static async Task DumpWinnersAsync(CPHAdapter adapter, string profileName, List<string> pool, GiveawayProfileConfig config, GiveawayState state = null)
         {
             try
             {
@@ -3847,19 +4037,41 @@ public static class Loc
                     }
                     else if (fmt == DumpFormat.CSV)
                     {
-                        await writer.WriteLineAsync("Username").ConfigureAwait(false);
-                        foreach (var winner in pool.Distinct())
+                        await writer.WriteLineAsync("Username,GameName").ConfigureAwait(false);
+                        foreach (var winnerName in pool.Distinct())
                         {
+                            var entry = state?.Entries.Values.FirstOrDefault(e => e.UserName == winnerName);
+                            var gameName = entry?.GameName ?? "";
+                            
                             // Escape commas if needed (simple implementation)
-                            var escaped = winner.Contains(",") ? $"\"{winner}\"" : winner;
-                            await writer.WriteLineAsync(escaped).ConfigureAwait(false);
+                            var escapedName = winnerName.Contains(",") ? $"\"{winnerName}\"" : winnerName;
+                            var escapedGame = gameName.Contains(",") ? $"\"{gameName}\"" : gameName;
+                            
+                            await writer.WriteLineAsync($"{escapedName},{escapedGame}").ConfigureAwait(false);
                         }
                     }
                     else // TXT
                     {
-                        foreach (var winner in pool.Distinct())
+                        foreach (var winnerName in pool.Distinct())
                         {
-                            await writer.WriteLineAsync(winner).ConfigureAwait(false);
+                            var entry = state?.Entries.Values.FirstOrDefault(e => e.UserName == winnerName);
+                            var gameNameDisplay = !string.IsNullOrEmpty(entry?.GameName) ? $" [{entry.GameName}]" : "";
+                            await writer.WriteLineAsync($"{winnerName}{gameNameDisplay}").ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                // Generate separate GameNames file if enabled
+                if (config?.DumpSeparateGameNames == true)
+                {
+                    var gameNamesPath = Path.Combine(dir, $"{DateTime.Now:yyyyMMdd_HHmm}_Winners_GameNames.txt");
+                    using (var writer = new System.IO.StreamWriter(gameNamesPath, false))
+                    {
+                        foreach (var winnerName in pool.Distinct())
+                        {
+                            var entry = state?.Entries.Values.FirstOrDefault(e => e.UserName == winnerName);
+                            var displayName = !string.IsNullOrEmpty(entry?.GameName) ? entry.GameName : winnerName;
+                            await writer.WriteLineAsync(displayName).ConfigureAwait(false);
                         }
                     }
                 }
@@ -3905,13 +4117,16 @@ public static class Loc
                     }
                     else if (fmt == DumpFormat.CSV)
                     {
-                        await writer.WriteLineAsync("UserId,Username,IsSub,TicketCount,EntryTime").ConfigureAwait(false);
+                        await writer.WriteLineAsync("UserId,Username,GameName,IsSub,TicketCount,EntryTime").ConfigureAwait(false);
                         foreach (var entry in state.Entries.Values)
                         {
                             var safeUser = entry.UserName.Replace("\"", "\"\"");
                             if (safeUser.Contains(",")) safeUser = $"\"{safeUser}\"";
 
-                            var line = $"{entry.UserId},{safeUser},{entry.IsSub},{entry.TicketCount},{entry.EntryTime:O}";
+                            var safeGame = (entry.GameName ?? "").Replace("\"", "\"\"");
+                            if (safeGame.Contains(",")) safeGame = $"\"{safeGame}\"";
+
+                            var line = $"{entry.UserId},{safeUser},{safeGame},{entry.IsSub},{entry.TicketCount},{entry.EntryTime:O}";
                             await writer.WriteLineAsync(line).ConfigureAwait(false);
                         }
                     }
@@ -3919,8 +4134,23 @@ public static class Loc
                     {
                         foreach (var entry in state.Entries.Values)
                         {
-                            var line = $"{entry.UserName} ({entry.UserId}) - Tickets: {entry.TicketCount}";
+                            var gameNameDisplay = !string.IsNullOrEmpty(entry.GameName) ? $" [{entry.GameName}]" : "";
+                            var line = $"{entry.UserName} ({entry.UserId}){gameNameDisplay} - Tickets: {entry.TicketCount}";
                             await writer.WriteLineAsync(line).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                // Generate separate GameNames file if enabled
+                if (config?.DumpSeparateGameNames == true)
+                {
+                    var gameNamesPath = Path.Combine(dir, $"{DateTime.Now:yyyyMMdd_HHmm}_Entries_GameNames.txt");
+                    using (var writer = new System.IO.StreamWriter(gameNamesPath, false))
+                    {
+                        foreach (var entry in state.Entries.Values)
+                        {
+                            var displayName = !string.IsNullOrEmpty(entry.GameName) ? entry.GameName : entry.UserName;
+                            await writer.WriteLineAsync(displayName).ConfigureAwait(false);
                         }
                     }
                 }
@@ -4412,6 +4642,12 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     /// Data transfer object holding the results of a trigger identification.
     /// Indicates which profile and action should be executed.
     /// </summary>
+
+
+    /// <summary>
+    /// Data transfer object holding the results of a trigger identification.
+    /// Indicates which profile and action should be executed.
+    /// </summary>
     public class TriggerResult
     {
         public string Profile { get; set; }
@@ -4551,6 +4787,13 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         private readonly Type _t;
         public FileLogger Logger { get; set; }
 
+        // Developer Controls
+        /// <summary>
+        /// Controls whether GetGlobalVar calls are logged to TRACE.
+        /// Useful to disable for reducing log spam while keeping other reflection logs.
+        /// </summary>
+        private const bool LogReflectionGetGlobalVar = false;
+        //TODO: Docs
         private readonly HashSet<string> _touchedGlobalVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 
@@ -4788,7 +5031,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
                 // Explicitly check LogLevel to ensure suppression even if Logger doesn't filter correctly
                 bool isTrace = string.Equals(GiveawayManager.StaticConfig?.Globals?.LogLevel, "TRACE", StringComparison.OrdinalIgnoreCase);
-                if (isTrace) Logger?.LogTrace(this, "Reflect", $"GetGlobalVar<{typeof(T).Name}>('{n}', {p}) => {val}");
+#pragma warning disable CS0162 // Unreachable code detected
+                if (isTrace && LogReflectionGetGlobalVar) Logger?.LogTrace(this, "Reflect", $"GetGlobalVar<{typeof(T).Name}>('{n}', {p}) => {val}");
+#pragma warning restore CS0162 // Unreachable code detected
 
                 return val;
             }
@@ -4800,7 +5045,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     var m = GetGenericMethod("GetGlobalVar", 2)?.MakeGenericMethod(typeof(T));
                     var res = m?.Invoke(_cph, new object[] { n, p });
                     var val = res == null ? default(T) : (T)res;
-                    Logger?.LogTrace(this, "Reflect", $"GetGlobalVar<{typeof(T).Name}>('{n}', {p}) => {val} (Fallback)");
+#pragma warning disable CS0162 // Unreachable code detected
+                    if (LogReflectionGetGlobalVar) Logger?.LogTrace(this, "Reflect", $"GetGlobalVar<{typeof(T).Name}>('{n}', {p}) => {val} (Fallback)");
+#pragma warning restore CS0162 // Unreachable code detected
                     Logger?.LogError(this, "Reflect", $"GetGlobalVar Exception: {ex.Message}");
                     return val;
                 }
@@ -4941,6 +5188,17 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             // Do not randomize here.
             string msg = m.EndsWith(GiveawayManager.ANTI_LOOP_TOKEN) ? m : m + GiveawayManager.ANTI_LOOP_TOKEN;
             InvokeSafe("SendKickMessage", new object[] { msg }, 1);
+        }
+
+        /// <summary>
+        /// Sends a message to a Discord channel via Streamer.bot integration.
+        /// </summary>
+        /// <param name="channelId">The Discord Channel ID.</param>
+        /// <param name="message">The message to send.</param>
+        public void DiscordSendMessage(string channelId, string message)
+        {
+            // Native SB method: void DiscordSendMessage(string channelId, string message, bool tts = false);
+            InvokeSafe("DiscordSendMessage", new object[] { channelId, message, false }, 3);
         }
 
         /// <summary>
@@ -6855,6 +7113,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public const string ProfileDumpOnEntrySuffix = "Dump Entries On Entry";
         public const string ProfileDumpThrottleSuffix = "Dump Entries On Entry Throttle Seconds";
         public const string ProfileDumpWinnersSuffix = "Dump Winners On Draw";
+        public const string ProfileDumpSeparateGameNamesSuffix = "Dump Separate Game Names";
         public const string ProfileUsernameRegexSuffix = "Username Regex";
         public const string ProfileMinAccountAgeSuffix = "Min Account Age Days";
         public const string ProfileEnableEntropySuffix = "Enable Entropy Check";
@@ -7101,8 +7360,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>Window size for spam detection in seconds.</summary>
         public int SpamWindowSeconds { get; set; } = 60;
 
-
-
         [JsonExtensionData] public Dictionary<string, object> ExtensionData { get; set; }
     }
     /// <summary>
@@ -7155,6 +7412,25 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
         /// <summary>Enable Wheel of Names integration.</summary>
         public bool EnableWheel { get; set; } = false;
+
+        [JsonProperty("_discord_help")] public string DiscordHelp { get; set; } = "Configure Discord notifications. Use WebhookUrl OR ChannelId (Native). Native takes priority.";
+
+        /// <summary>
+        /// Optional: Discord Webhook URL for winner announcements.
+        /// </summary>
+        public string DiscordWebhookUrl { get; set; }
+
+        /// <summary>
+        /// Optional: Streamer.bot Discord Channel ID for native announcements.
+        /// Note: Requires the bot to be connected to Discord in Streamer.bot settings.
+        /// </summary>
+        public string DiscordChannelId { get; set; }
+
+        /// <summary>
+        /// Optional: Custom message for Discord announcements.
+        /// Supports placeholders like {winner}.
+        /// </summary>
+        public string DiscordMessage { get; set; } = "Congratulations {winner}!";
         /// <summary>Enable OBS Browser Source control.</summary>
         public bool EnableObs { get; set; } = false;
         /// <summary>OBS Scene name for the wheel source.</summary>
@@ -7186,6 +7462,12 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
         /// <summary>Dump winner details to file on draw.</summary>
         public bool DumpWinnersOnDraw { get; set; } = true;
+
+        /// <summary>
+        /// If true, generates a separate content-only file for winners/entries containing just the GameName (or UserName).
+        /// Useful for copy-pasting into game clients.
+        /// </summary>
+        public bool DumpSeparateGameNames { get; set; } = false;
 
         [JsonProperty("_luck_help")] public string LuckHelp { get; set; } = "SubLuckMultiplier: Bonus tickets for subs (e.g. 2.0 = 2x tickets). WinChance: Probability (0.0-1.0) that ANY entry is accepted (Gatekeeper).";
 
@@ -7365,6 +7647,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public string UserId { get; set; }
         /// <summary>Display Name.</summary>
         public string UserName { get; set; }
+        /// <summary>Optional: In-Game Name or other input provided at entry time.</summary>
+        public string GameName { get; set; }
         /// <summary>True if user is a subscriber.</summary>
         public bool IsSub { get; set; }
         /// <summary>Time of entry.</summary>
@@ -7806,6 +8090,23 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                  {
                      SendBroadcast(evt.Adapter, msg, evt.Source);
                  }
+
+                 // --- Discord Integration ---
+                 // Priority: Native (Channel ID) > Webhook
+                 if (!string.IsNullOrEmpty(config.DiscordChannelId) || !string.IsNullOrEmpty(config.DiscordWebhookUrl))
+                 {
+                     string discordMsg = config.DiscordMessage?.Replace("{winner}", evt.Winner.UserName) 
+                                         ?? $"Congratulations {evt.Winner.UserName}!";
+                     
+                     if (!string.IsNullOrEmpty(config.DiscordChannelId))
+                     {
+                         SendDiscordNative(evt.Adapter, config.DiscordChannelId, discordMsg);
+                     }
+                     else if (!string.IsNullOrEmpty(config.DiscordWebhookUrl))
+                     {
+                         SendDiscordWebhook(evt.Adapter, config.DiscordWebhookUrl, discordMsg);
+                     }
+                 }
              }
         }
 
@@ -7949,7 +8250,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="platform">Target platform (Twitch, YouTube, Kick).</param>
         /// <param name="userName">Username to reply to.</param>
         /// <param name="messageId">Message ID for threaded replies (Twitch msgId).</param>
-        private void SendReply(CPHAdapter adapter, string msg, string platform, string userName, string messageId = null)
+        public void SendReply(CPHAdapter adapter, string msg, string platform, string userName, string messageId = null)
         {
             // Add anti-loop token
             string msgWithToken = msg + GiveawayManager.ANTI_LOOP_TOKEN;
@@ -7976,6 +8277,42 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             adapter.LogTrace($"[Messenger] Sending @mention reply to {userName} on {platform}");
             string replyMsg = $"@{userName} {msg}";
             SendMessageToPlatform(adapter, platform, replyMsg);
+        }
+
+        /// <summary>
+        /// Sends a message to a Discord channel via Streamer.bot native integration.
+        /// </summary>
+        private void SendDiscordNative(CPHAdapter adapter, string channelId, string message)
+        {
+            adapter.LogDebug($"[Discord] Sending Native Message to Channel {channelId}: {message}");
+            adapter.DiscordSendMessage(channelId, message);
+        }
+
+        /// <summary>
+        /// Sends a message via Discord Webhook.
+        /// </summary>
+        private void SendDiscordWebhook(CPHAdapter adapter, string webhookUrl, string message)
+        {
+            adapter.LogDebug($"[Discord] Sending Webhook to {webhookUrl}: {message}");
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    string jsonContent = Newtonsoft.Json.JsonConvert.SerializeObject(new { content = message });
+                    var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+
+                    // Blocking call to ensure delivery implies .Result
+                    var response = client.PostAsync(webhookUrl, content).Result;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        adapter.LogWarn($"[Discord] Webhook failed: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                adapter.LogError($"[Discord] Webhook exception: {ex.Message}");
+            }
         }
     }
 
@@ -8315,6 +8652,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     {
         /// <summary>The username.</summary>
         public string UserName { get; set; }
+        /// <summary>Optional: In-Game Name or other input provided at entry time.</summary>
+        public string GameName { get; set; }
         /// <summary>Key-value pairs of metrics for this user.</summary>
         public Dictionary<string, long> Metrics { get; set; } = new Dictionary<string, long>();
     }
