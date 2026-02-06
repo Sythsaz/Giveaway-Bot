@@ -118,7 +118,10 @@ namespace WikiGenerator
                 // 3. Parse Command Triggers (e.g., Triggers.Add("command:!enter", ...))
                 else if (line.Contains("Triggers.Add(\"command:"))
                 {
-                     var match = Regex.Match(line, @"Triggers\.Add\(""command:(.+?)"",\s*GiveawayConstants\.Action_(.+?)\)");
+                     // Broaden matching for Triggers.Add to allow flexible whitespace/args
+                     // e.g. Triggers.Add("command:!enter", GiveawayConstants.Action_Enter)
+                     // or   Triggers.Add( "command:!enter" , GiveawayConstants.Action_Enter, ... )
+                     var match = Regex.Match(line, @"Triggers\.Add\s*\(\s*""command:(.+?)""\s*,\s*GiveawayConstants\.Action_(.+?)\b");
                      if (match.Success)
                      {
                          items.Add(new DocItem {
@@ -356,7 +359,7 @@ namespace WikiGenerator
                 }
             }
 
-            foreach (var item in items.Where(i => i.Type == "CommandTrigger"))
+            foreach (var item in items.Where(i => i.Type == "CommandTrigger").OrderBy(i => i.Name))
             {
                 // Group by action if needed, or just list them
                 // item.Name = Action (e.g. Enter)
