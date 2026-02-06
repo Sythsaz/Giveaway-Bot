@@ -1,0 +1,155 @@
+name: Script Integrity Check
+
+on:
+  pull_request:
+    paths:
+      - "GiveawayBot.cs"
+      - ".github/workflows/script-integrity.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "GiveawayBot.cs"
+      - ".github/workflows/script-integrity.yml"
+  workflow_dispatch:
+
+jobs:
+  integrity-check:
+    name: Validate GiveawayBot.cs integrity
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Verify required top-level markers
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          script = Path("GiveawayBot.cs")
+          if not script.exists():
+            print("::error file=GiveawayBot.cs::File not found")
+            sys.exit(1)
+
+          text = script.read_text(encoding="utf-8")
+
+          required_markers = {
+            "public const string Version": r"\bpublic\s+const\s+string\s+Version\b",
+            "public bool Execute()": r"\bpublic\s+bool\s+Execute\s*\(\s*\)",
+          }
+
+          missing = [name for name, pattern in required_markers.items() if not re.search(pattern, text)]
+
+          if missing:
+            for marker in missing:
+              print(f"::error file=GiveawayBot.cs::Missing required marker: {marker}")
+            sys.exit(1)
+
+          print("✅ Required top-level markers are present.")
+          PY
+
+      - name: Size and growth alert (soft fail)
+        id: size_threshold
+        shell: bash
+        continue-on-error: true
+        env:
+          MAX_LINES: "4500"
+          MAX_BYTES: "240000"
+        run: |
+          line_count=$(wc -l < GiveawayBot.cs | tr -d ' ')
+          byte_count=$(wc -c < GiveawayBot.cs | tr -d ' ')
+
+          echo "Current line count: ${line_count}"
+          echo "Current file size: ${byte_count} bytes"
+
+          exceeded=0
+
+          if [ "$line_count" -gt "$MAX_LINES" ]; then
+            echo "::warning file=GiveawayBot.cs::Line count (${line_count}) exceeds soft threshold (${MAX_LINES})."
+            exceeded=1
+          fi
+
+          if [ "$byte_count" -gt "$MAX_BYTES" ]; then
+            echo "::warning file=GiveawayBot.cs::File size (${byte_count} bytes) exceeds soft threshold (${MAX_BYTES} bytes)."
+            exceeded=1
+          fi
+
+          {
+            echo "### GiveawayBot.cs size report"
+            echo "- Lines: ${line_count} (threshold: ${MAX_LINES})"
+            echo "- Bytes: ${byte_count} (threshold: ${MAX_BYTES})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$exceeded" -eq 1 ]; then
+            echo "Threshold exceeded (soft fail to keep visibility)."
+            exit 1
+          fi
+
+          echo "✅ GiveawayBot.cs is within soft thresholds."
+
+      - name: Enforce forbidden high-risk patterns
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          script = Path("GiveawayBot.cs")
+          text = script.read_text(encoding="utf-8")
+          lines = text.splitlines()
+
+          checks = [
+            (
+              "Hardcoded secret assignment",
+              re.compile(r'(?i)\b(?:api[_-]?key|token|secret|password|passwd)\b\s*(?:=|:)\s*["\'][^"\'\n]{8,}["\']'),
+              "Possible embedded secret detected. Prefer environment/config vars.",
+            ),
+            (
+              "Absolute file path literal",
+              re.compile(r'["\'](?:[A-Za-z]:\\[^"\'\n]+|/(?:[^"\'\n/]+/)*[^"\'\n/]+)["\']'),
+              "Absolute path literal found. Prefer relative/configured paths.",
+            ),
+            (
+              "Hardcoded localhost endpoint",
+              re.compile(r'(?i)https?://(?:localhost|127\.0\.0\.1)(?::\d+)?'),
+              "Localhost endpoint literal found. Externalize endpoint configuration.",
+            ),
+          ]
+
+          violations = []
+          for idx, line in enumerate(lines, start=1):
+            stripped = line.strip()
+            if stripped.startswith("//"):
+              continue
+            for name, pattern, message in checks:
+              if pattern.search(line):
+                violations.append((idx, name, message, stripped[:200]))
+
+          if violations:
+            for line_no, name, message, snippet in violations:
+              print(f"::error file=GiveawayBot.cs,line={line_no},title={name}::{message} -> {snippet}")
+            sys.exit(1)
+
+          print("✅ No forbidden high-risk patterns found.")
+          PY
+
+      - name: Generate SHA256 checksum artifact
+        shell: bash
+        run: |
+          mkdir -p integrity
+          sha256sum GiveawayBot.cs > integrity/GiveawayBot.cs.sha256
+          echo "✅ Wrote integrity/GiveawayBot.cs.sha256"
+
+      - name: Upload checksum artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: giveawaybot-sha256
+          path: integrity/GiveawayBot.cs.sha256
+          if-no-files-found: error
