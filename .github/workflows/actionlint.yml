@@ -18,8 +18,8 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        # v4.2.2
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e787
+        # v4
+        uses: actions/checkout@v4
 
       - name: Run actionlint
         uses: reviewdog/action-actionlint@v1
