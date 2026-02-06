@@ -454,7 +454,7 @@ namespace StreamerBot.Tests
             Console.Write("[TEST] Initial Sync: ");
             var c = new MockCPH();
             c.SetGlobalVar("Giveaway Global ExposeVariables", "true", true);
-            c.SetGlobalVar("Giveaway Global LogLevel", "INFO", true);
+            c.SetGlobalVar("Giveaway Global Log Level", "INFO", true);
             c.SetGlobalVar("Giveaway Global RunMode", "GlobalVar", true);
             c.SetGlobalVar("Giveaway Global Config", "{\"Globals\":{\"RunMode\":\"GlobalVar\",\"LogLevel\":\"debug\",\"ExposeVariables\":true},\"Profiles\":{\"Main\":{},\"Weekly\":{}}}", true);
 
@@ -466,7 +466,7 @@ namespace StreamerBot.Tests
                 if (!c.Globals.ContainsKey("Giveaway Main EntryCount")) throw new Exception("Main variables missing after Initialize!");
                 if (!c.Globals.ContainsKey("Giveaway Weekly EntryCount")) throw new Exception("Weekly variables missing after Initialize!");
                 if (!c.Globals.TryGetValue("Giveaway Global RunMode", out var rm) || rm.ToString() != "GlobalVar") throw new Exception("RunMode missing or incorrect after Initialize!");
-                if (c.Globals["Giveaway Global LogLevel"]?.ToString() != "DEBUG") throw new Exception($"LogLevel mismatch! Got: '{c.Globals["Giveaway Global LogLevel"]}'");
+                if (c.Globals["Giveaway Global Log Level"]?.ToString() != "DEBUG") throw new Exception($"LogLevel mismatch! Got: '{c.Globals["Giveaway Global Log Level"]}'");
 
                 // Test config change sync (simulating adding a profile)
                 // 1. Enable GlobalVar Mode and wait for Migration (FileSystem -> GlobalVar)
@@ -924,8 +924,8 @@ namespace StreamerBot.Tests
                 // Note: SetupWithCph sets RunMode="FileSystem"
 
                 // Set external Global Variables
-                cph.Globals["Giveaway Global LogLevel"] = "TRACE";
-                cph.Globals["Giveaway Global FallbackPlatform"] = "YouTube";
+                cph.Globals["Giveaway Global Log Level"] = "TRACE";
+                cph.Globals["Giveaway Global Fallback Platform"] = "YouTube";
 
                 // Trigger Sync via reflection
                 var checkMethod = m.GetType().GetMethod("CheckForConfigUpdates", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

@@ -52,6 +52,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **EditorConfig**: Added IDE0074 suppression for null-coalescing assignment operator suggestions
 - **Test Suite**: Removed all C# 8.0+ syntax (nullable annotations, pragmas) from test files
 
+## [1.5.0] - 2026-02-05
+
+### Fixed (v1.5.0)
+
+- **Timer Crash**: Resolved a critical issue where an empty or invalid "Timer Duration" global variable would
+  cause the bot to crash during configuration updates. Invalid values now safely disable the timer and log a warning.
+
+### Changed (v1.5.0)
+
+- **Code Quality**: Completely refactored `SyncProfileVariables` to use centralized `GiveawayConstants` for
+  all 30+ profile variable keys.
+  - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
+  - Ensures strict consistency between the internal variable generation and the consumption logic.
+
 ## [1.4.2] - 2026-01-31
 
 ### Fixed (v1.4.2)
