@@ -7,28 +7,15 @@ to the latest supported version before reporting issues.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.5.x   | :white_check_mark: |
-| 1.4.x   | :white_check_mark: |
-| < 1.4.0 | :x:                |
-
-### Support Window
-
-Security patches are provided for the **latest two minor release lines** only.
-
-- When a new minor version is released (for example, `1.6.x`), the oldest previously supported minor line
-  (for example, `1.4.x`) exits support.
-- Patch releases (`x.y.z`) are cumulative within each supported minor line.
-
-Track fixed vulnerabilities and affected versions through GitHub Security Advisories:
-
-- <https://github.com/Sythsaz/Giveaway-Bot/security/advisories>
+| 1.x.x   | :white_check_mark: |
+| < 1.0.0 | :x:                |
 
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in the Giveaway Bot, please **do not open a public issue**. Instead,
 please report it via:
 
-- **Discord**: DM `Sythsaz`
+- **Discord**: DM `Sythsaz` - Discord server: [Invite link](https://discord.gg/A7rXNaFTUX)
 
 We will acknowledge your report within 72 hours and provide an estimated timeline for investigation and resolution.
 
