@@ -2,7 +2,8 @@
 
 ## Security Section Guidance
 
-When a release contains security-relevant updates, include a dedicated `### Security` section under that release heading with:
+When a release contains security-relevant updates, include a dedicated `### Security` section under that release
+heading with:
 
 - impacted component/feature
 - severity/impact summary
