@@ -252,7 +252,6 @@ dotnet run
 4. **Run** `!giveaway system test` in chat
 5. **Test your changes** with real commands
 
-
 ## Versioning/Release process
 
 This repository uses a **single canonical version source**: the root `VERSION` file.
