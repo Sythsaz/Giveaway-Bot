@@ -195,11 +195,7 @@ public class CPHInline
 
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
-<<<<<<< Updated upstream
         public const string Version = GiveawayManager.Version;
-=======
-        public const string Version = "1.5.3";
->>>>>>> Stashed changes
 
 
         /// <summary>
@@ -383,11 +379,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-<<<<<<< Updated upstream
         public const string Version = "1.5.3"; // Semantic Versioning (canonical: VERSION file)
-=======
-        public const string Version = "1.5.3"; // Semantic Versioning
->>>>>>> Stashed changes
 
         // ==================== Instance Fields ====================
 
