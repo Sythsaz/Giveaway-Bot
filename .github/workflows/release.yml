@@ -21,6 +21,23 @@ jobs:
         with:
           changelog_file: CHANGELOG.md
 
+      - name: Validate release artifacts
+        run: |
+          set -euo pipefail
+
+          artifacts=(
+            "GiveawayBot.cs"
+            "README.md"
+            "CHANGELOG.md"
+          )
+
+          for artifact in "${artifacts[@]}"; do
+            if [[ ! -f "$artifact" ]]; then
+              echo "::error::Release artifact '$artifact' is missing. Update .github/workflows/release.yml before tagging a release."
+              exit 1
+            fi
+          done
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -28,4 +45,4 @@ jobs:
           files: |
             GiveawayBot.cs
             README.md
-            USER_GUIDE.md
+            CHANGELOG.md

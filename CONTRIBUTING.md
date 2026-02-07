@@ -296,6 +296,34 @@ The workflow `.github/workflows/version-consistency.yml` enforces this and fails
    ```
 
 6. **Open a Pull Request** on GitHub using the [PR template](.github/pull_request_template.md)
+7. **Verify Version**: Ensure `VERSION`, `GiveawayBot.cs`, `StreamerBot.csproj`, and `CHANGELOG.md` match.
+
+### Releasing a New Version
+
+We use a unified versioning system. To release a new version (or bump version for development):
+
+1. **Run the update script**:
+
+   ```powershell
+   .\tools\update-version.ps1 1.6.0
+   ```
+
+   This automatically updates:
+   - `VERSION` file
+   - `StreamerBot.csproj`
+   - `GiveawayBot.cs` constant
+   - `RELEASE_NOTES.md` header
+   - Wiki pages (if `../Giveaway-Bot.wiki` exists)
+
+2. **Commit the changes**:
+
+   ```bash
+   git add .
+   git commit -m "chore: bump version to 1.6.0"
+   ```
+
+   > [!NOTE]
+   > The pre-commit hook (`tools/install-hooks.ps1`) will block commits if the `VERSION` file and `.csproj` mismatch.
 
 ### Wiki Generation
 

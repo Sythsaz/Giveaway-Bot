@@ -65,6 +65,14 @@ All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Gi
 
 **Runtime Environment**: C# 7.3 / .NET Framework 4.8 (Streamer.bot's current runtime)
 
+## 📦 Release Assets
+
+Each GitHub release is expected to include these assets:
+
+- `GiveawayBot.cs`
+- `README.md`
+- `CHANGELOG.md`
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) and
