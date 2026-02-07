@@ -15,7 +15,7 @@ to the latest supported version before reporting issues.
 If you discover a security vulnerability in the Giveaway Bot, please **do not open a public issue**. Instead,
 please report it via:
 
-- **Discord**: DM `Sythsaz` - Discord Server[https://discord.gg/A7rXNaFTUX]
+- **Discord**: DM `Sythsaz` - Discord server: [Invite link](https://discord.gg/A7rXNaFTUX)
 
 We will acknowledge your report within 72 hours and provide an estimated timeline for investigation and resolution.
 
