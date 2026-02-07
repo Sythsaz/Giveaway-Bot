@@ -1,5 +1,17 @@
 # Release Notes v1.5.0
 
+## Security Section Guidance
+
+When a release contains security-relevant updates, include a dedicated `### Security` section under that release
+heading with:
+
+- impacted component/feature
+- severity/impact summary
+- mitigation guidance
+- advisory link (if published)
+
+If no security changes apply, the section may be omitted.
+
 This release focuses on **Documentation Synchronization**, **Code Quality Refactors**, and **Infrastructure Hardening**.
 
 ## [1.5.0] - 2026-02-05
