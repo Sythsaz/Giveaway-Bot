@@ -127,31 +127,88 @@ namespace StreamerBot
     /// <summary>
     /// Interface wrapper for Streamer.bot's `CPH` object.
     /// Allows us to mock the CPH interaction for unit testing outside of Streamer.bot.
+    /// This abstraction is crucial for maintaining testability and decoupling the bot logic from the runtime environment.
     /// </summary>
     public interface IGiveawayCPH
     {
-        void LogInfo(string message); void LogWarn(string message); void LogDebug(string message); void LogError(string message); void LogTrace(string message); void LogVerbose(string message); void LogFatal(string message);
+        // Logging Methods
+        /// <summary>Logs an informational message to the Streamer.bot log.</summary>
+        void LogInfo(string message);
+        /// <summary>Logs a warning message to the Streamer.bot log.</summary>
+        void LogWarn(string message);
+        /// <summary>Logs a debug message to the Streamer.bot log (requires verbose logging).</summary>
+        void LogDebug(string message);
+        /// <summary>Logs an error message to the Streamer.bot log.</summary>
+        void LogError(string message);
+        /// <summary>Logs a trace message for deep debugging.</summary>
+        void LogTrace(string message);
+        /// <summary>Logs a verbose message.</summary>
+        void LogVerbose(string message);
+        /// <summary>Logs a fatal error message, typically indicating a crash or critical failure.</summary>
+        void LogFatal(string message);
+
+        // Argument Handling
+        /// <summary>
+        /// Attempts to retrieving an argument from the action's argument dictionary.
+        /// </summary>
+        /// <typeparam name="T">The expected type of the argument.</typeparam>
+        /// <param name="argName">The key name of the argument.</param>
+        /// <param name="value">The output value if found.</param>
+        /// <returns>True if found and successfully converted, otherwise false.</returns>
         bool TryGetArg<T>(string argName, out T value);
+
+        // Variable Management
+        /// <summary>Retrieves a global variable from Streamer.bot's persistent store.</summary>
         T GetGlobalVar<T>(string varName, bool persisted = true);
+        /// <summary>Sets a global variable in Streamer.bot's persistent store.</summary>
         void SetGlobalVar(string varName, object value, bool persisted = true);
+        /// <summary>Retrieves a user-specific variable.</summary>
         T GetUserVar<T>(string userId, string varName, bool persisted = true);
+        /// <summary>Sets a user-specific variable.</summary>
         void SetUserVar(string userId, string varName, object value, bool persisted = true);
+        /// <summary>Gets a list of all global variable names (used for cleanup).</summary>
         List<string> GetGlobalVarNames(bool persisted = true);
+        /// <summary>Removes a global variable from the store.</summary>
         void UnsetGlobalVar(string varName, bool persisted = true);
+
+        // Platform Actions
+        /// <summary>Sends a chat message to the active platform (Twitch/YouTube/Kick).</summary>
         void SendMessage(string message, bool bot = true);
+        /// <summary>Sends a chat message specifically to YouTube.</summary>
         void SendYouTubeMessage(string message);
+        /// <summary>Sends a chat message specifically to Kick.</summary>
         void SendKickMessage(string message);
+        /// <summary>Replies to a specific message on Twitch.</summary>
         void TwitchReplyToMessage(string message, string replyId, bool useBot = true, bool fallback = true);
+        
+        // State Checks
+        /// <summary>Checks if the Twitch broadcaster is live.</summary>
         bool IsTwitchLive();
+        /// <summary>Checks if the YouTube broadcaster is live.</summary>
         bool IsYouTubeLive();
+        /// <summary>Checks if the Kick broadcaster is live.</summary>
         bool IsKickLive();
 
+        // User Status
+        /// <summary>Checks if a user is following the channel on Twitch.</summary>
         bool TwitchIsUserFollower(string userId);
+        /// <summary>Checks if a user is subscribed to the channel on Twitch.</summary>
         bool TwitchIsUserSubscriber(string userId);
+
+        // OBS Integration
+        /// <summary>Updates a browser source URL in OBS via Streamer.bot.</summary>
         void ObsSetBrowserSource(string scene, string source, string url);
+        
+        // UI & Core
+        /// <summary>Shows a Windows toast notification via Streamer.bot.</summary>
         void ShowToastNotification(string title, string message);
+        /// <summary>Executes another Streamer.bot action by name.</summary>
         bool RunAction(string actionName, bool runImmediately = true);
+        /// <summary>Gets the event trigger type.</summary>
         object GetEventType();
+
+        // Internal
+        /// <summary>Access to the internal file logger instance.</summary>
         FileLogger Logger { get; set; }
     }
 
@@ -194,7 +251,7 @@ public class CPHInline
 
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
-        public const string Version = "1.5.2";
+
 
 
         /// <summary>
