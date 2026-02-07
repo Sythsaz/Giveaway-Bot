@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Refactoring**: Added `#region` directives throughout `GiveawayBot.cs` for improved code navigation and organization.
-- **Code Quality**: Enforced strict adherence to coding rules, including thread safety, time handling, and magic string elimination.
+- **Refactoring**: Added `#region` directives throughout `GiveawayBot.cs` for improved code navigation
+  and organization.
+- **Code Quality**: Enforced strict adherence to coding rules, including thread safety, time handling,
+  and magic string elimination.
 - **Logging**: Standardized logging messages to use `[Class] [Method]` prefix for better traceability.
 - **Refactoring**: Replaced remaining magic strings with `GiveawayConstants`.
 
