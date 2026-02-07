@@ -1,4 +1,7 @@
-# Standard C# ignores
+# Standard C# Agent rules (not part of the project)
+.clinerules/
+
+# Build outputs
 bin/
 obj/
 .vs/
