@@ -20,11 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Applies to both entry dumps and winner dumps
   - Falls back to username if no GameName is parsed
   - Controlled per-profile via `DumpSeparateGameNames` setting
-- **Bidirectional Config Sync (Mirror Mode)**: Profile configuration variables can now be modified
-  directly in Streamer.bot's global variables and automatically sync back to the config file.
-  Previously, Mirror mode only supported Config → GlobalVar sync, requiring manual config file edits.
-  - All editable profile settings supported: dump options, entry requirements, luck multipliers,
-    wheel/OBS settings, validation rules, timer duration
+- **Bidirectional Config Sync (Mirror Mode)**: Profile configuration variables can now be modified directly in
+  Streamer.bot's global variables and automatically sync back to the config file. Previously, Mirror mode only
+  supported Config → GlobalVar sync, requiring manual config file edits for changes.
+  - All editable profile settings supported: dump options, entry requirements, luck multipliers, wheel/OBS settings,
+    validation rules, timer duration
   - Changes detected during lifecycle ticks (every 30 seconds) or triggered actions
   - Comprehensive logging of detected changes at INFO level (`[Mirror] Detected external change: ...`)
   - Automatic config file save when changes detected
@@ -50,8 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for all 30+ profile variable keys.
   - Eliminated ~20 hardcoded "magic strings" (e.g., "Enable Wheel", "Dump Format").
   - Ensures strict consistency between the internal variable generation and the consumption logic.
-- **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting API Key variable names
-  and adding dynamic timer examples.
+- **Documentation**: Synchronized Wiki and Examples to match v1.5.0 code, specifically correcting
+  API Key variable names and adding dynamic timer examples.
 - **Config Instructions**: Fixed internal help text in `GiveawayBot.cs` to correctly reference `Giveaway Global WheelApiKey`.
 - **Documentation**: Comprehensive XML documentation audit for `GiveawayBot.cs` covering all public methods
   and properties.
