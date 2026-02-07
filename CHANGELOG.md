@@ -5,9 +5,16 @@ All notable changes to the Giveaway Bot will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.4] - 2026-02-07
 
 ### Added
+
+- **Refactoring**: Added `#region` directives throughout `GiveawayBot.cs` for improved code navigation
+  and organization.
+- **Code Quality**: Enforced strict adherence to coding rules, including thread safety, time handling,
+  and magic string elimination.
+- **Logging**: Standardized logging messages to use `[Class] [Method]` prefix for better traceability.
+- **Refactoring**: Replaced remaining magic strings with `GiveawayConstants`.
 
 ### Security
 
