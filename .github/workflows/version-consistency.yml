@@ -1,0 +1,59 @@
+name: Version Consistency
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  verify-version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify version consistency
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          expected = Path('VERSION').read_text(encoding='utf-8').strip()
+          if not expected:
+              raise SystemExit('VERSION is empty')
+
+          changelog = Path('CHANGELOG.md').read_text(encoding='utf-8')
+          release_matches = re.findall(r'^## \[(?!Unreleased\])([^\]]+)\]', changelog, flags=re.MULTILINE)
+          if not release_matches:
+              raise SystemExit('Could not find any release heading in CHANGELOG.md')
+          changelog_latest = release_matches[0].strip()
+
+          giveaway = Path('GiveawayBot.cs').read_text(encoding='utf-8')
+          manager_match = re.search(r'public const string Version = "([^"]+)";\s*// Semantic Versioning', giveaway)
+          if not manager_match:
+              raise SystemExit('Could not find GiveawayManager.Version constant in GiveawayBot.cs')
+          runtime_version = manager_match.group(1)
+
+          csproj = Path('StreamerBot.csproj').read_text(encoding='utf-8')
+          csproj_match = re.search(r'<Version>([^<]+)</Version>', csproj)
+          if not csproj_match:
+              raise SystemExit('Could not find <Version> in StreamerBot.csproj')
+          project_version = csproj_match.group(1).strip()
+
+          versions = {
+              'VERSION': expected,
+              'CHANGELOG latest release': changelog_latest,
+              'GiveawayBot runtime constant': runtime_version,
+              'StreamerBot.csproj <Version>': project_version,
+          }
+
+          unique = set(versions.values())
+          if len(unique) != 1:
+              print('Version mismatch detected:')
+              for key, value in versions.items():
+                  print(f'  - {key}: {value}')
+              raise SystemExit(1)
+
+          print(f"All version sources are consistent at {expected}")
+          PY
