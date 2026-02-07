@@ -134,7 +134,7 @@ namespace StreamerBot.Tests
                 if (!c.Globals.TryGetValue("Giveaway Main EntryCount", out var count) || (int)count != 2)
                     throw new Exception($"Entry count mismatch: expected 2, got {count} (UserOneAccepted: {c.Globals.ContainsKey("Giveaway Main EntryCount")})");
 
-                if (!c.Globals.TryGetValue("Giveaway Main IsActive", out var active))
+                if (!c.Globals.TryGetValue("Giveaway Main Is Active", out var active))
                 {
                     var keys = string.Join(", ", c.Globals.Keys);
                     throw new Exception($"IsActive mismatch - Missing from Globals. Available: {keys}");
