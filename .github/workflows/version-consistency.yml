@@ -1,48 +1,62 @@
 name: Version Consistency
 
+permissions:
+  contents: read
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 jobs:
-  check-version:
+  verify-version-consistency:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Version Consistency
-        shell: bash
+      - name: Verify version consistency
         run: |
-          # 1. Get Source of Truth
-          if [ ! -f "VERSION" ]; then
-            echo "::error::VERSION file missing!"
-            exit 1
-          fi
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "Target Version: $VERSION"
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
 
-          # 2. Check CSPROJ
-          CSPROJ_VERSION=$(grep "<Version>" StreamerBot.csproj | sed -e 's/.*<Version>\(.*\)<\/Version>.*/\1/' | tr -d '[:space:]')
-          if [ "$VERSION" != "$CSPROJ_VERSION" ]; then
-            echo "::error::StreamerBot.csproj version mismatch! Expected $VERSION, found $CSPROJ_VERSION"
-            exit 1
-          fi
+          expected = Path('VERSION').read_text(encoding='utf-8').strip()
+          if not expected:
+              raise SystemExit('VERSION is empty')
 
-          # 3. Check C# Constant (GiveawayManager)
-          # Look for: public const string Version = "1.5.3";
-          CS_VERSION=$(grep 'public const string Version = ".*";' GiveawayBot.cs | grep -oP '(?<=")[^"]+(?=")' | head -n 1)
-          if [ "$VERSION" != "$CS_VERSION" ]; then
-             echo "::error::GiveawayBot.cs version mismatch! Expected $VERSION, found $CS_VERSION"
-             exit 1
-          fi
+          changelog = Path('CHANGELOG.md').read_text(encoding='utf-8')
+          release_matches = re.findall(r'^## \[(?!Unreleased\])([^\]]+)\]', changelog, flags=re.MULTILINE)
+          if not release_matches:
+              raise SystemExit('Could not find any release heading in CHANGELOG.md')
+          changelog_latest = release_matches[0].strip()
 
-          # 4. Check Changelog
-          # Look for ## [1.5.3] - YYYY-MM-DD
-          if ! grep -q "## \[$VERSION\]" CHANGELOG.md; then
-             echo "::error::CHANGELOG.md missing entry for $VERSION!"
-             exit 1
-          fi
+          giveaway = Path('GiveawayBot.cs').read_text(encoding='utf-8')
+          manager_match = re.search(r'public const string Version = "([^"]+)";\s*// Semantic Versioning', giveaway)
+          if not manager_match:
+              raise SystemExit('Could not find GiveawayManager.Version constant in GiveawayBot.cs')
+          runtime_version = manager_match.group(1)
 
-          echo "✅ All versions match $VERSION"
+          csproj = Path('StreamerBot.csproj').read_text(encoding='utf-8')
+          csproj_match = re.search(r'<Version>([^<]+)</Version>', csproj)
+          if not csproj_match:
+              raise SystemExit('Could not find <Version> in StreamerBot.csproj')
+          project_version = csproj_match.group(1).strip()
+
+          versions = {
+              'VERSION': expected,
+              'CHANGELOG latest release': changelog_latest,
+              'GiveawayBot runtime constant': runtime_version,
+              'StreamerBot.csproj <Version>': project_version,
+          }
+
+          unique = set(versions.values())
+          if len(unique) != 1:
+              print('Version mismatch detected:')
+              for key, value in versions.items():
+                  print(f'  - {key}: {value}')
+              raise SystemExit(1)
+
+          print(f"All version sources are consistent at {expected}")
+          PY

@@ -12,6 +12,7 @@ to help you get started.
 - [EditorConfig Usage](#editorconfig-usage)
 - [Making Changes](#making-changes)
 - [Testing](#testing)
+- [Versioning/Release process](#versioningrelease-process)
 - [Submitting a Pull Request](#submitting-a-pull-request)
 - [Reporting Issues](#reporting-issues)
 
@@ -250,6 +251,26 @@ dotnet run
 3. **Configure** `giveaway_config.json` in `data/Giveaway Helper/config/`
 4. **Run** `!giveaway system test` in chat
 5. **Test your changes** with real commands
+
+## Versioning/Release process
+
+This repository uses a **single canonical version source**: the root `VERSION` file.
+
+When preparing a release, bump all versioned artifacts together in one commit:
+
+1. Update `VERSION` to the new semantic version (for example `1.5.4`).
+2. Update the runtime constant in `GiveawayBot.cs` (`GiveawayManager.Version`).
+   - `CPHInline.Version` must remain an alias to `GiveawayManager.Version` to avoid duplication.
+3. Update `StreamerBot.csproj` `<Version>` to match `VERSION`.
+4. Add a new release heading at the top of `CHANGELOG.md` (right below `## [Unreleased]`) using the same version number.
+5. Run the version consistency check locally (or in CI) to confirm all values match.
+
+The workflow `.github/workflows/version-consistency.yml` enforces this and fails if any of the following diverge:
+
+- `CHANGELOG.md` latest release heading
+- `GiveawayBot.cs` runtime version constant
+- `StreamerBot.csproj` package metadata version
+- `VERSION`
 
 ## Submitting a Pull Request
 

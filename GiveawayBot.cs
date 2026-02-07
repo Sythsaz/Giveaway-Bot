@@ -41,6 +41,10 @@
 #pragma warning disable IDE0028 // Duplicate suppression (just in case)
 
 // css_ref System.Net.Http.dll
+// css_ref Newtonsoft.Json.dll
+// css_ref System.Core.dll
+// css_ref System.Xml.Linq.dll
+// css_ref Microsoft.CSharp.dll
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -59,14 +63,10 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-// css_ref System.Net.Http.dll
-// css_ref Newtonsoft.Json.dll
-// css_ref System.Core.dll
-// css_ref System.Xml.Linq.dll
-// css_ref Microsoft.CSharp.dll
 
 
-// UNCONDITIONAL SUPPRESSION for Legacy C# Environment
+
+// UNCONDITIONAL SUPPRESSION for Streamer.bot (Legacy C# Environment) - Required for valid compilation
 #pragma warning disable IDE0028 // Simplify collection initialization
 #pragma warning disable IDE0300 // Use collection expression
 #pragma warning disable IDE0301 // Use collection expression
@@ -221,6 +221,7 @@ namespace StreamerBot
  * Description:
  * A comprehensive giveaway management system for Streamer.bot.
  * Features include multi-profile support, anti-loop protection,
+ * Bidirectional Config Sync (Mirror Mode), Separate Game Name Dumps,
  * Wheel of Names integration, OBS control, and robust logging/persistence.
  *
  * Rules & constraints:
@@ -252,7 +253,6 @@ public class CPHInline
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
         public const string Version = GiveawayManager.Version;
-
 
 
         /// <summary>
@@ -436,7 +436,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.6.0"; // Semantic Versioning
+        public const string Version = "1.5.3"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 
@@ -515,16 +515,15 @@ public static class Loc
         /// Sanitizes a string by replacing the application base directory with [BaseDir].
         /// Prevents leaking absolute paths in chat messages.
         /// </summary>
-        /// <summary>
-        /// Sanitizes a string by replacing the application base directory with [BaseDir].
-        /// Prevents leaking absolute paths in chat messages.
-        /// </summary>
         /// <param name="input">The raw path string.</param>
         /// <returns>The sanitized string with [BaseDir] placeholder.</returns>
         public static string SanitizePath(string input)
         {
             if (string.IsNullOrEmpty(input)) return input;
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            // Security/Privacy: Sanitize Path
+            // We want to prevent accidentally showing the user's full hard drive path in chat or logs (e.g., C:\Users\Ashton\...).
+            // This method replaces the base directory with a safe placeholder "[BaseDir]".
             if (string.IsNullOrEmpty(baseDir)) return input;
 
             // Normalize slashes for comparison if needed, but simple replacement usually works
@@ -541,25 +540,29 @@ public static class Loc
         {
              if (string.IsNullOrWhiteSpace(rawMsg)) return rawMsg;
 
-             // Support pipe OR comma delimiter (Pipe preferred)
-             // If pipes exist, we ONLY split on pipes (allowing commas in the messages)
+             // ---------------------------------------------------------
+             // RANDOM MESSAGE SELECTION LOGIC
+             // ---------------------------------------------------------
+             // Priority 1: Pipe Delimiter (|)
+             // Used for advanced messages that might contain commas.
+             // Example: "Hello, World|Hi, There" -> "Hello, World" OR "Hi, There"
              if (rawMsg.Contains("|"))
              {
                  var options = rawMsg.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
                  return options.Length > 0 ? options[new Random().Next(options.Length)].Trim() : rawMsg;
              }
 
-             // Fallback: Check for logic-based comma splitting (only if it looks like a list)
-             // We want to be careful not to split normal sentences with commas.
-             // Current logic: If it contains pipes, we handled it. If not, we check for multiple valid segments.
-             // For consistency with WheelOfNamesClient logic which supported commas:
-             // We will maintain the comma fallback but only if no pipes.
+             // Priority 2: Comma Delimiter (,)
+             // Used for simple lists.
+             // Example: "Hi,Hello,Hey" -> "Hi" OR "Hello" OR "Hey"
+             // We only fallback to this if NO pipes are present to avoid breaking sentences.
              var commaOptions = rawMsg.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
              if (commaOptions.Length > 1)
              {
                  return commaOptions[new Random().Next(commaOptions.Length)].Trim();
              }
 
+             // No delimiters found? Return the message as-is.
              return rawMsg;
         }
 
@@ -582,7 +585,12 @@ public static class Loc
             int totalSeconds = 0;
             bool matched = false;
 
-            // Regex to match "1h", "30m", "10s", "1d", "1w"
+            // Regex Explanation:
+            // (\d+)  -> Captures one or more digits (the number value).
+            // ([wdhms]) -> Captures a single character from the set w,d,h,m,s (the unit).
+            // Example: "1h30m" will match twice:
+            // Match 1: Group 1="1", Group 2="h"
+            // Match 2: Group 1="30", Group 2="m"
             var matches = Regex.Matches(durationStr, @"(\d+)([wdhms])");
 
             foreach (Match m in matches)
@@ -922,6 +930,7 @@ public static class Loc
         /// Re-encrypts existing API keys using the new salt if necessary.
         /// </summary>
         /// <param name="adapter">CPH Adapter for logging and variable access.</param>
+        // TODO: Remove in v2.0 (Legacy Migration)
         private void MigrateSecurity(CPHAdapter adapter)
         {
             if (GlobalConfig?.Globals == null) return;
@@ -968,7 +977,7 @@ public static class Loc
         /// Supports backward-compatible auto-conversion from legacy OBF (Base64) format.
         /// Warns users if legacy DPAPI keys are detected (non-portable).
         /// </summary>
-        /// <param name="adapter">CPH Adapter for user notification.</param>
+        // TODO: Remove in v2.0 (Legacy Migration)
         private void AutoEncryptApiKey(CPHAdapter adapter)
         {
             try
@@ -1042,26 +1051,43 @@ public static class Loc
             return EncryptWithSeed(plainText, seed);
         }
 
+        /// <summary>
+        /// Encrypts a string using AES-256-CBC with a specific seed.
+        /// </summary>
+        /// <param name="plainText">The text to encrypt.</param>
+        /// <param name="seed">The seed string to derive the key/IV from.</param>
+        /// <returns>The encrypted string in base64 format prefixed with "AES:", or null on failure.</returns>
         private static string EncryptWithSeed(string plainText, string seed)
         {
             try
             {
                 using (Aes aes = Aes.Create())
                 {
+                    // AES Configuration:
+                    // KeySize 256: Strongest standard key size.
+                    // CBC (Cipher Block Chaining): Each block of data is XORed with the previous one. secure for messages > 1 block.
+                    // PKCS7: Adds padding bytes if the data isn't a perfect multiple of the block size.
                     aes.KeySize = 256;
                     aes.Mode = CipherMode.CBC;
                     aes.Padding = PaddingMode.PKCS7;
 
+                    // Key Derivation:
+                    // We take the "Seed" (password) and hash it with SHA256 to get a perfect 32-byte (256-bit) key.
+                    // This ensures any length password becomes a valid AES key.
                     using (var sha = SHA256.Create())
                     {
                         aes.Key = sha.ComputeHash(Encoding.UTF8.GetBytes(seed));
                     }
 
+                    // IV (Initialization Vector):
+                    // A random starting block. This ensures that encrypting the same text twice results in different output.
                     aes.GenerateIV();
 
                     using (var encryptor = aes.CreateEncryptor())
                     using (var ms = new MemoryStream())
                     {
+                        // Structure of the encrypted data: [IV (16 bytes)] + [Encrypted Content]
+                        // We write the IV first so we can read it back during decryption.
                         ms.Write(aes.IV, 0, aes.IV.Length); // Prepend IV
 
                         using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
@@ -1069,7 +1095,8 @@ public static class Loc
                         {
                             writer.Write(plainText);
                         }
-
+                        
+                        // Convert to Base64 so it can be stored as a string in text files/settings.
                         return "AES:" + Convert.ToBase64String(ms.ToArray());
                     }
                 }
@@ -1085,6 +1112,7 @@ public static class Loc
         /// Tries configured EncryptionSalt first, then falls back to legacy MachineName.
         /// Auto-converts legacy OBF: format (Base64) to plaintext.
         /// </summary>
+        // TODO: Remove in v2.0 (Legacy Migration)
         public static string DecryptSecret(string secret)
         {
             if (string.IsNullOrEmpty(secret)) return null;
@@ -1455,6 +1483,7 @@ public static class Loc
         /// <param name="adapter">CPH adapter for logging and variable access</param>
         /// <param name="allowedBots">Source list from config (may be file path, variable name, or inline list)</param>
         /// <returns>Resolved list of bot names (case-sensitive)</returns>
+        // TODO: Remove in v2.0 (Legacy Migration)
         private static List<string> ResolveBotList(CPHAdapter adapter, List<string> allowedBots)
         {
             if (allowedBots == null || allowedBots.Count == 0) return new List<string>();
@@ -1585,6 +1614,11 @@ public static class Loc
         /// Returns true if INVALID (should be rejected).
         /// Supports dual-check: If userName matches, it's valid. If not, checks gameNameInput.
         /// </summary>
+        /// <param name="userName">The username to check.</param>
+        /// <param name="gameNameInput">Optional game name input to check if username fails.</param>
+        /// <param name="config">The profile configuration containing the regex pattern.</param>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="validName">Output parameter for the valid name found (if any).</param>
         /// <returns>True if INVALID (reject), False if Valid (allow)</returns>
         private bool IsEntryNameInvalid(string userName, string gameNameInput, GiveawayProfileConfig config, CPHAdapter adapter, out string validName)
         {
@@ -1651,9 +1685,10 @@ public static class Loc
         /// Also updates the in-memory cached metrics for real-time display.
         /// </summary>
         /// <param name="adapter">CPH adapter instance.</param>
-        /// <param name="u">The user's ID (e.g., Twitch User ID).</param>
-        /// Increments a metric for a specific user.
-        /// </summary>
+        /// <param name="userId">The user's ID (e.g., Twitch User ID).</param>
+        /// <param name="userName">The user's display name.</param>
+        /// <param name="metricKey">The metric key to increment.</param>
+        /// <param name="gameName">Optional game name to update.</param>
         private void IncUserMetric(CPHAdapter adapter, string userId, string userName, string metricKey, string gameName = null)
         {
             if (_cachedMetrics != null)
@@ -1690,6 +1725,7 @@ public static class Loc
         /// 3. Sync Profile Variables (Triggers, Configs, Live Stats).
         /// 4. Prune any variables that were NOT touched (Orphan cleanup).
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         public void SyncAllVariables(CPHAdapter adapter)
         {
             if (GlobalConfig == null) return;
@@ -1722,6 +1758,7 @@ public static class Loc
         /// Identifies and removes Streamer.bot global variables starting with 'GiveawayBot_'
         /// that were not updated (touched) during the most recent synchronization.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         private static void PruneUnusedVariables(CPHAdapter adapter)
         {
             try
@@ -1757,6 +1794,7 @@ public static class Loc
         /// Aggregates metrics from all profiles for a comprehensive sync.
         /// Optimized to avoid redundant log spam.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         public void SyncGlobalVars(CPHAdapter adapter)
         {
             if (GlobalConfig == null) return;
@@ -1883,6 +1921,7 @@ public static class Loc
         /// <summary>
         /// Persists the current in-memory metrics to storage (file/GlobalVar).
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         public void SaveDirtyMetrics(CPHAdapter adapter)
         {
             if (Metrics != null && _cachedMetrics != null)
@@ -1896,6 +1935,11 @@ public static class Loc
     /// Handles 'ExposeVariables' logic to selectively show/hide runtime data.
     /// Optimized to avoid redundant log spam.
     /// </summary>
+    /// <param name="adapter">The CPH adapter context.</param>
+    /// <param name="profileName">The name of the profile to sync.</param>
+    /// <param name="config">The profile configuration.</param>
+    /// <param name="state">The current runtime state of the profile.</param>
+    /// <param name="globals">The global settings.</param>
     private void SyncProfileVariables(CPHAdapter adapter, string profileName, GiveawayProfileConfig config, GiveawayState state, GlobalSettings globals)
     {
         // Always sync the full state JSON for persistence/visibility, regardless of ExposeVariables
@@ -2133,6 +2177,8 @@ public static class Loc
         /// Parses a time duration string (e.g., "10m", "1h", "300s") into integer minutes.
         /// Wraps the existing ParseDuration helper to ensure consistency.
         /// </summary>
+        /// <param name="input">The time duration string to parse.</param>
+        /// <returns>The duration in minutes, or 0 if parsing fails.</returns>
         private static int ParseDurationMinutes(string input)
         {
             var seconds = ParseDuration(input);
@@ -2658,6 +2704,8 @@ public static class Loc
         /// 5. Checks for dynamic Timer Duration updates and adjusts active timers in real-time.
         /// 6. (Mirror Mode) Syncs profile settings from global variables to memory.
         /// </remarks>
+        // Checks global variables for changes and updates internal config if needed.
+        // Core component of Bidirectional Config Sync (Mirror Mode).
         private async Task CheckForConfigUpdates(CPHAdapter adapter, bool fullSync = true)
         {
             if (_isDisposed) return;
@@ -2670,7 +2718,7 @@ public static class Loc
                  // Check status: Direct > Indirect
                  string directKey = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalWheelApiKey);
 
-                // TODO: What about other encryption methods?
+                // TODO: Future Roadmap - Support additional encryption methods.
                 // Auto-Encryption Logic: If key is plain text (not empty, not ENC:), validate and encrypt it.
                 if (!string.IsNullOrEmpty(directKey) && !directKey.StartsWith("ENC:"))
                 {
@@ -2685,18 +2733,22 @@ public static class Loc
                     }
                     else
                     {
-                        // Validate first to ensure we don't encrypt garbage
-                        bool? isValid = await new WheelOfNamesClient().ValidateApiKey(adapter, directKey);
-                        if (isValid == true)
-                        {
-                            string encrypted = GiveawayManager.EncryptSecret(directKey);
-                            if (!string.IsNullOrEmpty(encrypted))
+                            // Validate first to ensure we don't encrypt garbage.
+                            // We use the WheelOfNamesClient to perform a lightweight "GetWheels" call to verify the key.
+                            bool? isValid = await new WheelOfNamesClient().ValidateApiKey(adapter, directKey);
+                            if (isValid == true)
                             {
-                                adapter.SetGlobalVar(GiveawayConstants.GlobalWheelApiKey, encrypted, true);
-                                adapter.LogInfo("🔒 API Key validated and encrypted successfully.");
-                                directKey = encrypted; // Update local var for status check
+                                // Validation passed: Encrypt the key using AES-256-CBC with the bot's seed.
+                                // The prefix "AES:" tells the bot this is an encrypted secret that needs decryption before use.
+                                string encrypted = GiveawayManager.EncryptSecret(directKey);
+                                if (!string.IsNullOrEmpty(encrypted))
+                                {
+                                    // Update the global variable immediately so the user doesn't see the plaintext key anymore.
+                                    adapter.SetGlobalVar(GiveawayConstants.GlobalWheelApiKey, encrypted, true);
+                                    adapter.LogInfo("🔒 API Key validated and encrypted successfully.");
+                                    directKey = encrypted; // Update local var for status check
+                                }
                             }
-                        }
                         else if (isValid == false)
                         {
                             // Validation failed - mark this key as failed so we don't spam the API or user with toasts
@@ -2901,7 +2953,10 @@ public static class Loc
                         {
                         if (TryParseDurationSafe(timerVal, out int newDurationSec, adapter) && newDurationSec > 0)
                         {
-                            // Treat new duration as "time remaining from now" (not total time from start)
+                            // Timer Duration Logic:
+                            // If the duration string (e.g., "10m") changes at runtime, we assume the user wants to
+                            // Reset/Extend the timer relative to NOW.
+                            // We accept the new duration as "Time Remaining" rather than "Total Time".
                             var newEndTime = DateTime.Now.AddSeconds(newDurationSec);
                             state.AutoCloseTime = newEndTime;
 
@@ -3078,8 +3133,12 @@ public static class Loc
                 // Dynamic IsActive Check (Remote Start/Stop)
                 if (States.TryGetValue(name, out var profileState))
                 {
-                    // RACE CONDITION PREVENTION: Skip remote detection if we're currently changing this profile's state
-                    // This prevents false triggers when Mirror mode reads stale global variables during state transitions
+                    // RACE CONDITION PREVENTION:
+                    // When we start/end a giveaway locally, we update the state first.
+                    // However, the global variable sync might lag slightly or run concurrently.
+                    // We interpret the 'active' variable as a remote command.
+                    // To avoid the bot seeing its own status update as a "New Command", we skip this check
+                    // if we are currently performing an operation on this profile.
                     if (_currentOperation != null &&
                         (_currentOperation == $"START:{name}" || _currentOperation == $"END:{name}"))
                     {
@@ -3177,7 +3236,11 @@ public static class Loc
                 // ANTI-LOOP PROTECTION & BOT DETECTION
                 // Consolidates checks for self-loops, external bot allows, and message IDs.
                 // =========================================================================================
-                // Implements 3-layer protection: Message ID Dedup, Bot Token, and isBot flag
+
+                // Implements 3-layer protection:
+                // 1. Message ID Deduplication (Prevent processing same msg twice)
+                // 2. Bot Token/User Check (Prevent responding to known bots unless allowed)
+                // 3. Self-Check (Prevent bot from triggering itself via broadcast)
                 if (IsLoopDetected(adapter, out var loopReason))
                 {
                      // Loop Detected: Log trace and exit to prevent spam or infinite recursion
@@ -3454,6 +3517,7 @@ public static class Loc
         /// <param name="explicitUserId">Optional: User ID injected from external source (bypasses CPH args).</param>
         /// <param name="explicitUserName">Optional: User Name injected from external source.</param>
         /// <returns>True if the entry was processed (accepted or rejected with reason).</returns>
+
         private async Task<bool> HandleEntry(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string explicitUserId = null, string explicitUserName = null)
         {
             var stopwatch = Stopwatch.StartNew(); // Track entry processing time
@@ -3540,6 +3604,11 @@ public static class Loc
                 }
 
                 adapter.TryGetArg<bool>("isSubscribed", out var isSub);
+                // Ticket Calculation Logic:
+                // Base tickets = 1.
+                // If user is Subscriber AND SubLuckMultiplier > 1.0, apply multiplier.
+                // We use Ceiling to ensure even a partial multiplier gives at least an extra ticket if > 1.0.
+                // Example: Multiplier 1.5 -> 1.5 -> Ceiling(1.5) = 2 tickets.
                 int tickets = 1;
                 if (isSub && config.SubLuckMultiplier > 1.0m)
                 {
@@ -3569,6 +3638,9 @@ public static class Loc
 
 
                 // Persist state (Throttled for entries)
+                // Writing to disk on every single entry can be slow and cause IO contention.
+                // We typically sync only if the interval (e.g., 5 seconds) has passed.
+                // Critical state changes (Start/End/Winner) always happen immediately.
                 bool needsSync = true;
                 if (_lastSyncTimes.TryGetValue(profileName, out var lastSync))
                 {
@@ -3648,6 +3720,16 @@ public static class Loc
         /// <returns>True if the entry request is valid and should proceed to locking/state checks. False if rejected.</returns>
         private bool ValidateEntryRequest(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string userId, string userName, string platform)
         {
+            // VALIDATION PIPELINE
+            // The order of these checks matters for performance and logic.
+            // 1. Game Filter (Fastest, modifies config)
+            // 2. Cooldown (Fast, state lookup)
+            // 3. Strictness (Platform checks)
+            // 4. Rate Limit (Math)
+            // 5. Regex (Expensive text processing)
+            // 6. Entropy (Math on text)
+            // 7. Account Age (API/Arg lookup)
+
             // GAME FILTER: Apply game filter FIRST as it can modify config.UsernamePattern and config.EnableEntropyCheck.
             ApplyGameFilter(config);
 
@@ -3829,7 +3911,10 @@ public static class Loc
                     return true;
                 }
 
-                // Flatten entries into a ticket pool (ticket count = duplication count)
+                // Ticket Pool Flattening:
+                // To support weighted probability (TicketCount > 1), we create a flat list where
+                // each user appears N times, where N is their TicketCount.
+                // Then a uniform random selection from this list gives the correct probability.
                 adapter.LogVerbose($"[{profileName}] Generating ticket pool from {state.Entries.Count} entrants...");
                 var pool = state.Entries.Values.SelectMany(e =>
                 {
@@ -3866,7 +3951,7 @@ public static class Loc
                 }
 
                 // Fallback: Local Random Draw
-                // TODO: Make sure this is true random
+                // TODO: V2.0 - Replace with crypto-strength RNG
                 adapter.LogDebug($"[{profileName}] Method: Local RNG");
                 var rng = new Random();
                 int winIndex = rng.Next(pool.Count);
@@ -3931,6 +4016,7 @@ public static class Loc
         /// <param name="profileName">Profile Name.</param>
         /// <param name="platform">Platform context.</param>
         /// <returns>True if processed.</returns>
+
         private async Task<bool> HandleStart(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform)
         {
             // Track this operation to prevent false remote END detection during startup
@@ -4004,6 +4090,7 @@ public static class Loc
         /// <param name="profileName">Profile Name.</param>
         /// <param name="platform">Platform.</param>
         /// <param name="bypassAuth">If true, skips broadcaster/mod checks (used for auto-close).</param>
+
         private async Task<bool> HandleEnd(CPHAdapter adapter, GiveawayProfileConfig config, GiveawayState state, string profileName, string platform, bool bypassAuth = false)
         {
             // Track this operation to prevent false remote START detection during shutdown
@@ -4234,7 +4321,7 @@ public static class Loc
                 "--- Baseline ---",
                 $"• Platform: {Environment.OSVersion}",
                 $"• Runtime: {AppDomain.CurrentDomain.FriendlyName}",
-                // TODO: We don't wan't the dir going to chat
+                // [WARNING] Do not output this path to chat to prevent information leakage.
                 $"• Base Directory: {AppDomain.CurrentDomain.BaseDirectory}",
 
                 // Logging System Check
@@ -4700,12 +4787,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     /// Data transfer object holding the results of a trigger identification.
     /// Indicates which profile and action should be executed.
     /// </summary>
-
-
-    /// <summary>
-    /// Data transfer object holding the results of a trigger identification.
-    /// Indicates which profile and action should be executed.
-    /// </summary>
     public class TriggerResult
     {
         public string Profile { get; set; }
@@ -4758,6 +4839,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             if (platform.Equals("twitch", StringComparison.OrdinalIgnoreCase)) platform = "Twitch";
             adapter.LogTrace($"[Trigger] Platform detected: {platform} (Raw: {userType})");
 
+            // ---------------------------------------------------------
+            // 1. DATA EXTRACTION
+            // Streamer.bot provides many arguments. We try to grab them all.
+            // 'command' = The command name if triggered by a command (e.g., "!giveaway")
+            // 'message' = The raw chat message
+            // 'rawInput' = The message usually, or the input after the command
+            // 'input0' = The first word after the command (e.g., in "!giveaway start", input0 is "start")
+            // ---------------------------------------------------------
             adapter.TryGetArg<string>("command", out var cmd);
             adapter.TryGetArg<string>("message", out var msgArg);
             adapter.TryGetArg<string>("sdButtonId", out var sdId);
@@ -4808,7 +4897,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                             }
 
                             // Fallback: Check rawInput or message for "StartsWith" (e.g. Chat Message trigger)
-                            // Be careful: Ensure it starts with the command and is followed by space or end of string
+                            // Sometimes a trigger isn't a "Command" in Streamer.bot but just a "Execute C#" code action
+                            // listening to "Chat Message" events.
+                            // In this case, we manually check if the message starts with the command.
                             string fallback = rawInput ?? msgArg;
                             if (fallback != null)
                             {
@@ -4851,7 +4942,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Useful to disable for reducing log spam while keeping other reflection logs.
         /// </summary>
         private const bool LogReflectionGetGlobalVar = false;
-        //TODO: Docs
+        /// <summary>
+        /// Tracks which global variables have been accessed/modified to optimize updates.
+        /// </summary>
         private readonly HashSet<string> _touchedGlobalVars = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 
@@ -5396,7 +5489,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         {
             var mode = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalRunMode, true);
             if (string.IsNullOrEmpty(mode)) return "FileSystem";
-            // Normalization
+            // RUN MODES:
+            // "FileSystem": Standard mode. Configs are read from/written to JSON files on disk. safe and persistent.
+            // "GlobalVar": Memory-only mode. Configs live in Streamer.bot variables. Fast, but lost if Streamer.bot crashes without persistence.
+            // "Mirror": Hybrid mode. Reads from Global Vars (for remote updates) but backs up to Disk. Best for remote control setups.
+            // "ReadOnlyVar": Strict mode. Reads from Global Vars but NEVER writes back. Useful for slave bots.
             if (mode.Equals("FileSystem", StringComparison.OrdinalIgnoreCase)) return "FileSystem";
             if (mode.Equals("GlobalVar", StringComparison.OrdinalIgnoreCase)) return "GlobalVar";
             if (mode.Equals("ReadOnlyVar", StringComparison.OrdinalIgnoreCase)) return "ReadOnlyVar";
@@ -5415,13 +5512,17 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             if (!forceDisk)
             {
                 string mode = GetRunMode(adapter);
+                // Fallback Strategy:
+                // If we are in a mode that supports Global Variables, we try to read from memory first.
+                // This allows the configuration to be updated remotely (e.g. via Deck/CPH) without touching files.
                 if (mode == "GlobalVar" || mode == "ReadOnlyVar" || mode == "Mirror")
                 {
                     var json = adapter.GetGlobalVar<string>(GiveawayConstants.GlobalConfig, true);
                     if (string.IsNullOrEmpty(json) && mode != "Mirror")
                         adapter.LogWarn($"[Config] RunMode is {mode} but '{GiveawayConstants.GlobalConfig}' global variable is empty!");
 
-                    // In Mirror mode, if GlobalVar is empty, we MUST fall back to file
+                    // If valid JSON was found in variables, return it immediately.
+                    // In Mirror mode, if it's empty, we proceed to read from disk below (Self-Healing).
                     if (!string.IsNullOrEmpty(json)) return json;
                 }
             }
@@ -5538,6 +5639,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         {
             if (c == null) return;
             // Bot Config Profiles
+            // Why Custom Comparer?
+            // C# Dictionaries are Case-Sensitive by default ("Main" != "main").
+            // User input commands are often messy. We force the dictionary to use 'OrdinalIgnoreCase'.
+            // This ensures looking up "main", "MAIN", or "Main" always finds the same profile.
             if (c.Profiles != null && !(c.Profiles.Comparer is StringComparer scp && scp == StringComparer.OrdinalIgnoreCase))
             {
                 var newProfiles = new Dictionary<string, GiveawayProfileConfig>(StringComparer.OrdinalIgnoreCase);
@@ -6070,6 +6175,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Updates the configuration status global variable with an error message.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="msg">The error message to display.</param>
+        /// <returns>The error message returned as a string.</returns>
         private static string HandleValidationError(CPHAdapter adapter, string msg)
         {
             SetStatus(adapter, msg);
@@ -6081,6 +6189,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Generates a default configuration file if none exists, or migrates an existing one.
         /// Keeps user profiles intact during migration.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         public void GenerateDefaultConfig(CPHAdapter adapter)
         {
             try
@@ -6132,6 +6241,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Creates a new profile with default settings asynchronously.
         /// Persists changes to disk/global vars immediately.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="name">The name of the new profile.</param>
+        /// <returns>A tuple containing Success (bool) and ErrorMessage (string).</returns>
         public async Task<(bool Success, string ErrorMessage)> CreateProfileAsync(CPHAdapter adapter, string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return (false, "Profile name cannot be empty");
@@ -6168,6 +6280,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Deletes a profile and its associated data asynchronously.
         /// Creates a comprehensive backup of the profile config and state before deletion.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="name">The name of the profile to ignore.</param>
+        /// <returns>A tuple containing Success (bool), ErrorMessage (string), and BackupPath (string).</returns>
         public async Task<(bool Success, string ErrorMessage, string BackupPath)> DeleteProfileAsync(CPHAdapter adapter, string name)
         {
             string backupPath = null;
@@ -6178,7 +6293,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             var config = GetConfig(adapter);
             if (!config.Profiles.TryGetValue(name, out var profile)) return (false, $"Profile '{name}' not found", "");
 
-            // TODO: Make Async
+            // Note: Consider making async in future refactor (Optimization).
             try
             {
                 string backupDir = Path.Combine(_dir, "backups", $"deleted_{name}_{DateTime.Now:yyyyMMdd_HHmm}");
@@ -6253,6 +6368,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Clones an existing profile to a new profile asynchronously.
         /// Copies all settings and triggers but resets runtime state.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="sourceProfile">The name of the source profile to clone.</param>
+        /// <param name="newProfileName">The name for the new profile.</param>
+        /// <returns>A tuple containing Success (bool) and ErrorMessage (string).</returns>
         public async Task<(bool Success, string ErrorMessage)> CloneProfileAsync(CPHAdapter adapter, string sourceProfile, string newProfileName)
         {
             if (string.IsNullOrWhiteSpace(sourceProfile) || string.IsNullOrWhiteSpace(newProfileName)) return (false, "Profile names cannot be empty");
@@ -6320,6 +6439,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Updates a specific configuration key for a profile asynchronously.
         /// Uses Reflection to support all properties of GiveawayProfileConfig dynamically.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="profileName">The name of the profile to update.</param>
+        /// <param name="key">The configuration key (property name) to update.</param>
+        /// <param name="value">The new value to set.</param>
+        /// <returns>A tuple containing Success (bool) and ErrorMessage (string).</returns>
         public async Task<(bool Success, string ErrorMessage)> UpdateProfileConfigAsync(CPHAdapter adapter, string profileName, string key, string value)
         {
             if (string.IsNullOrWhiteSpace(profileName) || string.IsNullOrWhiteSpace(key)) return (false, "Profile name and key required");
@@ -6449,6 +6573,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Adds or updates a trigger for a profile.
         /// Valid actions: Entry, Winner, Open, Close.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="profileName">The name of the profile.</param>
+        /// <param name="triggerSpec">The trigger specification (e.g., "command:!join").</param>
+        /// <param name="action">The action to execute (Enter, Winner, Open, Close).</param>
+        /// <returns>A tuple containing Success (bool) and ErrorMessage (string).</returns>
         public async Task<(bool Success, string ErrorMessage)> AddProfileTriggerAsync(CPHAdapter adapter, string profileName, string triggerSpec, string action)
         {
             var config = GetConfig(adapter);
@@ -6506,6 +6635,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Removes a specific trigger from a profile.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="profileName">The name of the profile.</param>
+        /// <param name="triggerSpec">The trigger specification to remove.</param>
+        /// <returns>A tuple containing Success (bool) and ErrorMessage (string).</returns>
         public async Task<(bool Success, string ErrorMessage)> RemoveProfileTriggerAsync(CPHAdapter adapter, string profileName, string triggerSpec)
         {
             var config = GetConfig(adapter);
@@ -6564,6 +6697,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Creates a ZIP backup of the current configuration file in the 'backups' directory.
         /// Retains a configurable number of rolling backups.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         private async Task BackupConfigAsync(CPHAdapter adapter)
         {
             string mode = GetRunMode(adapter);
@@ -6617,22 +6751,42 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Calculates the Levenshtein edit distance between two strings.
         /// Used for fuzzy matching configuration keys to suggest corrections.
         /// </summary>
+        /// <param name="s">The first string.</param>
+        /// <param name="t">The second string.</param>
+        /// <returns>The edit distance (number of operations).</returns>
         public static int LevenshteinDistance(string s, string t)
         {
+            // Handle edge cases: if one string is empty, the distance is the length of the other.
             if (string.IsNullOrEmpty(s)) return string.IsNullOrEmpty(t) ? 0 : t.Length;
             if (string.IsNullOrEmpty(t)) return s.Length;
+
             int n = s.Length, m = t.Length;
+            
+            // Create a matrix (2D array) to store distances between all prefixes of s and t.
+            // d[i, j] holds the edit distance between the first i characters of s and the first j characters of t.
             int[,] d = new int[n + 1, m + 1];
+
+            // Initialize the first row and column.
+            // The distance between any string and an empty string is the length of that string (all deletions).
             for (int i = 0; i <= n; d[i, 0] = i++) ;
             for (int j = 0; j <= m; d[0, j] = j++) ;
+
+            // Populate the matrix
             for (int i = 1; i <= n; i++)
             {
                 for (int j = 1; j <= m; j++)
                 {
+                    // If characters match, cost is 0. If they differ, cost is 1 (Substitution).
                     int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+
+                    // Calculate the minimum cost to get to this cell (i, j) from:
+                    // 1. Deletion (d[i-1, j] + 1)
+                    // 2. Insertion (d[i, j-1] + 1)
+                    // 3. Substitution (d[i-1, j-1] + cost)
                     d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1), d[i - 1, j - 1] + cost);
                 }
             }
+            // The bottom-right cell contains the Levenshtein distance between the full strings.
             return d[n, m];
         }
 
@@ -6640,6 +6794,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Performs a fuzzy check on the configuration object to detect potential typos in keys.
         /// Logs warnings and suggestions to Streamer.bot global variables.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="config">The configuration object to check.</param>
         private static void RunFuzzyCheck(CPHAdapter adapter, GiveawayBotConfig config)
         {
             CheckObj(adapter, config, "Root");
@@ -6699,6 +6855,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Resolves the absolute file path for a profile's state JSON.
         /// </summary>
+        /// <param name="p">The profile name.</param>
+        /// <returns>The absolute file path to the state file.</returns>
         private static string GetStatePath(string p) =>
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "state", $"{p}.json");
 
@@ -6821,7 +6979,16 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     public class FileLogger
     {
         private readonly string _base;
+        
+        // ThreadStatic: This field is unique to each thread. 
+        // We use it to prevent infinite recursion if a logging method crashes and tries to log the crash.
         [ThreadStatic] private static bool _isLogging;
+        
+        // Lock Object:
+        // In Streamer.bot, actions can run in parallel on different threads.
+        // If two threads try to write to the same file at the exact same time, the file will be corrupt or throw an error.
+        // We use 'lock(_lock)' to force them to wait their turn.
+        private static readonly object _lock = new object();
 
         /// <summary>
         /// Initializes the file logger with a base path.
@@ -6836,23 +7003,48 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         }
 
         /// <summary>Logs an INFO message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogInfo(CPHAdapter adapter, string c, string m) => Log(adapter, "INFO", c, m);
         /// <summary>Logs a WARNING message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogWarn(CPHAdapter adapter, string c, string m) => Log(adapter, "WARN", c, m);
         /// <summary>Logs an ERROR message with optional exception details.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
+        /// <param name="e">Exception (optional).</param>
         public void LogError(CPHAdapter adapter, string c, string m, Exception e = null) => Log(adapter, "ERROR", c, $"{m} {e?.Message}");
         /// <summary>Logs a DEBUG message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogDebug(CPHAdapter adapter, string c, string m) => Log(adapter, "DEBUG", c, m);
         /// <summary>Logs a TRACE message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogTrace(CPHAdapter adapter, string c, string m) => Log(adapter, "TRACE", c, m);
         /// <summary>Logs a VERBOSE message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogVerbose(CPHAdapter adapter, string c, string m) => Log(adapter, "VERBOSE", c, m);
         /// <summary>Logs a FATAL message.</summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="c">Category.</param>
+        /// <param name="m">Message.</param>
         public void LogFatal(CPHAdapter adapter, string c, string m) => Log(adapter, "FATAL", c, m);
 
         /// <summary>Resets the logging flag to allow new log entries.</summary>
         public static void ResetLoggingFlag() => _isLogging = false;
 
+        /// <summary>
+        /// Internal method to handle the actual logging logic including file rotation and pruning.
+        /// </summary>
         private void Log(CPHAdapter adapter, string level, string category, string message)
         {
             if (_isLogging) return;
@@ -6880,7 +7072,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 CheckForRotation(adapter, todayLog);
 
                 string line = $"[{now:yyyy-MM-dd hh:mm:ss tt}] [{level,-5}] [{category}] {message}" + Environment.NewLine;
-                File.AppendAllText(todayLog, line);
+                
+                // CRITICAL: Thread Safety
+                // We lock on the static _lock object to ensure only one thread writes to the file at a time.
+                // Without this, two giveaways ending at the exact same millisecond could crash the bot.
+                lock (_lock)
+                {
+                    File.AppendAllText(todayLog, line);
+                }
             }
             catch (Exception ex)
             {
@@ -6895,6 +7094,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Enforce log retention policies (age and size).
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
         private void PruneLogs(CPHAdapter adapter)
         {
             try
@@ -6939,6 +7139,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Checks if the current log file exceeds the size limit and rotates it if necessary.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="path">The path to the current log file.</param>
         private void CheckForRotation(CPHAdapter adapter, string path)
         {
             try
@@ -6978,6 +7180,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Checks if the message level is enabled by the current configuration.
         /// </summary>
+        /// <param name="configured">The configured log level.</param>
+        /// <param name="current">The current message log level.</param>
+        /// <returns>True if the message should be logged, false otherwise.</returns>
         private static bool IsLogLevelEnabled(string configured, string current)
         {
             var levels = new List<string> { "TRACE", "VERBOSE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
@@ -7672,6 +7877,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Sliding window spam detection: counts entries in the last N seconds (default 60).
         /// </summary>
+        /// <param name="limit">Max entries allowed in the window.</param>
+        /// <param name="windowSeconds">Window size in seconds.</param>
+        /// <returns>True if spam is detected (count &gt; limit).</returns>
         public bool IsSpamming(int limit, int windowSeconds = 60)
         {
             lock (_globalSpam)
@@ -7751,6 +7959,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Selects a random message variant from a pipe-delimited string.
         /// </summary>
+        /// <param name="rawMsg">The raw message string containing variants separated by pipes.</param>
+        /// <returns>A single selected message variant.</returns>
         private string GetRandomMessage(string rawMsg)
         {
              return GiveawayManager.PickRandomMessage(rawMsg);
@@ -7845,10 +8055,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 // If not cached or cache expired, validate now
                 if (!hasCachedEntry)
                 {
+                    // Pre-flight Check:
+                    // Before trying to create a wheel (which is complex and heavy), we quickly check if the key is valid.
+                    // This saves time and prevents sending a massive payload to an invalid endpoint.
                     var validationResult = await ValidateApiKey(adapter, key);
                     if (validationResult == false)
                     {
                         // Invalid key - cache result and abort wheel creation
+                        // We cache "False" so we don't keep asking the API "Is this key valid?" when we know it isn't.
                         _keyValidationCache[key] = (false, DateTime.Now);
                         adapter.LogWarn("[WheelAPI] Skipping wheel creation: API key validation failed.");
                         return null;
@@ -7865,8 +8079,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
             try
             {
-                // Nest wheel properties under 'wheelConfig' per API v2 specification
-                // API requires TWO top-level fields: wheelConfig (object) and shareMode (string)
+                // API Payload Construction (JSON):
+                // The Wheel of Names API requires a specific structure.
+                // We use "Anonymous Objects" (new { ... }) to match that structure without defining a whole Class for it.
+                // Structure:
+                // {
+                //   "wheelConfig": { "entries": [...], "title": "..." },
+                //   "shareMode": "..."
+                // }
                 var p = new
                 {
                     wheelConfig = new
@@ -8108,6 +8328,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
     {
         public GiveawayBotConfig Config { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the MultiPlatformMessenger class.
+        /// </summary>
+        /// <param name="config">The main giveaway configuration.</param>
         public MultiPlatformMessenger(GiveawayBotConfig config)
         {
             Config = config;
@@ -8119,6 +8343,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="bus">The event bus to subscribe to.</param>
         public void Register(IEventBus bus)
         {
+            // PUB/SUB PATTERN (Publish/Subscribe):
+            // The Messenger "Subscribes" to specific events (like WinnerSelected).
+            // When the GiveawayManager "Publishes" that event, this code runs automatically.
+            // This keeps the "Business Logic" (Manager) separate from the "UI/Notification" (Messenger).
             bus.Subscribe<WinnerSelectedEvent>(OnWinnerSelected);
             bus.Subscribe<WheelReadyEvent>(OnWheelReady);
             bus.Subscribe<GiveawayStartedEvent>(OnGiveawayStarted);
@@ -8150,7 +8378,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                  }
 
                  // --- Discord Integration ---
-                 // Priority: Native (Channel ID) > Webhook
+                 // Priority Hierarchy:
+                 // 1. Native Discord Integration (Channel ID) - Preferred/Cleaner
+                 // 2. Webhook URL - Fallback if native integration isn't set up
                  if (!string.IsNullOrEmpty(config.DiscordChannelId) || !string.IsNullOrEmpty(config.DiscordWebhookUrl))
                  {
                      string discordMsg = config.DiscordMessage?.Replace("{winner}", evt.Winner.UserName) 
@@ -8340,6 +8570,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Sends a message to a Discord channel via Streamer.bot native integration.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="channelId">The Discord channel ID.</param>
+        /// <param name="message">The message content to send.</param>
         private void SendDiscordNative(CPHAdapter adapter, string channelId, string message)
         {
             adapter.LogDebug($"[Discord] Sending Native Message to Channel {channelId}: {message}");
@@ -8349,6 +8582,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Sends a message via Discord Webhook.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="webhookUrl">The Discord webhook URL.</param>
+        /// <param name="message">The message content to send.</param>
         private void SendDiscordWebhook(CPHAdapter adapter, string webhookUrl, string message)
         {
             adapter.LogDebug($"[Discord] Sending Webhook to {webhookUrl}: {message}");
@@ -8788,6 +9024,9 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <summary>
         /// Checks for updates and downloads them if available.
         /// </summary>
+        /// <param name="adapter">The CPH adapter context.</param>
+        /// <param name="currentVersion">The current version string of the bot.</param>
+        /// <param name="notifyIfUpToDate">If true, sends a notification even if no update is found.</param>
         public static async Task CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion, bool notifyIfUpToDate = false)
         {
             try
@@ -8946,10 +9185,13 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <returns>True if remote is newer, otherwise false.</returns>
         private static bool IsNewer(string remote, string local)
         {
+            // First, try to parse as proper Semantic Versions (e.g. 1.0.0 vs 1.0.1)
+            // This handles cases like 1.10 > 1.2 correctly (which string comparison gets wrong).
             if (Version.TryParse(remote, out Version vRemote) && Version.TryParse(local, out Version vLocal))
             {
                 return vRemote > vLocal;
             }
+            // Fallback: If non-numeric (e.g. "beta-1"), use simple alphabetical sort.
             return string.Compare(remote, local, StringComparison.OrdinalIgnoreCase) > 0;
         }
 
