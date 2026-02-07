@@ -42,6 +42,8 @@ All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Gi
 - **Observability**: Real-time **OBS variables** and automated wheel spins.
 - **Wheel of Names Integration**: Seamlessly sync entries to the wheel and trigger spins.
 - **Discord Integration**: Automatically announce winners to a Discord channel (Native or Webhook).
+- **Bidirectional Sync (Mirror Mode)**: Update config settings directly from Streamer.bot Global Variables.
+- **Separate Game Name Dumps**: Export just the "Game Name" (e.g., Player.1234) for easy import into other tools.
 - **Auto-Update**: Built-in command `!giveaway update` to check for and download the latest version.
 
 ## 🚀 Quick Start
