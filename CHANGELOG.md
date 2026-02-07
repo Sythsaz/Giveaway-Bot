@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Test Suite**: Added `SeparateGameNameDumpsTests` to verify GameName dump file creation and
   content validation
 
+### Infrastructure (v1.5.3)
+
+- **Version Unification**: Introduced `VERSION` file as the single source of truth for the project version.
+- **Automation**: Added `tools/update-version.ps1` to automate version bumps across code, project files, and docs.
+- **Safety**: Added `tools/install-hooks.ps1` to install a git pre-commit hook that prevents version mismatches.
+- **CI**: Added `version-consistency.yml` workflow to enforce version alignment in Pull Requests.
+
 ## [1.5.1] - 2026-02-06
 
 ### Added (v1.5.1)

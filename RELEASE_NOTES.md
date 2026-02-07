@@ -1,4 +1,4 @@
-# Release Notes v1.5.0
+# Release Notes v1.6.0
 
 ## Security Section Guidance
 

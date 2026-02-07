@@ -1,0 +1,48 @@
+name: Version Consistency
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main, master]
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Version Consistency
+        shell: bash
+        run: |
+          # 1. Get Source of Truth
+          if [ ! -f "VERSION" ]; then
+            echo "::error::VERSION file missing!"
+            exit 1
+          fi
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          echo "Target Version: $VERSION"
+
+          # 2. Check CSPROJ
+          CSPROJ_VERSION=$(grep "<Version>" StreamerBot.csproj | sed -e 's/.*<Version>\(.*\)<\/Version>.*/\1/' | tr -d '[:space:]')
+          if [ "$VERSION" != "$CSPROJ_VERSION" ]; then
+            echo "::error::StreamerBot.csproj version mismatch! Expected $VERSION, found $CSPROJ_VERSION"
+            exit 1
+          fi
+
+          # 3. Check C# Constant (GiveawayManager)
+          # Look for: public const string Version = "1.5.3";
+          CS_VERSION=$(grep 'public const string Version = ".*";' GiveawayBot.cs | grep -oP '(?<=")[^"]+(?=")' | head -n 1)
+          if [ "$VERSION" != "$CS_VERSION" ]; then
+             echo "::error::GiveawayBot.cs version mismatch! Expected $VERSION, found $CS_VERSION"
+             exit 1
+          fi
+
+          # 4. Check Changelog
+          # Look for ## [1.5.3] - YYYY-MM-DD
+          if ! grep -q "## \[$VERSION\]" CHANGELOG.md; then
+             echo "::error::CHANGELOG.md missing entry for $VERSION!"
+             exit 1
+          fi
+
+          echo "✅ All versions match $VERSION"

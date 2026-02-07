@@ -251,6 +251,7 @@ public class CPHInline
 
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
+        public const string Version = GiveawayManager.Version;
 
 
 
@@ -435,7 +436,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.2"; // Semantic Versioning
+        public const string Version = "1.6.0"; // Semantic Versioning
 
         // ==================== Instance Fields ====================
 
