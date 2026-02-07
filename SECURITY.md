@@ -7,7 +7,7 @@ to the latest supported version before reporting issues.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
+| 1.x.x   | :white_check_mark: |
 | < 1.0.0 | :x:                |
 
 ## Reporting a Vulnerability
@@ -15,7 +15,7 @@ to the latest supported version before reporting issues.
 If you discover a security vulnerability in the Giveaway Bot, please **do not open a public issue**. Instead,
 please report it via:
 
-- **Discord**: DM `Sythsaz`
+- **Discord**: DM `Sythsaz` - Discord Server[https://discord.gg/A7rXNaFTUX]
 
 We will acknowledge your report within 72 hours and provide an estimated timeline for investigation and resolution.
 
