@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - _No security changes in this release cycle._
 
+### Infrastructure
+
+- Implementing Version Unification (PR #43)
+
 ## [1.5.3] - 2026-02-06
 
 ### Added (v1.5.3)
