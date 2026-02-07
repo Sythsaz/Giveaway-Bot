@@ -194,7 +194,7 @@ public class CPHInline
 
         // Identity Constants
         private const string ActionName = "Giveaway Bot";
-        public const string Version = "1.5.2";
+
 
 
         /// <summary>
