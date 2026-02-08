@@ -20,7 +20,7 @@ Write-Step "0. Dependency Check"
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     Write-Success "gh CLI found."
     if (-not $DryRun) {
-        $ghStatus = gh auth status 2>&1
+        gh auth status 2>&1 | Out-Null
         if ($LASTEXITCODE -ne 0) {
             Write-ErrorMsg "gh CLI is not authenticated. Run 'gh auth login' first."
             exit 1
