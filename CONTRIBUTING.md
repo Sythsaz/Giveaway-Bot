@@ -248,7 +248,7 @@ dotnet run
 
 1. **Copy `GiveawayBot.cs`** to Streamer.bot
 2. **Import** into a C# action
-3. **Configure** `giveaway_config.json` in `data/Giveaway Helper/config/`
+3. **Configure** `giveaway_config.json` in `data/Giveaway Bot/config/`
 4. **Run** `!giveaway system test` in chat
 5. **Test your changes** with real commands
 
@@ -302,7 +302,11 @@ The workflow `.github/workflows/version-consistency.yml` enforces this and fails
 
 We use a streamlined **PR-based release workflow**. To release a new version:
 
-1. **Run the auto-release script**:
+1. **Prepare the Changelog**:
+   - Ensure all notable changes are documented in `CHANGELOG.md` under the `[Unreleased]` section.
+   - The script will automatically move these items to the new version section.
+
+2. **Run the auto-release script**:
 
    ```powershell
    # Syntax: .\tools\auto-release.ps1 -Version <NEW_VERSION>
@@ -310,19 +314,19 @@ We use a streamlined **PR-based release workflow**. To release a new version:
    ```
 
    This script will automatically:
-   - Create a release branch (`release/v1.6.0`)
    - Bump version in `VERSION`, `.csproj`, `.cs`, and `.wiki`
    - Update `CHANGELOG.md` (preserving `[Unreleased]` section)
-   - Open a Pull Request via GitHub CLI (`gh`)
+   - Create a temporary branch and open a Pull Request via GitHub CLI (`gh`)
 
-2. **Merge the Pull Request**:
+3. **Merge the Pull Request**:
    - The script will wait for you to merge the PR.
    - Ensure all CI checks pass.
    - Merge the PR into `main`.
 
-3. **Finalize**:
+4. **Finalize**:
    - The script will detect the merge, pull `main`, and push the `v1.6.0` tag.
    - This tag triggers the final GitHub Release workflow.
+   - **Cleanup**: The script automatically deletes both the local and remote release branches.
 
 ### Wiki Generation
 

@@ -448,7 +448,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.6"; // Semantic Versioning (canonical: VERSION file)
+        public const string Version = "1.5.7"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 

@@ -9,7 +9,7 @@
       },
       "MaxEntriesPerMinute": 200,
       "SubLuckMultiplier": 2,
-      
+
       "//": "Auto-close the giveaway after 5 minutes",
       "TimerDuration": "5m",
 
@@ -20,6 +20,8 @@
         "WinnerSelected": "🏆 FAST FINGERS! @{0} is the winner!",
         "EntryAccepted": "Got it {1}! You're in for the flash draw."
       },
+      "//": "Custom Discord announcement",
+      "DiscordMessage": "⚡ FLASH GIVEAWAY WINNER: **{winner}**! Claim your prize now! ⚡",
 
       "//": "Enable desktop notifications for key events",
       "ToastNotifications": {

@@ -121,7 +121,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
 Write-Step "5. Creating Release PR"
 
 # Create Branch
-$releaseBranch = "release/v$Version"
+$releaseBranch = "chore/release-v$Version"
 Write-Host "Creating branch $releaseBranch..."
 if (-not $DryRun) {
     git checkout -b $releaseBranch
@@ -178,6 +178,13 @@ if (-not $DryRun) {
     
     Write-Host "Cleaning up branch..."
     git branch -d $releaseBranch
+    Write-Host "Deleting remote branch..."
+    try {
+        git push origin --delete $releaseBranch 2>&1 | Out-Null
+    }
+    catch {
+        Write-Warning "Could not delete remote branch (it may have already been deleted)."
+    }
     
     Write-Success "Release v$Version Complete and Pushed!"
 }

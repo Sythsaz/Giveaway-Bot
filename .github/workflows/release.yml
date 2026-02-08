@@ -33,7 +33,6 @@ jobs:
 
           artifacts=(
             "GiveawayBot.cs"
-            "README.md"
             "CHANGELOG.md"
           )
 
@@ -47,8 +46,11 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          body: ${{ steps.extract_notes.outputs.release_notes }}
+          body: |
+            ${{ steps.extract_notes.outputs.release_notes }}
+
+            ---
+            **Full Documentation**: https://github.com/Sythsaz/Giveaway-Bot/wiki
           files: |
             GiveawayBot.cs
-            README.md
             CHANGELOG.md
