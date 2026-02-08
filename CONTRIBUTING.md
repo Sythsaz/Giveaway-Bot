@@ -302,7 +302,11 @@ The workflow `.github/workflows/version-consistency.yml` enforces this and fails
 
 We use a streamlined **PR-based release workflow**. To release a new version:
 
-1. **Run the auto-release script**:
+1. **Prepare the Changelog**:
+   - Ensure all notable changes are documented in `CHANGELOG.md` under the `[Unreleased]` section.
+   - The script will automatically move these items to the new version section.
+
+2. **Run the auto-release script**:
 
    ```powershell
    # Syntax: .\tools\auto-release.ps1 -Version <NEW_VERSION>
@@ -315,12 +319,12 @@ We use a streamlined **PR-based release workflow**. To release a new version:
    - Update `CHANGELOG.md` (preserving `[Unreleased]` section)
    - Open a Pull Request via GitHub CLI (`gh`)
 
-2. **Merge the Pull Request**:
+3. **Merge the Pull Request**:
    - The script will wait for you to merge the PR.
    - Ensure all CI checks pass.
    - Merge the PR into `main`.
 
-3. **Finalize**:
+4. **Finalize**:
    - The script will detect the merge, pull `main`, and push the `v1.6.0` tag.
    - This tag triggers the final GitHub Release workflow.
 
