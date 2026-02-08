@@ -327,6 +327,7 @@ We use a streamlined **PR-based release workflow**. To release a new version:
 4. **Finalize**:
    - The script will detect the merge, pull `main`, and push the `v1.6.0` tag.
    - This tag triggers the final GitHub Release workflow.
+   - **Cleanup**: The script automatically deletes both the local and remote release branches.
 
 ### Wiki Generation
 
