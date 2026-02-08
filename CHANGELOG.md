@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.9] - 2026-02-08
+
+### Fixed
+
+- **Update Service**: Fixed second duplicate update command handler at line 3466 that was still using chat broadcast
+  instead of toast notification.
+- **Localization**: Fixed `Loc.Get()` parameter ordering bug where format arguments weren't being passed correctly,
+  causing placeholders like `{0}` and `{1}` to appear literally in toast messages instead of showing actual values.
+
+### Improved
+
+- **Code Quality**: Added `Loc.GetGlobal()` helper method to improve readability by eliminating explicit `null` parameters
+  in localization calls.
+- **Code Quality**: Centralized `ToastTitle` localization key as a constant (`Loc.ToastTitle`) for better maintainability.
+
 ## [1.5.8] - 2026-02-08
 
 ### Fixed
