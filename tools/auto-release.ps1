@@ -107,7 +107,7 @@ if (Test-Path $ChangelogPath) {
 Write-Step "4. Ready to Release"
 Write-Host "Version: $Version"
 Write-Host "Branch:  $branch"
-Write-Host "Action:  Commit, Tag, and Push"
+Write-Host "Action:  Branch -> PR -> Merge -> Tag"
 
 if ($DryRun) {
     Write-Success "Dry Run Complete. No changes made."
@@ -115,7 +115,7 @@ if ($DryRun) {
 }
 
 Write-Host "Press any key to continue or Ctrl+C to abort..."
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+$null = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
 
 # 5. PR Workflow
 Write-Step "5. Creating Release PR"
