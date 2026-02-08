@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.6] - 2026-02-08
+
 ### Fixed
 
 - **Linting**: Resolved `markdownlint` errors in `CHANGELOG.md` (duplicate headings, trailing newlines).
