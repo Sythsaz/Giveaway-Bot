@@ -391,7 +391,19 @@ public static class Loc
 
     public static IEnumerable<string> Keys => _defaults.Keys;
 
+    // Common localization keys as constants for convenience
+    public const string ToastTitle = "ToastTitle";
+
     public static string Get(string key, params object[] args)
+    {
+        return Get(key, null, args);
+    }
+
+    /// <summary>
+    /// Gets a global localized string (bypassing profile-specific messages).
+    /// This is a convenience wrapper that explicitly passes null for profileName.
+    /// </summary>
+    public static string GetGlobal(string key, params object[] args)
     {
         return Get(key, null, args);
     }
@@ -2379,7 +2391,7 @@ public static class Loc
                         Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                         return true;
                     }
-                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Checking"));
+                    adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_Checking"));
                     // Use internal UpdateService
                     await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                     return true;
@@ -3463,7 +3475,7 @@ public static class Loc
                                 Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                                 return true;
                             }
-                            adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Checking"));
+                            adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_Checking"));
                             await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                             return true;
                         }
@@ -9114,7 +9126,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 var release = await GetLatestReleaseInfoAsync(adapter);
                 if (release == null)
                 {
-                    if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_CheckFailed"));
+                    if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_CheckFailed"));
                     return;
                 }
 
@@ -9132,25 +9144,25 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     {
                         string fileName = Path.GetFileName(savedPath);
                         // Single consolidated toast with all info (localized)
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", null, remoteTag, fileName));
+                        adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_Downloaded", remoteTag, fileName));
                         adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Path: {savedPath}");
                     }
                     else
                     {
                         adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] ❌ Failed to download update file.");
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_FailedDownload"));
+                        adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_FailedDownload"));
                     }
                 }
                 else if (notifyIfUpToDate)
                 {
                     adapter.LogInfo("[UpdateService] [CheckForUpdatesAsync] Bot is up to date.");
-                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_UpToDate", null, currentVersion));
+                    adapter.ShowToastNotification(Loc.Get(Loc.ToastTitle), Loc.GetGlobal("Update_UpToDate", currentVersion));
                 }
             }
             catch (Exception ex)
             {
                 adapter.LogError($"[UpdateService] [CheckForUpdatesAsync] Update Check Failed: {ex.Message}");
-                if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get("Update_ErrorTitle"), Loc.Get("Update_ErrorUnexpected"));
+                if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.GetGlobal("Update_ErrorTitle"), Loc.GetGlobal("Update_ErrorUnexpected"));
             }
             finally
             {
