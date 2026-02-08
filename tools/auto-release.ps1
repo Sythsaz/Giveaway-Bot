@@ -84,20 +84,22 @@ $ChangelogPath = Join-Path $RepoRoot "CHANGELOG.md"
 $Today = Get-Date -Format "yyyy-MM-dd"
 if (Test-Path $ChangelogPath) {
     $content = Get-Content $ChangelogPath -Raw -Encoding UTF8
-    # Replace [Unreleased] with [Version] - Date
-    # Pattern: ## [Unreleased] -> ## [1.2.3] - 2024-01-01
+    # Replace [Unreleased] with new [Unreleased] + [Version]
+    # We use a regex replace to insert the new version header below a fresh [Unreleased] header
     if ($content -match "## \[Unreleased\]") {
+        $newHeader = "## [Unreleased]`n`n## [$Version] - $Today"
         if ($DryRun) {
-            Write-Warning "[Dry Run] Would update CHANGELOG.md header to: ## [$Version] - $Today"
+            Write-Warning "[Dry Run] Would update CHANGELOG.md header to:`n$newHeader"
         }
         else {
-            $content = $content -replace "## \[Unreleased\]", "## [$Version] - $Today"
+            $content = $content -replace "## \[Unreleased\]", $newHeader
             $content | Set-Content $ChangelogPath -Encoding UTF8
-            Write-Success "CHANGELOG.md updated."
+            Write-Success "CHANGELOG.md updated (preserved Unreleased section)."
         }
     }
     else {
-        Write-Warning "Could not find '## [Unreleased]' section in CHANGELOG.md"
+        Write-ErrorMsg "Could not find '## [Unreleased]' section in CHANGELOG.md"
+        exit 1
     }
 }
 
