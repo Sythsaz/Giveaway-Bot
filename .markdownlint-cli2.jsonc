@@ -1,13 +1,13 @@
-{
+﻿{
   "config": {
     "default": true,
     "MD013": {
-      "line_length": 120,
+      "line_length": 120
     },
     "MD024": {
-      "siblings_only": true,
-    },
+      "siblings_only": true
+    }
   },
   "globs": ["**/*.md"],
-  "ignores": [".clinerules/**"],
+  "ignores": [".clinerules/**"]
 }

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Linting**: Resolved `markdownlint` errors in `CHANGELOG.md` (duplicate headings, trailing newlines).
 - **Config**: Updated `.markdownlint-cli2.jsonc` to strict JSON format and added to `.prettierignore`
   to prevent formatter conflicts.
+- **Workflow**: Changed release workflow to utilize Pull Requests (`gh pr create`) and automate tagging on merge.
 
 ## [1.5.5] - 2026-02-08
 

@@ -150,3 +150,7 @@ dotnet_diagnostic.CS8603.severity = none  # Possible null reference return
 dotnet_diagnostic.CS8604.severity = none  # Possible null reference argument
 dotnet_diagnostic.CS8618.severity = none  # Non-nullable property initialization
 dotnet_diagnostic.CS8625.severity = none  # Cannot convert null literal to non-nullable reference type
+
+[*.jsonc]
+insert_final_newline = false
+trim_trailing_whitespace = false
