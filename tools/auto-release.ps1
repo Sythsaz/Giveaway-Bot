@@ -15,6 +15,24 @@ function Write-Success { param([string]$msg) Write-Host "SUCCESS: $msg" -Foregro
 function Write-Warning { param([string]$msg) Write-Host "WARNING: $msg" -ForegroundColor Yellow }
 function Write-ErrorMsg { param([string]$msg) Write-Host "ERROR: $msg" -ForegroundColor Red }
 
+# 0. Dependency Check
+Write-Step "0. Dependency Check"
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    Write-Success "gh CLI found."
+    if (-not $DryRun) {
+        $ghStatus = gh auth status 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-ErrorMsg "gh CLI is not authenticated. Run 'gh auth login' first."
+            exit 1
+        }
+        Write-Success "gh CLI authenticated."
+    }
+}
+else {
+    Write-ErrorMsg "gh CLI is not installed. Please install GitHub CLI."
+    exit 1
+}
+
 # 1. Safety Checks
 Write-Step "1. Safety Checks"
 
@@ -97,20 +115,70 @@ if ($DryRun) {
 Write-Host "Press any key to continue or Ctrl+C to abort..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
-# 5. Git Operations
-Write-Step "5. Git Operations"
+# 5. PR Workflow
+Write-Step "5. Creating Release PR"
 
-Write-Host "Adding files..."
-git add .
+# Create Branch
+$releaseBranch = "release/v$Version"
+Write-Host "Creating branch $releaseBranch..."
+if (-not $DryRun) {
+    git checkout -b $releaseBranch
+}
 
-Write-Host "Committing..."
-git commit -m "chore(release): v$Version"
+# Commit Changes
+Write-Host "Committing changes..."
+if (-not $DryRun) {
+    git add .
+    git commit -m "chore(release): v$Version"
+    
+    # Push Branch
+    git push --set-upstream origin $releaseBranch
+}
 
-Write-Host "Tagging..."
-git tag "v$Version"
+# Create PR
+if (-not $DryRun) {
+    Write-Host "Creating Pull Request..."
+    # Capture the PR URL. We use --json url to get just the URL field for cleaner parsing if needed.
+    # But strictly speaking `gh pr create` outputs the URL to stdout by default.
+    $prUrl = gh pr create --title "chore(release): v$Version" --body "Automated release for v$Version.`n`nUpdates version files and changelog." --base main --head $releaseBranch
+    Write-Success "PR Created: $prUrl"
 
-Write-Host "Pushing to remote..."
-git push origin main
-git push origin "v$Version"
+    # 6. Wait for Merge
+    Write-Step "6. Waiting for PR Merge"
+    Write-Host "Polling PR status... (Ctrl+C to abort waiting)"
+    
+    while ($true) {
+        $state = gh pr view $releaseBranch --json state --jq .state
+        if ($state -eq "MERGED") {
+            Write-Success "PR Merged!"
+            break
+        }
+        if ($state -eq "CLOSED") {
+            Write-ErrorMsg "PR was closed without merging. Aborting release."
+            exit 1
+        }
+        
+        Write-Host "Current State: $state. Waiting 15s..."
+        Start-Sleep -Seconds 15
+    }
 
-Write-Success "Release v$Version pushed to origin!"
+    # 7. Finalize (Tag & Push)
+    Write-Step "7. Finalizing Release"
+    
+    git checkout main
+    git pull
+    
+    Write-Host "Tagging v$Version..."
+    git tag "v$Version"
+    
+    Write-Host "Pushing tag..."
+    git push origin "v$Version"
+    
+    Write-Host "Cleaning up branch..."
+    git branch -d $releaseBranch
+    
+    Write-Success "Release v$Version Complete and Pushed!"
+}
+else {
+    Write-Warning "[Dry Run] Would create branch $releaseBranch, commit, push, create PR, wait for merge, and tag."
+}
