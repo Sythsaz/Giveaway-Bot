@@ -25,6 +25,8 @@
       "ExternalListeners": [],
       "GameFilter": "Just Chatting",
       "TitleFilter": "Giveaway",
+      "RequireGameName": false,
+      "GameNameRequiredMessage": "Please specify a game! Usage: !enter <Game Name>",
 
       "//": "--- Bot Protection ---",
       "EnableEntropyCheck": false,
@@ -60,6 +62,9 @@
         "GiveawayOpened": "Giveaway is OPEN!",
         "GiveawayClosed": "Giveaway is CLOSED!"
       },
+      "DiscordWebhookUrl": null,
+      "DiscordChannelId": null,
+      "DiscordMessage": "Congratulations {winner}!",
       "ToastNotifications": {
         "WinnerSelected": true,
         "GiveawayOpened": true,
@@ -72,6 +77,7 @@
       "DumpFormat": "TXT",
       "DumpEntriesOnEntry": false,
       "DumpEntriesOnEntryThrottleSeconds": 10,
+      "DumpSeparateGameNames": false,
 
       "//": "--- State Exposure ---",
       "ExposeVariables": false

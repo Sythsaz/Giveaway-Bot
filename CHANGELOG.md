@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Release Workflow**: Updated `tools/auto-release.ps1` to create temporary `chore/release-vX.Y.Z` branches and open
+  Pull Requests, replacing the previous `release/vX.Y.Z` branch strategy to better align with conventional commits.
+- **Documentation**: Updated `CONTRIBUTING.md` to reflect the new PR-based release workflow.
+- **Documentation**: Corrected the configuration directory path in `README.md` and `CONTRIBUTING.md` from
+  `Giveaway Helper` to `Giveaway Bot`.
+- **Release Assets**: Removed `README.md` from release artifacts in favor of linking to the
+  [Wiki](https://github.com/Sythsaz/Giveaway-Bot/wiki) in the release notes.
+- **Tests**: Fixed incorrect directory path in `IntegrationTests.cs` to match the actual `Giveaway Bot` folder.
+
 ## [1.5.6] - 2026-02-08
 
 ### Fixed

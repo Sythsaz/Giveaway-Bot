@@ -121,7 +121,7 @@ $null = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
 Write-Step "5. Creating Release PR"
 
 # Create Branch
-$releaseBranch = "release/v$Version"
+$releaseBranch = "chore/release-v$Version"
 Write-Host "Creating branch $releaseBranch..."
 if (-not $DryRun) {
     git checkout -b $releaseBranch

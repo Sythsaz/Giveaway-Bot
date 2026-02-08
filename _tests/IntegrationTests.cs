@@ -426,7 +426,7 @@ namespace StreamerBot.Tests
                 cph.Args.Clear(); cph.Args["command"] = "!draw"; cph.Args["isBroadcaster"] = true;
                 await m.ProcessTrigger(new CPHAdapter(cph, cph.Args));
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string d = Path.Combine(baseDir, "Giveaway Helper", "dumps", "Main");
+                string d = Path.Combine(baseDir, "Giveaway Bot", "dumps", "Main");
                 if (Directory.Exists(d) && Directory.GetFiles(d).Length > 0) Console.WriteLine("PASS");
                 else Console.WriteLine($"FAIL (Dir exists: {Directory.Exists(d)})");
             }

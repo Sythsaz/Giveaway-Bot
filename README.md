@@ -55,7 +55,7 @@ All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Gi
    - Paste the contents of `GiveawayBot.cs`.
    - Click "Compile" (Ensure you have added the references first).
 3. **Configure**:
-   - The bot will generate a config file at `.../Streamer.bot/data/Giveaway Helper/config/giveaway_config.json`.
+   - The bot will generate a config file at `.../Streamer.bot/data/Giveaway Bot/config/giveaway_config.json`.
    - Edit this file or use the [Example Configs](examples/).
 4. **Run**:
    - Type `!giveaway system test` in chat to verify installation.
@@ -70,7 +70,6 @@ All documentation has moved to the **[GitHub Wiki](https://github.com/Sythsaz/Gi
 Each GitHub release is expected to include these assets:
 
 - `GiveawayBot.cs`
-- `README.md`
 - `CHANGELOG.md`
 
 ## 🤝 Contributing

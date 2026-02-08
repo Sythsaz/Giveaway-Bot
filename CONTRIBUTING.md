@@ -248,7 +248,7 @@ dotnet run
 
 1. **Copy `GiveawayBot.cs`** to Streamer.bot
 2. **Import** into a C# action
-3. **Configure** `giveaway_config.json` in `data/Giveaway Helper/config/`
+3. **Configure** `giveaway_config.json` in `data/Giveaway Bot/config/`
 4. **Run** `!giveaway system test` in chat
 5. **Test your changes** with real commands
 
@@ -314,10 +314,10 @@ We use a streamlined **PR-based release workflow**. To release a new version:
    ```
 
    This script will automatically:
-   - Create a release branch (`release/v1.6.0`)
+   This script will automatically:
    - Bump version in `VERSION`, `.csproj`, `.cs`, and `.wiki`
    - Update `CHANGELOG.md` (preserving `[Unreleased]` section)
-   - Open a Pull Request via GitHub CLI (`gh`)
+   - Create a temporary branch and open a Pull Request via GitHub CLI (`gh`)
 
 3. **Merge the Pull Request**:
    - The script will wait for you to merge the PR.
