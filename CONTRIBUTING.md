@@ -314,7 +314,6 @@ We use a streamlined **PR-based release workflow**. To release a new version:
    ```
 
    This script will automatically:
-   This script will automatically:
    - Bump version in `VERSION`, `.csproj`, `.cs`, and `.wiki`
    - Update `CHANGELOG.md` (preserving `[Unreleased]` section)
    - Create a temporary branch and open a Pull Request via GitHub CLI (`gh`)

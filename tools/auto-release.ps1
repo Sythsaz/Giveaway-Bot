@@ -179,7 +179,12 @@ if (-not $DryRun) {
     Write-Host "Cleaning up branch..."
     git branch -d $releaseBranch
     Write-Host "Deleting remote branch..."
-    git push origin --delete $releaseBranch
+    try {
+        git push origin --delete $releaseBranch 2>&1 | Out-Null
+    }
+    catch {
+        Write-Warning "Could not delete remote branch (it may have already been deleted)."
+    }
     
     Write-Success "Release v$Version Complete and Pushed!"
 }
