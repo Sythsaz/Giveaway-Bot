@@ -374,10 +374,13 @@ public static class Loc
 
             // Update Service
             { "Update_CheckFailed", "❌ Failed to fetch release info." },
+            { "Update_Checking", "🔄 Checking GitHub for updates..." },
             { "Update_Available", "⬇ Update Available: {0}" },
-            { "Update_Downloaded", "✅ Update saved to: updates/{0}" },
-            { "Update_FailedDownload", "❌ Failed to download file." },
+            { "Update_Downloaded", "✅ Update {0} downloaded to updates/{1}" },
+            { "Update_FailedDownload", "❌ Failed to download update" },
             { "Update_UpToDate", "✅ You are on the latest version ({0})." },
+            { "Update_ErrorTitle", "Update Error" },
+            { "Update_ErrorUnexpected", "❌ Unexpected error." },
 
 
             // Errors
@@ -2376,7 +2379,7 @@ public static class Loc
                         Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                         return true;
                     }
-                    adapter.ShowToastNotification("Giveaway Bot Update", "🔄 Checking GitHub for updates...");
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Checking"));
                     // Use internal UpdateService
                     await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                     return true;
@@ -9082,7 +9085,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         private const string RepoOwner = "Sythsaz";
         private const string RepoName = "Giveaway-Bot";
         private static readonly HttpClient _httpClient = new HttpClient();
-        private static bool _isCheckingForUpdates = false;
+        private static int _isCheckingForUpdates = 0; // 0 = not checking, 1 = checking
 
         static UpdateService()
         {
@@ -9097,14 +9100,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="notifyIfUpToDate">If true, sends a notification even if no update is found.</param>
         public static async Task CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion, bool notifyIfUpToDate = false)
         {
-            // Guard: Prevent concurrent update checks (fixes duplicate toast issue)
-            if (_isCheckingForUpdates)
+            // Guard: Prevent concurrent update checks using thread-safe atomic operation
+            // CompareExchange returns the original value; if it was 0, we successfully set it to 1
+            if (System.Threading.Interlocked.CompareExchange(ref _isCheckingForUpdates, 1, 0) != 0)
             {
                 adapter.LogDebug("[UpdateService] [CheckForUpdatesAsync] Update check already in progress, skipping duplicate request.");
                 return;
             }
 
-            _isCheckingForUpdates = true;
             try
             {
                 // 1. Get Latest Release Info
@@ -9128,14 +9131,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         string fileName = Path.GetFileName(savedPath);
-                        // Single consolidated toast with all info
-                        adapter.ShowToastNotification("Giveaway Bot Update", $"✅ Update {remoteTag} downloaded to updates/{fileName}");
+                        // Single consolidated toast with all info (localized)
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", remoteTag, fileName));
                         adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Path: {savedPath}");
                     }
                     else
                     {
                         adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] ❌ Failed to download update file.");
-                        adapter.ShowToastNotification("Giveaway Bot Update", "❌ Failed to download update");
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_FailedDownload"));
                     }
                 }
                 else if (notifyIfUpToDate)
@@ -9147,11 +9150,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             catch (Exception ex)
             {
                 adapter.LogError($"[UpdateService] [CheckForUpdatesAsync] Update Check Failed: {ex.Message}");
-                if (notifyIfUpToDate) adapter.ShowToastNotification("Update Error", "❌ Unexpected error.");
+                if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get("Update_ErrorTitle"), Loc.Get("Update_ErrorUnexpected"));
             }
             finally
             {
-                _isCheckingForUpdates = false;
+                System.Threading.Interlocked.Exchange(ref _isCheckingForUpdates, 0);
             }
         }
 
