@@ -178,6 +178,8 @@ if (-not $DryRun) {
     
     Write-Host "Cleaning up branch..."
     git branch -d $releaseBranch
+    Write-Host "Deleting remote branch..."
+    git push origin --delete $releaseBranch
     
     Write-Success "Release v$Version Complete and Pushed!"
 }
