@@ -47,23 +47,23 @@
 // css_ref Microsoft.CSharp.dll
 #region Imports & Assembly Attributes
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
-using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 #endregion
 
 
@@ -371,12 +371,14 @@ public static class Loc
             { "GiveawayFull", "🚫 The giveaway is FULL! No more entries accepted." },
             { "TimerUpdated", "⏳ Time limit updated! Ends in {0}." },
 
+
             // Update Service
             { "Update_CheckFailed", "❌ Failed to fetch release info." },
-            { "Update_Available", "⬇ Update Available: {0}\nDownloading..." },
-            { "Update_Downloaded", "✅ Saved to: updates/{0}\nImport into Streamer.bot to apply." },
+            { "Update_Available", "⬇ Update Available: {0}" },
+            { "Update_Downloaded", "✅ Update saved to: updates/{0}" },
             { "Update_FailedDownload", "❌ Failed to download file." },
             { "Update_UpToDate", "✅ You are on the latest version ({0})." },
+
 
             // Errors
             { "Error_Loop", "Loop detected. Setup error." },
@@ -2374,7 +2376,7 @@ public static class Loc
                         Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                         return true;
                     }
-                    Messenger?.SendBroadcast(adapter, "🔄 Checking GitHub for updates...", platform);
+                    adapter.ShowToastNotification("Giveaway Bot Update", "🔄 Checking GitHub for updates...");
                     // Use internal UpdateService
                     await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                     return true;
@@ -9080,6 +9082,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         private const string RepoOwner = "Sythsaz";
         private const string RepoName = "Giveaway-Bot";
         private static readonly HttpClient _httpClient = new HttpClient();
+        private static bool _isCheckingForUpdates = false;
 
         static UpdateService()
         {
@@ -9094,6 +9097,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="notifyIfUpToDate">If true, sends a notification even if no update is found.</param>
         public static async Task CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion, bool notifyIfUpToDate = false)
         {
+            // Guard: Prevent concurrent update checks (fixes duplicate toast issue)
+            if (_isCheckingForUpdates)
+            {
+                adapter.LogDebug("[UpdateService] [CheckForUpdatesAsync] Update check already in progress, skipping duplicate request.");
+                return;
+            }
+
+            _isCheckingForUpdates = true;
             try
             {
                 // 1. Get Latest Release Info
@@ -9110,23 +9121,21 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 // 2. Compare Versions
                 if (IsNewer(remoteVersion, currentVersion))
                 {
-                    adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] Update Available: {currentVersion} -> {remoteVersion}");
-                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Available", remoteTag));
+                    adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Update Available: {currentVersion} -> {remoteVersion}");
 
                     // 3. Download
                     string savedPath = await DownloadUpdateAsync(adapter, remoteTag);
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         string fileName = Path.GetFileName(savedPath);
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", fileName));
-                        adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] Update saved to: {savedPath}");
-
-                        // Copy to clipboard instructions? No, just log.
-                        adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] INSTRUCTIONS: Open 'Giveaway Bot - Main', select 'Import', and pick '{savedPath}'.");
+                        // Single consolidated toast with all info
+                        adapter.ShowToastNotification("Giveaway Bot Update", $"✅ Update {remoteTag} downloaded to updates/{fileName}");
+                        adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Path: {savedPath}");
                     }
                     else
                     {
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_FailedDownload"));
+                        adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] ❌ Failed to download update file.");
+                        adapter.ShowToastNotification("Giveaway Bot Update", "❌ Failed to download update");
                     }
                 }
                 else if (notifyIfUpToDate)
@@ -9139,6 +9148,10 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             {
                 adapter.LogError($"[UpdateService] [CheckForUpdatesAsync] Update Check Failed: {ex.Message}");
                 if (notifyIfUpToDate) adapter.ShowToastNotification("Update Error", "❌ Unexpected error.");
+            }
+            finally
+            {
+                _isCheckingForUpdates = false;
             }
         }
 

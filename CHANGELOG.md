@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Update Service**: Fixed duplicate toast notifications when running `!ga update` by adding a concurrency guard
+  to prevent `CheckForUpdatesAsync` from executing simultaneously.
+- **Localization**: Removed newline characters from `Update_Available` and `Update_Downloaded` localization strings
+  for cleaner single-line toast messages.
+
+### Changed
+
+- **UX**: Changed update check notification from chat message to toast notification for a cleaner user experience
+  without spamming chat.
+
 ## [1.5.7] - 2026-02-08
 
 ### Changed
