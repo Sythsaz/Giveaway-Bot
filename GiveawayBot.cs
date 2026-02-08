@@ -453,7 +453,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.8"; // Semantic Versioning (canonical: VERSION file)
+        public const string Version = "1.5.9"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 
@@ -3463,7 +3463,7 @@ public static class Loc
                                 Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                                 return true;
                             }
-                            Messenger?.SendBroadcast(adapter, "🔄 Checking GitHub for updates...", platform);
+                            adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Checking"));
                             await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                             return true;
                         }
@@ -9132,7 +9132,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     {
                         string fileName = Path.GetFileName(savedPath);
                         // Single consolidated toast with all info (localized)
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", remoteTag, fileName));
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", null, remoteTag, fileName));
                         adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Path: {savedPath}");
                     }
                     else
@@ -9144,7 +9144,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 else if (notifyIfUpToDate)
                 {
                     adapter.LogInfo("[UpdateService] [CheckForUpdatesAsync] Bot is up to date.");
-                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_UpToDate", currentVersion));
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_UpToDate", null, currentVersion));
                 }
             }
             catch (Exception ex)
