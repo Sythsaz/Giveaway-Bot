@@ -47,23 +47,23 @@
 // css_ref Microsoft.CSharp.dll
 #region Imports & Assembly Attributes
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
-using System.Collections.Concurrent;
 using System.Reflection;
 using System.Security.Cryptography;
-using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 #endregion
 
 
@@ -371,12 +371,17 @@ public static class Loc
             { "GiveawayFull", "🚫 The giveaway is FULL! No more entries accepted." },
             { "TimerUpdated", "⏳ Time limit updated! Ends in {0}." },
 
+
             // Update Service
             { "Update_CheckFailed", "❌ Failed to fetch release info." },
-            { "Update_Available", "⬇ Update Available: {0}\nDownloading..." },
-            { "Update_Downloaded", "✅ Saved to: updates/{0}\nImport into Streamer.bot to apply." },
-            { "Update_FailedDownload", "❌ Failed to download file." },
+            { "Update_Checking", "🔄 Checking GitHub for updates..." },
+            { "Update_Available", "⬇ Update Available: {0}" },
+            { "Update_Downloaded", "✅ Update {0} downloaded to updates/{1}" },
+            { "Update_FailedDownload", "❌ Failed to download update" },
             { "Update_UpToDate", "✅ You are on the latest version ({0})." },
+            { "Update_ErrorTitle", "Update Error" },
+            { "Update_ErrorUnexpected", "❌ Unexpected error." },
+
 
             // Errors
             { "Error_Loop", "Loop detected. Setup error." },
@@ -448,7 +453,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.7"; // Semantic Versioning (canonical: VERSION file)
+        public const string Version = "1.5.8"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 
@@ -2374,7 +2379,7 @@ public static class Loc
                         Messenger?.SendBroadcast(adapter, "⛔ Only the broadcaster can update the bot.", platform);
                         return true;
                     }
-                    Messenger?.SendBroadcast(adapter, "🔄 Checking GitHub for updates...", platform);
+                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Checking"));
                     // Use internal UpdateService
                     await UpdateService.CheckForUpdatesAsync(adapter, Version, true);
                     return true;
@@ -9080,6 +9085,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         private const string RepoOwner = "Sythsaz";
         private const string RepoName = "Giveaway-Bot";
         private static readonly HttpClient _httpClient = new HttpClient();
+        private static int _isCheckingForUpdates = 0; // 0 = not checking, 1 = checking
 
         static UpdateService()
         {
@@ -9094,6 +9100,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="notifyIfUpToDate">If true, sends a notification even if no update is found.</param>
         public static async Task CheckForUpdatesAsync(CPHAdapter adapter, string currentVersion, bool notifyIfUpToDate = false)
         {
+            // Guard: Prevent concurrent update checks using thread-safe atomic operation
+            // CompareExchange returns the original value; if it was 0, we successfully set it to 1
+            if (System.Threading.Interlocked.CompareExchange(ref _isCheckingForUpdates, 1, 0) != 0)
+            {
+                adapter.LogDebug("[UpdateService] [CheckForUpdatesAsync] Update check already in progress, skipping duplicate request.");
+                return;
+            }
+
             try
             {
                 // 1. Get Latest Release Info
@@ -9110,22 +9124,20 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 // 2. Compare Versions
                 if (IsNewer(remoteVersion, currentVersion))
                 {
-                    adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] Update Available: {currentVersion} -> {remoteVersion}");
-                    adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Available", remoteTag));
+                    adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Update Available: {currentVersion} -> {remoteVersion}");
 
                     // 3. Download
                     string savedPath = await DownloadUpdateAsync(adapter, remoteTag);
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         string fileName = Path.GetFileName(savedPath);
-                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", fileName));
-                        adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] Update saved to: {savedPath}");
-
-                        // Copy to clipboard instructions? No, just log.
-                        adapter.LogInfo($"[UpdateService] [CheckForUpdatesAsync] INSTRUCTIONS: Open 'Giveaway Bot - Main', select 'Import', and pick '{savedPath}'.");
+                        // Single consolidated toast with all info (localized)
+                        adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_Downloaded", remoteTag, fileName));
+                        adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Path: {savedPath}");
                     }
                     else
                     {
+                        adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] ❌ Failed to download update file.");
                         adapter.ShowToastNotification(Loc.Get("ToastTitle"), Loc.Get("Update_FailedDownload"));
                     }
                 }
@@ -9138,7 +9150,11 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             catch (Exception ex)
             {
                 adapter.LogError($"[UpdateService] [CheckForUpdatesAsync] Update Check Failed: {ex.Message}");
-                if (notifyIfUpToDate) adapter.ShowToastNotification("Update Error", "❌ Unexpected error.");
+                if (notifyIfUpToDate) adapter.ShowToastNotification(Loc.Get("Update_ErrorTitle"), Loc.Get("Update_ErrorUnexpected"));
+            }
+            finally
+            {
+                System.Threading.Interlocked.Exchange(ref _isCheckingForUpdates, 0);
             }
         }
 
