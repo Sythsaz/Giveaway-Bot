@@ -300,30 +300,29 @@ The workflow `.github/workflows/version-consistency.yml` enforces this and fails
 
 ### Releasing a New Version
 
-We use a unified versioning system. To release a new version (or bump version for development):
+We use a streamlined **PR-based release workflow**. To release a new version:
 
-1. **Run the update script**:
+1. **Run the auto-release script**:
 
    ```powershell
-   .\tools\update-version.ps1 1.6.0
+   # Syntax: .\tools\auto-release.ps1 -Version <NEW_VERSION>
+   .\tools\auto-release.ps1 -Version 1.6.0
    ```
 
-   This automatically updates:
-   - `VERSION` file
-   - `StreamerBot.csproj`
-   - `GiveawayBot.cs` constant
-   - `RELEASE_NOTES.md` header
-   - Wiki pages (if `../Giveaway-Bot.wiki` exists)
+   This script will automatically:
+   - Create a release branch (`release/v1.6.0`)
+   - Bump version in `VERSION`, `.csproj`, `.cs`, and `.wiki`
+   - Update `CHANGELOG.md` (preserving `[Unreleased]` section)
+   - Open a Pull Request via GitHub CLI (`gh`)
 
-2. **Commit the changes**:
+2. **Merge the Pull Request**:
+   - The script will wait for you to merge the PR.
+   - Ensure all CI checks pass.
+   - Merge the PR into `main`.
 
-   ```bash
-   git add .
-   git commit -m "chore: bump version to 1.6.0"
-   ```
-
-   > [!NOTE]
-   > The pre-commit hook (`tools/install-hooks.ps1`) will block commits if the `VERSION` file and `.csproj` mismatch.
+3. **Finalize**:
+   - The script will detect the merge, pull `main`, and push the `v1.6.0` tag.
+   - This tag triggers the final GitHub Release workflow.
 
 ### Wiki Generation
 
