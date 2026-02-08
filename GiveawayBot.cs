@@ -391,23 +391,44 @@ public static class Loc
 
     public static IEnumerable<string> Keys => _defaults.Keys;
 
-    // Common localization keys as constants for convenience
+    /// <summary>
+    /// Common toast title localization key. Use this constant instead of hardcoding "ToastTitle" string.
+    /// </summary>
     public const string ToastTitle = "ToastTitle";
 
+    /// <summary>
+    /// Gets a localized string for the specified key, with optional formatting arguments.
+    /// Uses global custom strings and defaults (no profile-specific override).
+    /// </summary>
+    /// <param name="key">Localization key to retrieve</param>
+    /// <param name="args">Optional formatting arguments for placeholders like {0}, {1}, etc.</param>
+    /// <returns>Formatted localized string</returns>
     public static string Get(string key, params object[] args)
     {
         return Get(key, null, args);
     }
 
     /// <summary>
-    /// Gets a global localized string (bypassing profile-specific messages).
-    /// This is a convenience wrapper that explicitly passes null for profileName.
+    /// Gets a global localized string, explicitly bypassing profile-specific overrides.
+    /// Use this for system messages (like update notifications) that should always use
+    /// the same text regardless of which giveaway profile is active.
     /// </summary>
+    /// <param name="key">Localization key to retrieve</param>
+    /// <param name="args">Optional formatting arguments for placeholders like {0}, {1}, etc.</param>
+    /// <returns>Formatted localized string from global custom strings or defaults</returns>
     public static string GetGlobal(string key, params object[] args)
     {
         return Get(key, null, args);
     }
 
+    /// <summary>
+    /// Gets a localized string with optional profile-specific override support.
+    /// Resolution order: profile messages → global custom strings → defaults.
+    /// </summary>
+    /// <param name="key">Localization key to retrieve</param>
+    /// <param name="profileName">Optional profile name for profile-specific message lookup</param>
+    /// <param name="args">Optional formatting arguments for placeholders like {0}, {1}, etc.</param>
+    /// <returns>Formatted localized string</returns>
     public static string Get(string key, string profileName, params object[] args)
     {
         string template = null;
