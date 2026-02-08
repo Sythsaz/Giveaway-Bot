@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.8] - 2026-02-08
+
 ### Fixed
 
 - **Update Service**: Fixed duplicate toast notifications when running `!ga update` by adding a thread-safe
@@ -351,3 +353,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Unreleased](https://github.com/Sythsaz/Giveaway-Bot/compare/v1.0.1...HEAD)
 - [1.0.1](https://github.com/Sythsaz/Giveaway-Bot/compare/v1.0.0...v1.0.1)
 - [1.0.0](https://github.com/Sythsaz/Giveaway-Bot/releases/tag/v1.0.0)
+
