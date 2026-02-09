@@ -1,3 +1,10 @@
+// Streamer.bot uses .NET Framework 4.8 / C# 7.3
+#pragma warning disable IDE0130 // Namespace does not match folder structure
+#pragma warning disable IDE0071 // Simplify interpolation
+#pragma warning disable IDE0056 // Indexing can be simplified (C# 8.0 ^ operator)
+#pragma warning disable IDE0054 // Use compound assignment
+#pragma warning disable IDE0074 // Use compound assignment
+#pragma warning disable CA1854 // Prefer TryGetValue
 using System;
 using System.Threading.Tasks;
 using StreamerBot;
@@ -64,14 +71,14 @@ namespace StreamerBot.Tests
 
         private static Task TestValidateChecksum_NoChecksum()
         {
-             // Should return true (allow update with warning)
-             if (!UpdateService.ValidateChecksum("Content", null))
+            // Should return true (allow update with warning)
+            if (!UpdateService.ValidateChecksum("Content", null))
                 throw new Exception("TestValidateChecksum_NoChecksum failed: Null checksum should pass (warn only)");
 
-             if (!UpdateService.ValidateChecksum("Content", ""))
+            if (!UpdateService.ValidateChecksum("Content", ""))
                 throw new Exception("TestValidateChecksum_NoChecksum failed: Empty checksum should pass (warn only)");
 
-             return Task.CompletedTask;
+            return Task.CompletedTask;
         }
     }
 }
