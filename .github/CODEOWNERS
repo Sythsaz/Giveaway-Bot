@@ -1,0 +1,9 @@
+# Core runtime script
+/GiveawayBot.cs @Sythsaz
+
+# Tests and tooling
+/_tests/ @Sythsaz
+/tools/ @Sythsaz
+
+# CI/CD and repo automation
+/.github/workflows/ @Sythsaz
