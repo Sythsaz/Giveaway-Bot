@@ -7,7 +7,7 @@ on:
 
 jobs:
   stale:
-    runs-on: ubuntu-latest, debian-dell
+    runs-on: [ubuntu-latest, debian-dell]
     permissions:
       issues: write
       pull-requests: write
