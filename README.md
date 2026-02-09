@@ -84,4 +84,5 @@ We take security seriously. See our [Security Policy](SECURITY.md) for details.
 ---
 
 **Maintained by [Sythsaz](https://github.com/Sythsaz)**
-**[Website Homepage](https://sythsaz.dpdns.org)
+
+**[Website Homepage](https://sythsaz.dpdns.org)**
