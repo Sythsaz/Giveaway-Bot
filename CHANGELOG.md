@@ -11,8 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Security**: implemented strict SHA256 checksum validation for downloaded updates. The bot now extracts the checksum from release notes and verifies file integrity before saving.
-- **CI**: Updated `release.yml` workflow to automatically calculate the SHA256 checksum of `GiveawayBot.cs` and append it to the release body.
+- **Security**: implemented strict SHA256 checksum validation for downloaded updates. The bot now extracts the checksum
+from release notes and verifies file integrity before saving.
+- **CI**: Updated `release.yml` workflow to automatically calculate the SHA256 checksum of `GiveawayBot.cs` and append
+it to the release body.
 
 ### Documentation
 
@@ -380,4 +382,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [Unreleased](https://github.com/Sythsaz/Giveaway-Bot/compare/v1.0.1...HEAD)
 - [1.0.1](https://github.com/Sythsaz/Giveaway-Bot/compare/v1.0.0...v1.0.1)
 - [1.0.0](https://github.com/Sythsaz/Giveaway-Bot/releases/tag/v1.0.0)
-

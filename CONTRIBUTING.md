@@ -273,7 +273,9 @@ The workflow `.github/workflows/version-consistency.yml` enforces this and fails
 - `VERSION`
 
 ### Checksum Requirement
-The bot requires a SHA256 checksum in the release notes to validate updates. The release workflow automatically calculates this checksum for `GiveawayBot.cs` and appends it to the release body in the format:
+
+The bot requires a SHA256 checksum in the release notes to validate updates. The release workflow automatically
+calculates this checksum for `GiveawayBot.cs` and appends it to the release body in the format:
 `SHA256: <64-character-hex-string>`
 
 Do not remove this line from the release notes, or the bot will skip validation (or fail if strict mode is enabled).
