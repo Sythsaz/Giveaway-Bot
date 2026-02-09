@@ -1,14 +1,9 @@
 // Streamer.bot uses .NET Framework 4.8 / C# 7.3
-#pragma warning disable IDE0130 // Namespace does not match folder structure
-#pragma warning disable IDE0071 // Simplify interpolation
-#pragma warning disable IDE0056 // Indexing can be simplified (C# 8.0 ^ operator)
-#pragma warning disable IDE0054 // Use compound assignment
-#pragma warning disable IDE0074 // Use compound assignment
-#pragma warning disable CA1854 // Prefer TryGetValue
 using System;
 using System.Threading.Tasks;
 using StreamerBot;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace StreamerBot.Tests
 {
     public static class UpdateServiceTests
@@ -77,6 +72,16 @@ namespace StreamerBot.Tests
 
             if (!UpdateService.ValidateChecksum("Content", ""))
                 throw new Exception("TestValidateChecksum_NoChecksum failed: Empty checksum should pass (warn only)");
+
+            // Whitespace-only checksums should behave the same as no checksum (warn only, but allow update)
+            if (!UpdateService.ValidateChecksum("Content", " "))
+                throw new Exception("TestValidateChecksum_NoChecksum failed: Single-space checksum should pass (warn only)");
+
+            if (!UpdateService.ValidateChecksum("Content", "\t"))
+                throw new Exception("TestValidateChecksum_NoChecksum failed: Tab checksum should pass (warn only)");
+
+            if (!UpdateService.ValidateChecksum("Content", " \t "))
+                throw new Exception("TestValidateChecksum_NoChecksum failed: Mixed whitespace checksum should pass (warn only)");
 
             return Task.CompletedTask;
         }

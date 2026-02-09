@@ -9303,7 +9303,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <returns>True if valid (or no checksum provided), False if mismatch.</returns>
         public static bool ValidateChecksum(string content, string expectedChecksum, CPHAdapter adapter = null)
         {
-            if (string.IsNullOrEmpty(expectedChecksum))
+            if (string.IsNullOrWhiteSpace(expectedChecksum))
             {
                 adapter?.LogWarn("[UpdateService] [Validation] ⚠ No checksum provided. Skipping validation.");
                 return true;

@@ -11,8 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Tests**: Added comprehensive unit tests for `UpdateService` SHA256 checksum validation, including tests for
   checksum extraction, file verification, and invalid format handling.
+- **Tests**: Enhanced `UpdateServiceTests` with whitespace-only checksum test cases (space, tab, mixed whitespace)
+  to ensure edge cases are properly handled.
 
 ### Changed
+
+- **Code Quality**: Updated `ValidateChecksum` to use `IsNullOrWhiteSpace` instead of `IsNullOrEmpty`,
+  ensuring whitespace-only checksums are treated the same as null/empty (allow update with warning).
+- **Code Quality**: Narrowed `#pragma warning disable` scope in `UpdateServiceTests.cs` to only affect
+  the specific lines that need suppression, improving code maintainability and making it easier to spot new issues.
 
 - **Build**: Updated `StreamerBot.csproj` to conditionally use Newtonsoft.Json NuGet package for CI builds
   (when local Streamer.bot DLL is unavailable) while maintaining local reference for development builds.
