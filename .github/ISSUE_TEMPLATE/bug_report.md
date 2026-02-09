@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a bug in Florals Giveaway Bot
+about: Report a bug in Giveaway Bot
 title: "[BUG] "
 labels: bug
 assignees: ""
@@ -54,7 +54,7 @@ assignees: ""
 
 <!-- Where are you checking logs? -->
 
-- [ ] FileLogger: `.../Giveaway Helper/logs/General/YYYY-MM-DD.log`
+- [ ] FileLogger: `.../Giveaway Bot/logs/General/YYYY-MM-DD.log`
 - [ ] Streamer.bot Console Logs
 
 **Relevant Log Lines**:
