@@ -1,0 +1,31 @@
+name: Label Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/labels.yml"
+      - ".github/workflows/label-sync.yml"
+  pull_request:
+    paths:
+      - ".github/labels.yml"
+      - ".github/workflows/label-sync.yml"
+  workflow_dispatch:
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest, debian-dell
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Sync repository labels
+        uses: EndBug/label-sync@v2
+        with:
+          config-file: .github/labels.yml
+          delete-other-labels: false
