@@ -7,14 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Tests**: Added comprehensive unit tests for `UpdateService` SHA256 checksum validation, including tests for
+  checksum extraction, file verification, and invalid format handling.
+
+### Changed
+
+- **Build**: Updated `StreamerBot.csproj` to conditionally use Newtonsoft.Json NuGet package for CI builds
+  (when local Streamer.bot DLL is unavailable) while maintaining local reference for development builds.
+
+### Infrastructure
+
+- **Code Analysis**: Disabled CA1850 diagnostic ("Prefer static HashData method") in `.editorconfig` as the
+  recommended `HashData` method is not available in .NET Framework 4.8.
+
 ## [1.5.10] - 2026-02-08
 
 ### Added
 
 - **Security**: implemented strict SHA256 checksum validation for downloaded updates. The bot now extracts the checksum
-from release notes and verifies file integrity before saving.
+  from release notes and verifies file integrity before saving.
 - **CI**: Updated `release.yml` workflow to automatically calculate the SHA256 checksum of `GiveawayBot.cs` and append
-it to the release body.
+  it to the release body.
 
 ### Documentation
 
