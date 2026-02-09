@@ -15,7 +15,7 @@ on:
 
 jobs:
   sync-labels:
-    runs-on: ubuntu-latest, debian-dell
+    runs-on: [ubuntu-latest, debian-dell]
     permissions:
       contents: read
       issues: write
