@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions and setup help
+    url: https://github.com/Sythsaz/Giveaway-Bot/discussions
+    about: Please use Discussions for usage/setup questions and troubleshooting help.
