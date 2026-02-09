@@ -1,0 +1,56 @@
+name: 🐛 Bug Report
+description: Create a report to help us fix an issue
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  
+  - type: dropdown
+    id: sb_version
+    attributes:
+      label: Streamer.bot Version
+      description: What version of Streamer.bot are you running?
+      options:
+        - "0.2.4 (Latest Stable)"
+        - "0.2.5 (Beta)"
+        - "Older (Please specify in description)"
+    validations:
+      required: true
+
+  - type: input
+    id: os_version
+    attributes:
+      label: OS / Environment
+      description: Windows 10, Windows 11, etc.
+      placeholder: Windows 10 Pro 22H2
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Please copy and paste any relevant errors from the Streamer.bot logs or Action History.
+      render: shell
