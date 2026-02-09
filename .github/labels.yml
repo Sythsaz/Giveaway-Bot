@@ -1,0 +1,39 @@
+- name: bug
+  color: "d73a4a"
+  description: Something isn't working as expected.
+
+- name: enhancement
+  color: "a2eeef"
+  description: New feature or improvement request.
+
+- name: documentation
+  color: "0075ca"
+  description: Documentation-only updates.
+
+- name: security
+  color: "b60205"
+  description: Security-related bug, hardening, or policy work.
+
+- name: release
+  color: "5319e7"
+  description: Versioning, release process, and artifact publishing.
+
+- name: stream-platform
+  color: "1d76db"
+  description: Twitch/YouTube/Kick integration behavior.
+
+- name: profile-system
+  color: "fbca04"
+  description: Multi-profile logic, profile config, and sync behavior.
+
+- name: tests
+  color: "0e8a16"
+  description: Test coverage, failures, and harness updates.
+
+- name: governance
+  color: "cfd3d7"
+  description: Repo process, policy, and contributor workflow improvements.
+
+- name: stale
+  color: "ededed"
+  description: No recent activity; pending close if inactive.
