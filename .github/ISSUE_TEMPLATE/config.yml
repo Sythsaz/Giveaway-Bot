@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability report
+    url: https://github.com/Sythsaz/Giveaway-Bot/security/policy
+    about: Please report vulnerabilities privately via the project's security policy.
+  - name: Documentation (Wiki)
+    url: https://github.com/Sythsaz/Giveaway-Bot/wiki
+    about: Check setup, commands, and troubleshooting guides.
