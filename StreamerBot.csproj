@@ -50,9 +50,12 @@
     <Reference Include="$(StreamerBotPath)\Wpf*.dll">
       <Private>true</Private>
     </Reference>
-    <Reference Include="$(StreamerBotPath)\Newtonsoft.Json.dll">
+    <!-- Newtonsoft.Json: Use NuGet package for CI builds, local reference for Streamer.bot development -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" Condition="!Exists('$(StreamerBotPath)\Newtonsoft.Json.dll')" />
+    <Reference Include="$(StreamerBotPath)\Newtonsoft.Json.dll" Condition="Exists('$(StreamerBotPath)\Newtonsoft.Json.dll')">
       <Private>true</Private>
     </Reference>
+    
     <Reference Include="$(StreamerBotPath)\System.*.dll">
       <Private>true</Private>
     </Reference>
