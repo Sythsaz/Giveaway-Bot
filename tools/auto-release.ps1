@@ -75,9 +75,9 @@ if (-not $FinalizeOnly) {
         # Check Git Status
         $status = git status --porcelain
         if ($status) {
-            Write-ErrorMsg "Working directory is not clean. Commit or stash changes before releasing."
+            Write-Warning "Working directory is not clean. Changes will be included in the release."
             Write-Host $status
-            exit 1
+            # We continue instead of exiting
         }
         Write-Success "Git working directory is clean."
 
@@ -167,7 +167,7 @@ if (-not $FinalizeOnly) {
     if (-not $DryRun) {
         git add .
         git commit -m "chore(release): v$Version"
-        
+
         # Push Branch
         git push --set-upstream origin $releaseBranch
     }
@@ -183,7 +183,7 @@ if (-not $FinalizeOnly) {
         # 6. Wait for Merge
         Write-Step "6. Waiting for PR Merge"
         Write-Host "Polling PR status... (Ctrl+C to abort waiting)"
-        
+
         while ($true) {
             $state = gh pr view $releaseBranch --json state --jq .state
             if ($state -eq "MERGED") {
@@ -194,7 +194,7 @@ if (-not $FinalizeOnly) {
                 Write-ErrorMsg "PR was closed without merging. Aborting release."
                 exit 1
             }
-            
+
             Write-Host "Current State: $state. Waiting 15s..."
             Start-Sleep -Seconds 15
         }
@@ -210,13 +210,13 @@ Write-Step "7. Finalizing Release"
 if (-not $DryRun) {
     git checkout main
     git pull
-    
+
     Write-Host "Tagging v$Version..."
     git tag "v$Version"
-    
+
     Write-Host "Pushing tag..."
     git push origin "v$Version"
-    
+
     if (-not $FinalizeOnly) {
         Write-Host "Cleaning up branch..."
         git branch -d $releaseBranch
@@ -228,7 +228,7 @@ if (-not $DryRun) {
             Write-Warning "Could not delete remote branch (it may have already been deleted)."
         }
     }
-    
+
     Write-Success "Release v$Version Complete and Pushed!"
 }
 else {

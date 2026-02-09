@@ -43,11 +43,23 @@ jobs:
             fi
           done
 
+      - name: Calculate Checksum
+        id: shasum
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            echo "sha=$(Get-FileHash GiveawayBot.cs -Algorithm SHA256).Hash.ToLower()" >> $GITHUB_OUTPUT
+          else
+            echo "sha=$(sha256sum GiveawayBot.cs | awk '{print $1}')" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           body: |
             ${{ steps.extract_notes.outputs.release_notes }}
+
+            SHA256: ${{ steps.shasum.outputs.sha }}
 
             ---
             **Full Documentation**: https://github.com/Sythsaz/Giveaway-Bot/wiki
