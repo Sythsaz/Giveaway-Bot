@@ -486,7 +486,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.9"; // Semantic Versioning (canonical: VERSION file)
+        public const string Version = "1.5.10"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 
@@ -9160,7 +9160,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     adapter.LogDebug($"[UpdateService] [CheckForUpdatesAsync] Update Available: {currentVersion} -> {remoteVersion}");
 
                     // 3. Download
-                    string savedPath = await DownloadUpdateAsync(adapter, remoteTag);
+                    string checksum = ExtractChecksum(release.Body);
+                    string savedPath = await DownloadUpdateAsync(adapter, remoteTag, checksum);
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         string fileName = Path.GetFileName(savedPath);
@@ -9248,7 +9249,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// <param name="adapter">The CPH adapter for logging.</param>
         /// <param name="tag">The git tag to download (e.g., "v1.0.0").</param>
         /// <returns>The full path to the downloaded file, or null if failed.</returns>
-        private static async Task<string> DownloadUpdateAsync(CPHAdapter adapter, string tag)
+        private static async Task<string> DownloadUpdateAsync(CPHAdapter adapter, string tag, string expectedChecksum)
         {
             try
             {
@@ -9262,12 +9263,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
                     string content = await response.Content.ReadAsStringAsync();
 
-                    // Validation
-                    if (!content.Contains("class GiveawayBot"))
-                    {
-                        adapter.LogError("[UpdateService] [DownloadUpdateAsync] Downloaded content validation failed.");
-                        return null;
-                    }
+                    // Validation handled by ValidateUpdateContent below
+
 
                     // Save to 'updates' folder
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -9278,6 +9275,14 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                     string filename = $"GiveawayBot_{tag}.cs.txt"; // .txt to prevent accidental compilation or confusion
                     string fullPath = Path.Combine(updateFolder, filename);
 
+                    // VALIDATION START
+                    if (!ValidateChecksum(content, expectedChecksum, adapter))
+                    {
+                        adapter.LogError("[UpdateService] [DownloadUpdateAsync] ❌ Update file validation failed. Checksum mismatch.");
+                        return null;
+                    }
+                    // VALIDATION END
+
                     File.WriteAllText(fullPath, content);
                     return fullPath;
                 }
@@ -9287,6 +9292,50 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                 adapter.LogError($"[UpdateService] [DownloadUpdateAsync] Download Exception: {ex.Message}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Validates the content against a SHA256 checksum.
+        /// </summary>
+        /// <param name="content">The content to verify.</param>
+        /// <param name="expectedChecksum">The expected SHA256 hash.</param>
+        /// <param name="adapter">CPH Adapter for logging.</param>
+        /// <returns>True if valid (or no checksum provided), False if mismatch.</returns>
+        public static bool ValidateChecksum(string content, string expectedChecksum, CPHAdapter adapter = null)
+        {
+            if (string.IsNullOrEmpty(expectedChecksum))
+            {
+                adapter?.LogWarn("[UpdateService] [Validation] ⚠ No checksum provided. Skipping validation.");
+                return true;
+            }
+
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(content);
+                byte[] hashBytes = sha256.ComputeHash(bytes);
+                string computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+                string expected = expectedChecksum.ToLowerInvariant();
+
+                if (!computedHash.Equals(expected, StringComparison.OrdinalIgnoreCase))
+                {
+                    adapter?.LogError($"[UpdateService] [Validation] Checksum Mismatch! Expected: {expected}, Computed: {computedHash}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Extracts the SHA256 checksum from the release body text.
+        /// Expected format: "SHA256: <64-char-hex-string>"
+        /// </summary>
+        public static string ExtractChecksum(string releaseBody)
+        {
+            if (string.IsNullOrEmpty(releaseBody)) return null;
+            // Regex for SHA256: [a-fA-F0-9]{64}
+            // Look for "SHA256: <hash>" using case-insensitive match
+            var match = Regex.Match(releaseBody, @"SHA256:\s*([a-fA-F0-9]{64})", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value : null;
         }
 
         /// <summary>
