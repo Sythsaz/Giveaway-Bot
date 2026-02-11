@@ -684,14 +684,15 @@ public class MetricsService
     }
 
     /// <summary>
-/// Legacy diagnostic metric set for a user (backward compatibility).
-/// </summary>
-public class UserMetricSet
-{
-    public Dictionary<string, long> Metrics { get; set; } = new Dictionary<string, long>();
-}
-// ADD THESE METHODS TO MetricsService CLASS (AFTER RecordDraw method, line 684)
+    /// Legacy diagnostic metric set for a user (backward compatibility).
+    /// </summary>
+    public class UserMetricSet
+    {
+        public Dictionary<string, long> Metrics { get; set; } = new Dictionary<string, long>();
+    }
+
     private readonly string _path;
+
     /// <summary>
     /// Initializes file path for diagnostic metrics persistence.
     /// </summary>
@@ -699,6 +700,7 @@ public class UserMetricSet
     {
         _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "data", "metrics.json");
     }
+
     /// <summary>
     /// Saves diagnostic metrics data to JSON file.
     /// </summary>
@@ -717,6 +719,7 @@ public class UserMetricSet
             adapter.LogError($"[MetricsService] [SaveMetrics] Failed to save metrics: {ex.Message}");
         }
     }
+
     /// <summary>
     /// Loads diagnostic metrics data from JSON file.
     /// </summary>
@@ -893,13 +896,15 @@ public class WinnerDrawnEvent : IGiveawayEvent
     public GiveawayState State { get; private set; }
     public string WinnerName { get; private set; }
     public string WinnerId { get; private set; }
-    public WinnerDrawnEvent(CPHAdapter adapter, string profileName, GiveawayState state, string winnerName, string winnerId)
+    public string Platform { get; private set; }
+    public WinnerDrawnEvent(CPHAdapter adapter, string profileName, GiveawayState state, string winnerName, string winnerId, string platform)
     {
         Adapter = adapter;
         ProfileName = profileName;
         State = state;
         WinnerName = winnerName;
         WinnerId = winnerId;
+        Platform = platform;
         Timestamp = DateTime.Now;
     }
 }
@@ -935,13 +940,17 @@ public class EntryAcceptedEvent : IGiveawayEvent
     public string UserId { get; private set; }
     public string UserName { get; private set; }
     public int TicketCount { get; private set; }
-    public EntryAcceptedEvent(CPHAdapter adapter, string profileName, string userId, string userName, int ticketCount)
+    public string Platform { get; private set; }
+    public string MessageId { get; private set; }
+    public EntryAcceptedEvent(CPHAdapter adapter, string profileName, string userId, string userName, int ticketCount, string platform, string messageId)
     {
         Adapter = adapter;
         ProfileName = profileName;
         UserId = userId;
         UserName = userName;
         TicketCount = ticketCount;
+        Platform = platform;
+        MessageId = messageId;
         Timestamp = DateTime.Now;
     }
 }
@@ -4305,7 +4314,7 @@ public class ConfigReloadedEvent : IGiveawayEvent
 
                 if (Bus != null)
                 {
-                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, userId, userName, tickets));
+                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, userId, userName, tickets, platform, msgId));
                 }
                 else
                 {
@@ -4618,7 +4627,7 @@ public class ConfigReloadedEvent : IGiveawayEvent
 
                     if (Bus != null)
                     {
-                        Bus.Publish(new WinnerDrawnEvent(adapter, profileName, state, winnerName, winnerEntry.UserId));
+                        Bus.Publish(new WinnerDrawnEvent(adapter, profileName, state, winnerName, winnerEntry.UserId, platform));
                     }
                     else
                     {
@@ -9047,7 +9056,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                  string msg = rawTmpl?.Replace("{name}", evt.WinnerName);
                  if (!string.IsNullOrEmpty(msg))
                  {
-                     SendBroadcast(evt.Adapter, msg, evt.ProfileName);
+                     SendBroadcast(evt.Adapter, msg, evt.Platform);
                  }
 
                  // --- Discord Integration ---
@@ -9119,8 +9128,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                  // Note: IsSub not available in new event, using general message
                  // (Removed SubLuck conditional logic)
 
-                 // Broadcast confirmation
-                 SendBroadcast(evt.Adapter, acceptedMsg, evt.ProfileName);
+                 // Send entry confirmation message via Reply (preserves threading)
+                 SendReply(evt.Adapter, acceptedMsg, evt.Platform, evt.UserName);
 
                  // Handle Toast notification
                  if (config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
@@ -9608,7 +9617,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             public string Name { get; set; }
             public string Body { get; set; }
         }
-    }
+        }
+
 #endregion
 
 #if EXTERNAL_EDITOR || GIVEAWAY_TESTS
