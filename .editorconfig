@@ -29,7 +29,8 @@ dotnet_diagnostic.CA1867.severity = none   # Use 'string.Contains(char)'
 
 # Performance suggestions that might be overkill or incompatible
 dotnet_diagnostic.CA1822.severity = none   # Mark members as static
-dotnet_diagnostic.CA1850.severity = none   # Prefer static HashData method (not in .NET Framework 4.8)
+dotnet_diagnostic.CA1850.severity = none   # Prefer static HashData method (not in .NET Framework 4.8)\r
+dotnet_diagnostic.CA1510.severity = none   # Use ArgumentNullException.ThrowIfNull (not in .NET Framework 4.8)
 dotnet_diagnostic.CA1861.severity = none   # Prefer 'static readonly' fields over constant array arguments
 
 # ===================================================================

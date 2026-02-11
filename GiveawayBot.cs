@@ -478,6 +478,588 @@ public static class Loc
 #endregion
 
 
+#region Metrics System
+/// <summary>
+/// Represents aggregated metrics data across all giveaway profiles.
+/// </summary>
+public class MetricsContainer
+{
+    // Giveaway Analytics Metrics
+    /// <summary>Total entries across all profiles.</summary>
+    public long EntriesTotal { get; set; }
+    /// <summary>Total wins across all profiles.</summary>
+    public long WinsTotal { get; set; }
+    /// <summary>Total draws executed across all profiles.</summary>
+    public long DrawsTotal { get; set; }
+    /// <summary>Per-profile metrics breakdown.</summary>
+    public Dictionary<string, ProfileMetrics> Profiles { get; set; }
+
+    // Legacy Diagnostic Metrics (for backward compatibility)
+    public Dictionary<string, long> GlobalMetrics { get; set; } = new Dictionary<string, long>();
+    public Dictionary<string, UserMetricSet> UserMetrics { get; set; } = new Dictionary<string, UserMetricSet>();
+    public DateTime LastUpdated { get; set; }
+
+    // Enhanced metrics for Phase 9 monitoring
+    /// <summary>Current size of the message ID deduplication cache</summary>
+    public int MessageIdCacheSize { get; set; }
+    /// <summary>Count of message ID cleanup operations performed</summary>
+    public int MessageIdCleanupCount { get; set; }
+    /// <summary>Total count of loop detections across all layers</summary>
+    public int LoopDetectedCount { get; set; }
+    /// <summary>Count of loops detected via message ID deduplication</summary>
+    public int LoopDetectedByMsgId { get; set; }
+    /// <summary>Count of loops detected via invisible token check</summary>
+    public int LoopDetectedByToken { get; set; }
+    /// <summary>Count of loops detected via bot source flag</summary>
+    public int LoopDetectedByBotFlag { get; set; }
+    /// <summary>Count of configuration reloads</summary>
+    public int ConfigReloadCount { get; set; }
+    /// <summary>Count of file I/O errors</summary>
+    public int FileIOErrors { get; set; }
+
+    // Phase 10 additional metrics
+    /// <summary>Total time spent processing entries (milliseconds)</summary>
+    public long TotalEntryProcessingMs { get; set; }
+    /// <summary>Count of entries processed (for average calculation)</summary>
+    public int EntriesProcessedCount { get; set; }
+    /// <summary>Count of winner draw attempts</summary>
+    public int WinnerDrawAttempts { get; set; }
+    /// <summary>Count of successful winner draws</summary>
+    public int WinnerDrawSuccesses { get; set; }
+    /// <summary>Total time for Wheel API calls (milliseconds)</summary>
+    public long WheelApiTotalMs { get; set; }
+    /// <summary>Count of Wheel API calls (for average latency calculation)</summary>
+    public int WheelApiCalls { get; set; }
+
+    // Error & Diagnostic Metrics
+    public int ApiErrors { get; set; }
+    public int WheelApiErrors { get; set; }
+    public int WheelApiInvalidKeys { get; set; }
+    public int WheelApiTimeouts { get; set; }
+    public int WheelApiNetworkErrors { get; set; }
+
+    public MetricsContainer()
+    {
+        Profiles = new Dictionary<string, ProfileMetrics>();
+        GlobalMetrics = new Dictionary<string, long>();
+        UserMetrics = new Dictionary<string, UserMetricSet>();
+    }
+    /// <summary>Serializes metrics to JSON string.</summary>
+    public string ToJson()
+    {
+        return JsonConvert.SerializeObject(this, Formatting.Indented);
+    }
+    /// <summary>
+    /// Loads aggregated metrics from global variables.
+    /// </summary>
+    public static MetricsContainer FromGlobalVars(CPHAdapter adapter)
+    {
+        var container = new MetricsContainer();
+        container.EntriesTotal = adapter.GetGlobalVar<long>("Giveaway Global Metrics EntriesTotal", true);
+        container.WinsTotal = adapter.GetGlobalVar<long>("Giveaway Global Metrics WinsTotal", true);
+        container.DrawsTotal = adapter.GetGlobalVar<long>("Giveaway Global Metrics DrawsTotal", true);
+        return container;
+    }
+}
+/// <summary>
+/// Metrics for a specific giveaway profile.
+/// </summary>
+public class ProfileMetrics
+{
+    /// <summary>Profile name.</summary>
+    public string ProfileName { get; set; }
+    /// <summary>Total entries for this profile.</summary>
+    public long Entries { get; set; }
+    /// <summary>Total wins for this profile.</summary>
+    public long Wins { get; set; }
+    /// <summary>Total draws for this profile.</summary>
+    public long Draws { get; set; }
+}
+/// <summary>
+ /// Metrics for a specific user.
+/// </summary>
+public class UserMetrics
+{
+    /// <summary>User ID.</summary>
+    public string UserId { get; set; }
+    /// <summary>Total entries across all giveaways.</summary>
+    public long EntriesTotal { get; set; }
+    /// <summary>Total wins across all giveaways.</summary>
+    public long WinsTotal { get; set; }
+}
+/// <summary>
+/// Service for tracking and aggregating giveaway metrics.
+/// Provides cross-profile analytics and per-user statistics.
+/// </summary>
+public class MetricsService
+{
+    /// <summary>
+    /// Gets aggregated metrics across all profiles.
+    /// </summary>
+    public MetricsContainer GetGlobalMetrics(CPHAdapter adapter)
+    {
+        adapter.LogDebug("[MetricsService] [GetGlobalMetrics] Fetching global metrics...");
+        return MetricsContainer.FromGlobalVars(adapter);
+    }
+    /// <summary>
+    /// Gets metrics for a specific profile.
+    /// </summary>
+    public ProfileMetrics GetProfileMetrics(string profileName, CPHAdapter adapter)
+    {
+        adapter.LogDebug($"[MetricsService] [GetProfileMetrics] Fetching metrics for profile '{profileName}'...");
+        var metrics = new ProfileMetrics();
+        metrics.ProfileName = profileName;
+        metrics.Entries = adapter.GetGlobalVar<long>($"Giveaway Profile {profileName} Metrics Entries", true);
+        metrics.Wins = adapter.GetGlobalVar<long>($"Giveaway Profile {profileName} Metrics Wins", true);
+        metrics.Draws = adapter.GetGlobalVar<long>($"Giveaway Profile {profileName} Metrics Draws", true);
+        return metrics;
+    }
+    /// <summary>
+    /// Gets metrics for a specific user.
+    /// </summary>
+    public UserMetrics GetUserMetrics(string userId, CPHAdapter adapter)
+    {
+        adapter.LogDebug($"[MetricsService] [GetUserMetrics] Fetching metrics for user '{userId}'...");
+        var metrics = new UserMetrics();
+        metrics.UserId = userId;
+        metrics.EntriesTotal = adapter.GetUserVar<long>(userId, "Giveaway User Metrics EntriesTotal", true);
+        metrics.WinsTotal = adapter.GetUserVar<long>(userId, "Giveaway User Metrics WinsTotal", true);
+        return metrics;
+    }
+    /// <summary>
+    /// Records an entry for a user in a specific profile.
+    /// </summary>
+    public void RecordEntry(string profileName, string userId, CPHAdapter adapter)
+    {
+        adapter.LogTrace($"[MetricsService] [RecordEntry] Recording entry for user '{userId}' in profile '{profileName}'");
+        
+        // Global metrics
+        long globalEntries = adapter.GetGlobalVar<long>("Giveaway Global Metrics EntriesTotal", true);
+        adapter.SetGlobalVar("Giveaway Global Metrics EntriesTotal", globalEntries + 1, true);
+        
+        // Profile metrics
+        string profileKey = $"Giveaway Profile {profileName} Metrics Entries";
+        long profileEntries = adapter.GetGlobalVar<long>(profileKey, true);
+        adapter.SetGlobalVar(profileKey, profileEntries + 1, true);
+        
+        // User metrics
+        long userEntries = adapter.GetUserVar<long>(userId, "Giveaway User Metrics EntriesTotal", true);
+        adapter.SetUserVar(userId, "Giveaway User Metrics EntriesTotal", userEntries + 1, true);
+    }
+    /// <summary>
+    /// Records a win for a user in a specific profile.
+    /// </summary>
+    public void RecordWin(string profileName, string userId, CPHAdapter adapter)
+    {
+        adapter.LogTrace($"[MetricsService] [RecordWin] Recording win for user '{userId}' in profile '{profileName}'");
+        
+        // Global metrics
+        long globalWins = adapter.GetGlobalVar<long>("Giveaway Global Metrics WinsTotal", true);
+        adapter.SetGlobalVar("Giveaway Global Metrics WinsTotal", globalWins + 1, true);
+        
+        // Profile metrics
+        string profileKey = $"Giveaway Profile {profileName} Metrics Wins";
+        long profileWins = adapter.GetGlobalVar<long>(profileKey, true);
+        adapter.SetGlobalVar(profileKey, profileWins + 1, true);
+        
+        // User metrics
+        long userWins = adapter.GetUserVar<long>(userId, "Giveaway User Metrics WinsTotal", true);
+        adapter.SetUserVar(userId, "Giveaway User Metrics WinsTotal", userWins + 1, true);
+    }
+    /// <summary>
+    /// Records a draw execution for a specific profile.
+    /// </summary>
+    public void RecordDraw(string profileName, CPHAdapter adapter)
+    {
+        adapter.LogTrace($"[MetricsService] [RecordDraw] Recording draw for profile '{profileName}'");
+        
+        // Global metrics
+        long globalDraws = adapter.GetGlobalVar<long>("Giveaway Global Metrics DrawsTotal", true);
+        adapter.SetGlobalVar("Giveaway Global Metrics DrawsTotal", globalDraws + 1, true);
+        
+        // Profile metrics
+        string profileKey = $"Giveaway Profile {profileName} Metrics Draws";
+        long profileDraws = adapter.GetGlobalVar<long>(profileKey, true);
+        adapter.SetGlobalVar(profileKey, profileDraws + 1, true);
+    }
+
+    /// <summary>
+/// Legacy diagnostic metric set for a user (backward compatibility).
+/// </summary>
+public class UserMetricSet
+{
+    public Dictionary<string, long> Metrics { get; set; } = new Dictionary<string, long>();
+}
+// ADD THESE METHODS TO MetricsService CLASS (AFTER RecordDraw method, line 684)
+    private readonly string _path;
+    /// <summary>
+    /// Initializes file path for diagnostic metrics persistence.
+    /// </summary>
+    public MetricsService()
+    {
+        _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "data", "metrics.json");
+    }
+    /// <summary>
+    /// Saves diagnostic metrics data to JSON file.
+    /// </summary>
+    public void SaveMetrics(CPHAdapter adapter, MetricsContainer metrics)
+    {
+        try
+        {
+            string stateDir = Path.GetDirectoryName(_path);
+            if (!string.IsNullOrEmpty(stateDir) && !Directory.Exists(stateDir)) Directory.CreateDirectory(stateDir);
+            var json = JsonConvert.SerializeObject(metrics, Formatting.Indented);
+            File.WriteAllText(_path, json);
+            adapter.LogTrace($"[MetricsService] [SaveMetrics] Metrics successfully saved to disk: {_path}");
+        }
+        catch (Exception ex)
+        {
+            adapter.LogError($"[MetricsService] [SaveMetrics] Failed to save metrics: {ex.Message}");
+        }
+    }
+    /// <summary>
+    /// Loads diagnostic metrics data from JSON file.
+    /// </summary>
+    public MetricsContainer LoadMetrics(CPHAdapter adapter)
+    {
+        try
+        {
+            if (!File.Exists(_path)) return new MetricsContainer();
+            var json = File.ReadAllText(_path);
+            var metrics = JsonConvert.DeserializeObject<MetricsContainer>(json);
+            return metrics ?? new MetricsContainer();
+        }
+        catch (Exception ex)
+        {
+            adapter.LogError($"[MetricsService] [LoadMetrics] Failed to load metrics: {ex.Message}");
+            return new MetricsContainer();
+        }
+    }
+}
+#endregion
+
+#region Event Bus
+/// <summary>
+/// Base interface for all giveaway events.
+/// </summary>
+public interface IGiveawayEvent
+{
+    /// <summary>CPH adapter context for this event.</summary>
+    CPHAdapter Adapter { get; }
+    /// <summary>Profile name associated with this event.</summary>
+    string ProfileName { get; }
+    /// <summary>Timestamp when the event was created.</summary>
+    DateTime Timestamp { get; }
+}
+/// <summary>
+/// Event Bus interface for decoupled communication.
+/// </summary>
+public interface IEventBus
+{
+    /// <summary>
+    /// Subscribes a handler to a specific event type.
+    /// </summary>
+    /// <typeparam name="T">The event type to subscribe to.</typeparam>
+    /// <param name="handler">The action to execute when the event is published.</param>
+    void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent;
+    /// <summary>
+    /// Unsubscribes a handler from a specific event type.
+    /// </summary>
+    /// <typeparam name="T">The event type to unsubscribe from.</typeparam>
+    /// <param name="handler">The handler to remove.</param>
+    void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent;
+    /// <summary>
+    /// Publishes an event to all subscribed handlers.
+    /// </summary>
+    /// <typeparam name="T">The event type.</typeparam>
+    /// <param name="evt">The event instance to publish.</param>
+    void Publish<T>(T evt) where T : IGiveawayEvent;
+}
+/// <summary>
+/// Thread-safe Event Bus implementation for pub/sub event handling.
+/// Isolates handler exceptions to prevent cascading failures.
+/// </summary>
+public class EventBus : IEventBus
+{
+    private readonly Dictionary<Type, List<Delegate>> _subscribers;
+    private readonly object _lock = new object();
+    public EventBus()
+    {
+        _subscribers = new Dictionary<Type, List<Delegate>>();
+    }
+    public void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent
+    {
+        if (handler == null) throw new ArgumentNullException(nameof(handler));
+        lock (_lock)
+        {
+            var eventType = typeof(T);
+            if (!_subscribers.ContainsKey(eventType))
+            {
+                _subscribers[eventType] = new List<Delegate>();
+            }
+            _subscribers[eventType].Add(handler);
+        }
+    }
+    public void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent
+    {
+        if (handler == null) throw new ArgumentNullException(nameof(handler));
+        lock (_lock)
+        {
+            var eventType = typeof(T);
+            if (_subscribers.ContainsKey(eventType))
+            {
+                _subscribers[eventType].Remove(handler);
+                if (_subscribers[eventType].Count == 0)
+                {
+                    _subscribers.Remove(eventType);
+                }
+            }
+        }
+    }
+    public void Publish<T>(T evt) where T : IGiveawayEvent
+    {
+        if (evt == null) throw new ArgumentNullException(nameof(evt));
+        List<Delegate> handlers;
+        lock (_lock)
+        {
+            var eventType = typeof(T);
+            if (!_subscribers.ContainsKey(eventType))
+            {
+                return; // No subscribers
+            }
+            // Create a copy to avoid modification during iteration
+            handlers = new List<Delegate>(_subscribers[eventType]);
+        }
+        // Invoke handlers outside the lock to avoid deadlocks
+        foreach (var handler in handlers)
+        {
+            try
+            {
+                ((Action<T>)handler)(evt);
+            }
+            catch (Exception ex)
+            {
+                // Isolate exceptions - log but don't propagate
+                evt.Adapter.LogError($"[EventBus] Handler exception for {typeof(T).Name}: {ex.Message}");
+            }
+        }
+    }
+}
+// =====================================================================
+// EVENT TYPE DEFINITIONS
+// =====================================================================
+/// <summary>
+/// Event published when a giveaway is started/opened.
+/// </summary>
+public class GiveawayStartedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public GiveawayState State { get; private set; }
+    public GiveawayStartedEvent(CPHAdapter adapter, string profileName, GiveawayState state)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        State = state;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when a giveaway is ended/closed.
+/// </summary>
+public class GiveawayEndedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public GiveawayState State { get; private set; }
+    public GiveawayEndedEvent(CPHAdapter adapter, string profileName, GiveawayState state)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        State = state;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when a winner is drawn.
+/// </summary>
+public class WinnerDrawnEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public GiveawayState State { get; private set; }
+    public string WinnerName { get; private set; }
+    public string WinnerId { get; private set; }
+    public WinnerDrawnEvent(CPHAdapter adapter, string profileName, GiveawayState state, string winnerName, string winnerId)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        State = state;
+        WinnerName = winnerName;
+        WinnerId = winnerId;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when Wheel of Names URL is ready.
+/// </summary>
+public class WheelReadyEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public GiveawayState State { get; private set; }
+    public string WheelUrl { get; private set; }
+    public string Platform { get; private set; }
+    public WheelReadyEvent(CPHAdapter adapter, string profileName, GiveawayState state, string wheelUrl, string platform)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        State = state;
+        WheelUrl = wheelUrl;
+        Platform = platform;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when an entry is successfully accepted.
+/// </summary>
+public class EntryAcceptedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string UserId { get; private set; }
+    public string UserName { get; private set; }
+    public int TicketCount { get; private set; }
+    public EntryAcceptedEvent(CPHAdapter adapter, string profileName, string userId, string userName, int ticketCount)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        UserId = userId;
+        UserName = userName;
+        TicketCount = ticketCount;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when an entry is rejected.
+/// </summary>
+public class EntryRejectedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string UserId { get; private set; }
+    public string UserName { get; private set; }
+    public string Reason { get; private set; }
+    public EntryRejectedEvent(CPHAdapter adapter, string profileName, string userId, string userName, string reason)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        UserId = userId;
+        UserName = userName;
+        Reason = reason;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event requesting a toast notification.
+/// </summary>
+public class ToastNotificationEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string Title { get; private set; }
+    public string Message { get; private set; }
+    public ToastNotificationEvent(CPHAdapter adapter, string profileName, string title, string message)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        Title = title;
+        Message = message;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event requesting a chat broadcast.
+/// </summary>
+public class ChatMessageEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string Message { get; private set; }
+    public string Platform { get; private set; }
+    public ChatMessageEvent(CPHAdapter adapter, string profileName, string message, string platform)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        Message = message;
+        Platform = platform;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event requesting an OBS scene/source update.
+/// </summary>
+public class ObsUpdateEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string Scene { get; private set; }
+    public string Source { get; private set; }
+    public string Url { get; private set; }
+    public ObsUpdateEvent(CPHAdapter adapter, string profileName, string scene, string source, string url)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        Scene = scene;
+        Source = source;
+        Url = url;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when metrics are updated.
+/// </summary>
+public class MetricsUpdatedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public string MetricName { get; private set; }
+    public long Value { get; private set; }
+    public MetricsUpdatedEvent(CPHAdapter adapter, string profileName, string metricName, long value)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        MetricName = metricName;
+        Value = value;
+        Timestamp = DateTime.Now;
+    }
+}
+/// <summary>
+/// Event published when configuration is reloaded.
+/// </summary>
+public class ConfigReloadedEvent : IGiveawayEvent
+{
+    public CPHAdapter Adapter { get; private set; }
+    public string ProfileName { get; private set; }
+    public DateTime Timestamp { get; private set; }
+    public ConfigReloadedEvent(CPHAdapter adapter, string profileName)
+    {
+        Adapter = adapter;
+        ProfileName = profileName;
+        Timestamp = DateTime.Now;
+    }
+}
+#endregion
 
 #region GiveawayManager Core
     /// <summary>
@@ -486,7 +1068,7 @@ public static class Loc
     /// </summary>
     public class GiveawayManager : IDisposable
     {
-        public const string Version = "1.5.10"; // Semantic Versioning (canonical: VERSION file)
+        public const string Version = "1.5.11"; // Semantic Versioning (canonical: VERSION file)
 
         // ==================== Instance Fields ====================
 
@@ -882,7 +1464,7 @@ public static class Loc
 
             MigrateSecurity(adapter);
 
-            Bus = new GiveawayEventBus();
+            Bus = new EventBus();
             WheelClient = new WheelOfNamesClient();
             WheelClient.Metrics = _cachedMetrics; // Enable API latency tracking
             Obs = new ObsController(GlobalConfig);
@@ -1785,7 +2367,7 @@ public static class Loc
 
             SyncGlobalVars(adapter);
             SyncEnhancedMetrics(adapter); // Expose diagnostic metrics
-            foreach (var profile in GlobalConfig.Profiles)
+            foreach (var profile in GlobalConfig.Profiles.ToList())
             {
                 if (States.TryGetValue(profile.Key, out var state))
                 {
@@ -3679,6 +4261,9 @@ public static class Loc
                 };
                 state.CumulativeEntries++;
 
+                // Track cross-profile analytics
+                Metrics.RecordEntry(profileName, userId, adapter);
+
                 // Enqueue for incremental dump if enabled
                 if (config.DumpEntriesOnEntry)
                 {
@@ -3720,7 +4305,7 @@ public static class Loc
 
                 if (Bus != null)
                 {
-                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, state, state.Entries[userId], platform, msgId));
+                    Bus.Publish(new EntryAcceptedEvent(adapter, profileName, userId, userName, tickets));
                 }
                 else
                 {
@@ -3940,6 +4525,7 @@ public static class Loc
             // Track winner draw metrics
             if (_cachedMetrics != null)
                 _cachedMetrics.WinnerDrawAttempts++;
+            Metrics.RecordDraw(profileName, adapter);
 
             adapter.LogInfo($"[HandleDraw] >>> Drawing winner for {profileName} (Platform: {platform})...");
             // Permission check: Only mods/broadcasters can draw
@@ -4024,12 +4610,15 @@ public static class Loc
                     // Track successful draw
                     if (_cachedMetrics != null)
                         _cachedMetrics.WinnerDrawSuccesses++;
+                    
+                    // Track cross-profile analytics
+                    Metrics.RecordWin(profileName, winnerEntry.UserId, adapter);
 
                     adapter.LogDebug($"[{profileName}] Winner: {winnerName} ({winnerEntry.UserId}) - WinsTotal incremented.");
 
                     if (Bus != null)
                     {
-                        Bus.Publish(new WinnerSelectedEvent(adapter, profileName, state, winnerEntry, platform));
+                        Bus.Publish(new WinnerDrawnEvent(adapter, profileName, state, winnerName, winnerEntry.UserId));
                     }
                     else
                     {
@@ -4105,7 +4694,7 @@ public static class Loc
             string openMsg = Loc.Get(msgKey, profileName, profileName);
             Messenger?.SendBroadcast(adapter, openMsg, platform);
 
-            if (Bus != null) Bus.Publish(new GiveawayStartedEvent(adapter, profileName, state, platform));
+            if (Bus != null) Bus.Publish(new GiveawayStartedEvent(adapter, profileName, state));
                 else
                 {
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayOpened", out var notify) && notify)
@@ -4180,7 +4769,7 @@ public static class Loc
             string closeMsg = Loc.Get("GiveawayClosed", profileName);
             Messenger?.SendBroadcast(adapter, closeMsg, platform);
 
-            if (Bus != null) Bus.Publish(new GiveawayEndedEvent(adapter, profileName, state, platform));
+            if (Bus != null) Bus.Publish(new GiveawayEndedEvent(adapter, profileName, state));
                 else
                 {
                     if (config.ToastNotifications != null && config.ToastNotifications.TryGetValue("GiveawayClosed", out var notify) && notify)
@@ -8431,7 +9020,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
             // The Messenger "Subscribes" to specific events (like WinnerSelected).
             // When the GiveawayManager "Publishes" that event, this code runs automatically.
             // This keeps the "Business Logic" (Manager) separate from the "UI/Notification" (Messenger).
-            bus.Subscribe<WinnerSelectedEvent>(OnWinnerSelected);
+            bus.Subscribe<WinnerDrawnEvent>(OnWinnerDrawn);
             bus.Subscribe<WheelReadyEvent>(OnWheelReady);
             bus.Subscribe<GiveawayStartedEvent>(OnGiveawayStarted);
             bus.Subscribe<GiveawayEndedEvent>(OnGiveawayEnded);
@@ -8442,23 +9031,23 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         /// Handles the WinnerSelected event to broadcast the winner announcement.
         /// </summary>
         /// <param name="evt">The winner selected event data.</param>
-        private void OnWinnerSelected(WinnerSelectedEvent evt)
+        private void OnWinnerDrawn(WinnerDrawnEvent evt)
         {
              if (Config.Profiles.TryGetValue(evt.ProfileName, out var config))
              {
                  // Handle Toast
                  if (config.ToastNotifications.TryGetValue("WinnerSelected", out var notify) && notify)
                  {
-                     evt.Adapter.ShowToastNotification("Giveaway Winner", $"Winner: {evt.Winner.UserName}!");
+                     evt.Adapter.ShowToastNotification("Giveaway Winner", $"Winner: {evt.WinnerName}!");
                  }
 
                  // Handle Broadcast
                  // Uses the template from the profile's WheelSettings
                  string rawTmpl = GiveawayManager.PickRandomMessage(config.WheelSettings.WinnerMessage);
-                 string msg = rawTmpl?.Replace("{name}", evt.Winner.UserName);
+                 string msg = rawTmpl?.Replace("{name}", evt.WinnerName);
                  if (!string.IsNullOrEmpty(msg))
                  {
-                     SendBroadcast(evt.Adapter, msg, evt.Source);
+                     SendBroadcast(evt.Adapter, msg, evt.ProfileName);
                  }
 
                  // --- Discord Integration ---
@@ -8467,8 +9056,8 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
                  // 2. Webhook URL - Fallback if native integration isn't set up
                  if (!string.IsNullOrEmpty(config.DiscordChannelId) || !string.IsNullOrEmpty(config.DiscordWebhookUrl))
                  {
-                     string discordMsg = config.DiscordMessage?.Replace("{winner}", evt.Winner.UserName)
-                                         ?? $"Congratulations {evt.Winner.UserName}!";
+                     string discordMsg = config.DiscordMessage?.Replace("{winner}", evt.WinnerName)
+                                         ?? $"Congratulations {evt.WinnerName}!";
 
                      if (!string.IsNullOrEmpty(config.DiscordChannelId))
                      {
@@ -8489,7 +9078,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         private void OnWheelReady(WheelReadyEvent evt)
         {
              // Broadcast the wheel link
-             SendBroadcast(evt.Adapter, $"Wheel Ready! {evt.Url}", evt.Source);
+             SendBroadcast(evt.Adapter, $"Wheel Ready! {evt.WheelUrl}", evt.Platform);
         }
 
         /// <summary>
@@ -8526,19 +9115,17 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
              if (Config.Profiles.TryGetValue(evt.ProfileName, out var config))
              {
                  // Send entry confirmation message as a reply to the user
-                 string acceptedMsg = Loc.Get("EntryAccepted", evt.ProfileName, evt.Entry.TicketCount, config.SubLuckMultiplier);
-                 if (evt.Entry.IsSub && config.SubLuckMultiplier == 0)
-                 {
-                     acceptedMsg = Loc.Get("EntryAccepted_NoLuck", evt.ProfileName, evt.Entry.TicketCount);
-                 }
+                 string acceptedMsg = Loc.Get("EntryAccepted", evt.ProfileName, evt.TicketCount, config.SubLuckMultiplier);
+                 // Note: IsSub not available in new event, using general message
+                 // (Removed SubLuck conditional logic)
 
-                 // Reply directly to the user with platform-specific threading
-                 SendReply(evt.Adapter, acceptedMsg, evt.Source, evt.Entry.UserName, evt.MessageId);
+                 // Broadcast confirmation
+                 SendBroadcast(evt.Adapter, acceptedMsg, evt.ProfileName);
 
                  // Handle Toast notification
                  if (config.ToastNotifications.TryGetValue("EntryAccepted", out var notify) && notify)
                  {
-                     evt.Adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {evt.Entry.UserName}");
+                     evt.Adapter.ShowToastNotification("Giveaway Bot", $"New Entry: {evt.UserName}");
                  }
              }
         }
@@ -8727,7 +9314,7 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
             if (profile.EnableObs)
             {
-                SetBrowserSource(evt.Adapter, profile.ObsScene, profile.ObsSource, evt.Url);
+                SetBrowserSource(evt.Adapter, profile.ObsScene, profile.ObsSource, evt.WheelUrl);
             }
         }
 
@@ -8747,291 +9334,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
 
 #endregion
 
-#region Metrics Models
-    /// <summary>
-    /// Container for all bot metrics and statistics.
-    /// Serialized to JSON for data persistence.
-    /// </summary>
-    public class MetricsContainer
-    {
-        public Dictionary<string, long> GlobalMetrics { get; set; } = new Dictionary<string, long>();
-        public Dictionary<string, UserMetricSet> UserMetrics { get; set; } = new Dictionary<string, UserMetricSet>();
-        public DateTime LastUpdated { get; set; }
-
-        // Enhanced metrics for Phase 9 monitoring
-        /// <summary>Current size of the message ID deduplication cache</summary>
-        public int MessageIdCacheSize { get; set; }
-
-        /// <summary>Count of message ID cleanup operations performed</summary>
-        public int MessageIdCleanupCount { get; set; }
-
-        /// <summary>Total count of loop detections across all layers</summary>
-        public int LoopDetectedCount { get; set; }
-
-        /// <summary>Count of loops detected via message ID deduplication</summary>
-        public int LoopDetectedByMsgId { get; set; }
-
-        /// <summary>Count of loops detected via invisible token check</summary>
-        public int LoopDetectedByToken { get; set; }
-
-        /// <summary>Count of loops detected via bot source flag</summary>
-        public int LoopDetectedByBotFlag { get; set; }
-
-        /// <summary>Count of configuration reloads</summary>
-        public int ConfigReloadCount { get; set; }
-
-        /// <summary>Count of file I/O errors</summary>
-        public int FileIOErrors { get; set; }
-
-        // Phase 10 additional metrics
-        /// <summary>Total time spent processing entries (milliseconds)</summary>
-        public long TotalEntryProcessingMs { get; set; }
-
-        /// <summary>Count of entries processed (for average calculation)</summary>
-        public int EntriesProcessedCount { get; set; }
-
-        /// <summary>Count of winner draw attempts</summary>
-        public int WinnerDrawAttempts { get; set; }
-
-        /// <summary>Count of successful winner draws</summary>
-        public int WinnerDrawSuccesses { get; set; }
-
-        /// <summary>Total time for Wheel API calls (milliseconds)</summary>
-        public long WheelApiTotalMs { get; set; }
-
-        /// <summary>Count of Wheel API calls (for average latency calculation)</summary>
-        public int WheelApiCalls { get; set; }
-
-        // Error & Diagnostic Metrics
-        public int ApiErrors { get; set; }
-        public int WheelApiErrors { get; set; }
-        public int WheelApiInvalidKeys { get; set; }
-        public int WheelApiTimeouts { get; set; }
-        public int WheelApiNetworkErrors { get; set; }
-    }
-
-
-
-#endregion
-
-#region Event Bus
-    /// <summary>
-    /// Event Bus Interface for decoupled communication.
-    /// </summary>
-    public interface IEventBus
-    {
-        /// <summary>
-        /// Subscribes a handler to a specific event type.
-        /// </summary>
-        /// <typeparam name="T">The event type to subscribe to.</typeparam>
-        /// <param name="handler">The action to execute when the event is published.</param>
-        void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent;
-
-        /// <summary>
-        /// Unsubscribes a handler from a specific event type.
-        /// </summary>
-        /// <typeparam name="T">The event type to unsubscribe from.</typeparam>
-        /// <param name="handler">The handler to remove.</param>
-        void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent;
-
-        /// <summary>
-        /// Publishes an event to all subscribed handlers.
-        /// </summary>
-        /// <typeparam name="T">The event type to publish.</typeparam>
-        /// <param name="evt">The event data.</param>
-        void Publish<T>(T evt) where T : IGiveawayEvent;
-    }
-
-    /// <summary>
-    /// Base interface for all giveaway events.
-    /// </summary>
-    public interface IGiveawayEvent
-    {
-        /// <summary>The CPH adapter context.</summary>
-        CPHAdapter Adapter { get; }
-        /// <summary>The name of the giveaway profile.</summary>
-        string ProfileName { get; }
-        /// <summary>The current state of the giveaway.</summary>
-        GiveawayState State { get; }
-        /// <summary>The source platform or trigger.</summary>
-        string Source { get; }
-    }
-
-    /// <summary>
-    /// Thread-safe Event Bus implementation.
-    /// </summary>
-    public class GiveawayEventBus : IEventBus
-    {
-        private readonly Dictionary<Type, List<Delegate>> _handlers = new Dictionary<Type, List<Delegate>>();
-        private readonly object _lock = new object();
-
-        /// <summary>
-        /// Subscribes a handler to a specific event type.
-        /// </summary>
-        /// <typeparam name="T">The event type to subscribe to.</typeparam>
-        /// <param name="handler">The action to execute when the event is published.</param>
-        public void Subscribe<T>(Action<T> handler) where T : IGiveawayEvent
-        {
-            lock (_lock)
-            {
-                if (!_handlers.ContainsKey(typeof(T)))
-                {
-                    _handlers[typeof(T)] = new List<Delegate>();
-                }
-                _handlers[typeof(T)].Add(handler);
-            }
-        }
-
-        /// <summary>
-        /// Unsubscribes a handler from a specific event type.
-        /// </summary>
-        /// <typeparam name="T">The event type to unsubscribe from.</typeparam>
-        /// <param name="handler">The handler to remove.</param>
-        public void Unsubscribe<T>(Action<T> handler) where T : IGiveawayEvent
-        {
-            lock (_lock)
-            {
-                if (_handlers.ContainsKey(typeof(T)))
-                {
-                    _handlers[typeof(T)].Remove(handler);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Publishes an event to all subscribed handlers.
-        /// </summary>
-        /// <typeparam name="T">The event type to publish.</typeparam>
-        /// <param name="evt">The event data.</param>
-        public void Publish<T>(T evt) where T : IGiveawayEvent
-        {
-            List<Delegate> handlersToInvoke = null;
-            lock (_lock)
-            {
-                if (_handlers.TryGetValue(typeof(T), out var list))
-                {
-                    handlersToInvoke = list.ToList();
-                }
-            }
-
-            if (handlersToInvoke != null)
-            {
-                foreach (var handler in handlersToInvoke)
-                {
-                    try
-                    {
-                        ((Action<T>)handler)(evt);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log but don't crash the bus
-                        evt.Adapter?.LogError($"[EventBus] Error handling event {typeof(T).Name}: {ex.Message}");
-                    }
-                }
-            }
-        }
-    }
-
-#endregion
-
-#region Core Events
-    public abstract class GiveawayEventBase : IGiveawayEvent
-    {
-        /// <summary>The CPH adapter context.</summary>
-        public CPHAdapter Adapter { get; }
-        /// <summary>The name of the giveaway profile.</summary>
-        public string ProfileName { get; }
-        /// <summary>The current state of the giveaway.</summary>
-        public GiveawayState State { get; }
-        /// <summary>The source platform or trigger.</summary>
-        public string Source { get; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="GiveawayEventBase"/> class.
-        /// </summary>
-        /// <param name="adapter">CPH adapter context.</param>
-        /// <param name="profileName">Name of the giveaway profile.</param>
-        /// <param name="state">Current giveaway state.</param>
-        /// <param name="source">Source platform/trigger.</param>
-        protected GiveawayEventBase(CPHAdapter adapter, string profileName, GiveawayState state, string source)
-        {
-            Adapter = adapter;
-            ProfileName = profileName;
-            State = state;
-            Source = source;
-        }
-    }
-
-    /// <summary>
-    /// Event triggered when a giveaway is started/opened.
-    /// </summary>
-    public class GiveawayStartedEvent : GiveawayEventBase
-    {
-        /// <summary>Initializes a new instance of the <see cref="GiveawayStartedEvent"/> class.</summary>
-        public GiveawayStartedEvent(CPHAdapter adapter, string profileName, GiveawayState state, string source) : base(adapter, profileName, state, source) { }
-    }
-
-    /// <summary>
-    /// Event triggered when a giveaway is ended/closed.
-    /// </summary>
-    public class GiveawayEndedEvent : GiveawayEventBase
-    {
-        /// <summary>Initializes a new instance of the <see cref="GiveawayEndedEvent"/> class.</summary>
-        public GiveawayEndedEvent(CPHAdapter adapter, string profileName, GiveawayState state, string source) : base(adapter, profileName, state, source) { }
-    }
-
-    /// <summary>
-    /// Event triggered when a winner is selected.
-    /// </summary>
-    public class WinnerSelectedEvent : GiveawayEventBase
-    {
-        /// <summary>The winning entry.</summary>
-        public Entry Winner { get; }
-
-        /// <summary>Initializes a new instance of the <see cref="WinnerSelectedEvent"/> class.</summary>
-        public WinnerSelectedEvent(CPHAdapter adapter, string profileName, GiveawayState state, Entry winner, string source) : base(adapter, profileName, state, source)
-        {
-            Winner = winner;
-        }
-    }
-
-    /// <summary>
-    /// Event triggered when a valid entry is accepted.
-    /// </summary>
-    public class EntryAcceptedEvent : GiveawayEventBase
-    {
-        /// <summary>The accepted entry details.</summary>
-        public Entry Entry { get; }
-        /// <summary>Twitch Message ID for threading (optional).</summary>
-        public string MessageId { get; }
-
-        /// <summary>Initializes a new instance of the <see cref="EntryAcceptedEvent"/> class.</summary>
-        public EntryAcceptedEvent(CPHAdapter adapter, string profileName, GiveawayState state, Entry entry, string source, string messageId = null) : base(adapter, profileName, state, source)
-        {
-            Entry = entry;
-            MessageId = messageId;
-        }
-    }
-
-    /// <summary>
-    /// Event triggered when a Wheel of Names link is generated and ready.
-    /// </summary>
-    public class WheelReadyEvent : GiveawayEventBase
-    {
-        /// <summary>The URL of the generated wheel.</summary>
-        public string Url { get; }
-
-        /// <summary>Initializes a new instance of the <see cref="WheelReadyEvent"/> class.</summary>
-        public WheelReadyEvent(CPHAdapter adapter, string profileName, GiveawayState state, string url, string source) : base(adapter, profileName, state, source)
-        {
-            Url = url;
-        }
-    }
-
-
-
-#endregion
-
 #region Metrics Service
     /// <summary>
     /// Container for user-specific metrics.
@@ -9044,62 +9346,6 @@ private static bool CheckDataCmd(string s) => s != null && (s.Contains(GiveawayC
         public string GameName { get; set; }
         /// <summary>Key-value pairs of metrics for this user.</summary>
         public Dictionary<string, long> Metrics { get; set; } = new Dictionary<string, long>();
-    }
-
-    public class MetricsService
-    {
-        private readonly string _path;
-
-        /// <summary>
-        /// Initializes a new instance of the MetricsService.
-        /// Sets the path to the metrics storage file.
-        /// </summary>
-        public MetricsService()
-        {
-            _path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Giveaway Bot", "data", "metrics.json");
-        }
-
-        /// <summary>
-        /// Saves metrics data to a JSON file.
-        /// </summary>
-        /// <param name="adapter">CPH adapter for logging.</param>
-        /// <param name="metrics">The metrics container to save.</param>
-        public void SaveMetrics(CPHAdapter adapter, MetricsContainer metrics)
-        {
-            try
-            {
-                string stateDir = Path.GetDirectoryName(_path);
-                if (!string.IsNullOrEmpty(stateDir) && !Directory.Exists(stateDir)) Directory.CreateDirectory(stateDir);
-                var json = JsonConvert.SerializeObject(metrics, Formatting.Indented);
-                File.WriteAllText(_path, json);
-                adapter.LogTrace($"[MetricsService] [SaveMetrics] Metrics successfully saved to disk: {_path}");
-            }
-            catch (Exception ex)
-            {
-                adapter.LogError($"[MetricsService] [SaveMetrics] Failed to save metrics: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Loads metrics data from the JSON file.
-        /// </summary>
-        /// <param name="adapter">CPH adapter for logging.</param>
-        /// <returns>The loaded MetricsContainer, or a new empty one if load fails.</returns>
-        public MetricsContainer LoadMetrics(CPHAdapter adapter)
-        {
-            try
-            {
-                if (!File.Exists(_path)) return new MetricsContainer();
-                var json = File.ReadAllText(_path);
-                var metrics = JsonConvert.DeserializeObject<MetricsContainer>(json);
-                return metrics ?? new MetricsContainer();
-            }
-            catch (Exception ex)
-            {
-                adapter.LogError($"[MetricsService] [LoadMetrics] Failed to load metrics: {ex.Message}");
-                return new MetricsContainer();
-            }
-        }
     }
 
 #pragma warning restore IDE0090 // 'new' expression can be simplified

@@ -46,7 +46,7 @@ if (Test-Path $WikiDir) {
     $MdFiles = Get-ChildItem -Path $WikiDir -Filter "*.md" -Recurse
     foreach ($File in $MdFiles) {
         $Content = Get-Content $File.FullName
-        $NewContent = $Content -replace 'Version\*\*: \d+\.\d+\.\d+', "**Version**: $Version" `
+        $NewContent = $Content -replace '\*+Version\*\*: \d+\.\d+\.\d+', "**Version**: $Version" `
             -replace 'Version: \d+\.\d+\.\d+', "Version: $Version" `
             -replace 'New in v\d+\.\d+\.\d+', "New in v$Version"
 
