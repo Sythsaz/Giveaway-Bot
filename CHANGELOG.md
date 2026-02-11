@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.11] - 2026-02-11
+
 ### Added
 
 - **Tests**: Added comprehensive unit tests for `UpdateService` SHA256 checksum validation, including tests for
   checksum extraction, file verification, and invalid format handling.
 - **Tests**: Enhanced `UpdateServiceTests` with whitespace-only checksum test cases (space, tab, mixed whitespace)
   to ensure edge cases are properly handled.
+- **Metrics Service**: Implemented `MetricsService` and `MetricsContainer` for comprehensive cross-profile analytics,
+  tracking global entries, wins, and draws.
+- **Unified Event Bus**: Implemented a thread-safe `EventBus` pub/sub system with 11 event types
+  (e.g., `WinnerDrawnEvent`, `EntryAcceptedEvent`) to decouple business logic from notification systems.
 
 ### Changed
 
@@ -23,11 +29,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Build**: Updated `StreamerBot.csproj` to conditionally use Newtonsoft.Json NuGet package for CI builds
   (when local Streamer.bot DLL is unavailable) while maintaining local reference for development builds.
+- **Refactoring**: Replaced direct `Messenger` and `ObsController` calls with event publications (`Bus.Publish`)
+  using simplified event signatures, improving code maintainability and testability.
 
 ### Infrastructure
 
 - **Code Analysis**: Disabled CA1850 diagnostic ("Prefer static HashData method") in `.editorconfig` as the
   recommended `HashData` method is not available in .NET Framework 4.8.
+- **Code Analysis**: Disabled CA1510 diagnostic ("Use ArgumentNullException.ThrowIfNull") in `.editorconfig` for
+  .NET Framework 4.8 compatibility.
+
+### Fixed
+
+- **Documentation**: Resolved markdown linting warnings in `Roadmap.md` (duplicate headings, mixed list styles).
+- **Stability**: Fixed `Collection Modified` exception in `SyncAllVariables` by iterating over a snapshot of the
+  profiles collection, preventing concurrent modification errors during config sync.
 
 ## [1.5.10] - 2026-02-08
 
