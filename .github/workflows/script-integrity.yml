@@ -148,7 +148,7 @@ jobs:
           echo "✅ Wrote integrity/GiveawayBot.cs.sha256"
 
       - name: Upload checksum artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: giveawaybot-sha256
           path: integrity/GiveawayBot.cs.sha256
